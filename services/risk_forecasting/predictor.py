@@ -189,7 +189,12 @@ def load_covariate_window(
         )
 
     idxs = [date_to_t[d] for d in window_dates]
-    x_raw_window = x_all[idxs]
+    x_raw_window = x_all[idxs].copy()
+
+    for k in range(x_raw_window.shape[2]):
+        mask = ~np.isfinite(x_raw_window[:, :, k])
+        if mask.any():
+            x_raw_window[:, :, k][mask] = means[k]
 
     x_std = ((x_raw_window - means) / stds).astype(np.float32)
     ones = np.ones((*x_std.shape[:2], 1), dtype=np.float32)

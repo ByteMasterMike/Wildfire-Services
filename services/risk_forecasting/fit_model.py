@@ -127,15 +127,29 @@ def load_training_arrays(
     e_train = np.concatenate(e_list, axis=1)
     date_range_train = date_list[0].append(date_list[1:])
 
-    # Fit standardization on train only (same logic as prepare_multiyear)
+    # Fit standardization on train only (same logic as prepare_multiyear).
+    # A few coastal cells have all-NaN NDVI/fm100 in the NetCDF; fill with
+    # column means after computing stats (weather loader already does this).
     flat = x_train_raw.reshape(-1, x_train_raw.shape[2])
-    if not np.isfinite(flat).all():
-        n_bad = int(np.size(flat) - np.isfinite(flat).sum())
-        raise ValueError(f"Covariate matrix contains {n_bad} non-finite values")
+    n_bad = int(np.size(flat) - np.isfinite(flat).sum())
+    if n_bad:
+        print(
+            f"[DATA] WARNING: {n_bad} non-finite covariate values "
+            f"(typically all-NaN veg cells); filling with column means"
+        )
 
     means = np.nanmean(flat, axis=0)
     stds = np.nanstd(flat, axis=0)
     stds[stds == 0] = 1.0
+    if not np.isfinite(means).all() or not np.isfinite(stds).all():
+        raise ValueError(
+            f"Cannot standardize: non-finite means={means} or stds={stds}"
+        )
+
+    for k in range(x_train_raw.shape[2]):
+        mask = ~np.isfinite(x_train_raw[:, :, k])
+        if mask.any():
+            x_train_raw[:, :, k][mask] = means[k]
 
     x_std = ((x_train_raw - means) / stds).astype(np.float32)
     ones = np.ones((*x_std.shape[:2], 1), dtype=np.float32)
