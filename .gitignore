@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env / secrets
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large / regenerable data
+*.nc
+grid_weather_*.csv
+events_*.csv
+*.pkl
+
+# Keep small reference grids (must stay tracked)
+!**/grid_cells.csv
+!**/circuit_midpoints.csv
+
+# Editor / local tooling
+.idea/
+.vscode/
+.cursor/
+*.swp
