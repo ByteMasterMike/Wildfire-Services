@@ -1,34 +1,35 @@
 """
-HPP vs NHPP vs cNHPP on corrected data.
+HPP vs NHPP vs cNHPP on corrected data, with uncertainty on OOS ΔLL.
 
-Fit on train years (default 2020-2023, Dec 2-31 2020 excluded).
-Report train and out-of-sample (default 2024) Poisson log-likelihoods.
+Default: leave-one-year-out over 2020-2024 (Dec 2-31 2020 always excluded).
+For each holdout year:
+  - fit HPP / NHPP / cNHPP on the other years (cNHPP ξ by train LL)
+  - score Poisson LL on the holdout year
+  - day-blocked bootstrap of (cNHPP − NHPP) val LL to get SE / p-value
 
-cNHPP xi is selected by *training* LL (same as models.fit_cnhpp) so the
-OOS comparison does not give cNHPP a validation-tuning advantage.
+Usage:
+  python -m services.risk_forecasting.compare_models
+  python -m services.risk_forecasting.compare_models --holdouts 2022,2023,2024
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 import pickle
+from typing import Sequence
 
 import numpy as np
+import pandas as pd
 from scipy.sparse import csr_matrix
 
 from services.risk_forecasting import grid_data_prep as gdp
-from services.risk_forecasting.config import (
-    DATA_DIR,
-    GRID_CSV,
-    GRID_W_PKL,
-    train_years_from_env,
-)
+from services.risk_forecasting.config import DATA_DIR, GRID_CSV, GRID_W_PKL
 from services.risk_forecasting.fit_model import (
     _require_file,
     _standardize,
     load_events,
     load_year_bundle,
-    val_year_from_env,
 )
 from services.risk_forecasting.models import (
     _mrnn_forward,
@@ -39,28 +40,73 @@ from services.risk_forecasting.models import (
 )
 
 
-def main() -> None:
-    train_years = train_years_from_env()
-    val_year = val_year_from_env()
+ALL_YEARS = [2020, 2021, 2022, 2023, 2024]
+
+
+def daily_poisson_ll(log_lambda_nt: np.ndarray, E: np.ndarray) -> np.ndarray:
+    """
+    Per-day Poisson LL contributions.
+    log_lambda_nt, E: (N, T)  →  returns (T,)
+    ll_t = Σ_i E_it h_it − Σ_i exp(h_it)
+    """
+    h = log_lambda_nt.astype(np.float64)
+    return (E * h).sum(axis=0) - np.exp(np.clip(h, -20, 20)).sum(axis=0)
+
+
+def bootstrap_delta(
+    delta_daily: np.ndarray,
+    n_boot: int = 5000,
+    seed: int = 0,
+) -> dict:
+    """Day-blocked bootstrap of sum(delta_daily)."""
+    rng = np.random.default_rng(seed)
+    t = len(delta_daily)
+    observed = float(delta_daily.sum())
+    # resample days with replacement
+    idx = rng.integers(0, t, size=(n_boot, t))
+    samples = delta_daily[idx].sum(axis=1)
+    se = float(samples.std(ddof=1))
+    # two-sided p: how often |boot| is at least as large as |obs| under
+    # centering at 0 via sign-flip / observed-centered null
+    # Use percentile CI and one-sided P(Δ≤0), two-sided via sign symmetry
+    p_le_0 = float(np.mean(samples <= 0))
+    p_ge_0 = float(np.mean(samples >= 0))
+    p_two = float(2 * min(p_le_0, p_ge_0))
+    p_two = min(p_two, 1.0)
+    ci_lo, ci_hi = np.percentile(samples, [2.5, 97.5])
+    # also SE from day-level: naive SE = sqrt(T)*sd(daily) for iid days
+    naive_se = float(delta_daily.std(ddof=1) * np.sqrt(t))
+    return {
+        "delta": observed,
+        "se_boot": se,
+        "se_naive": naive_se,
+        "ci95": (float(ci_lo), float(ci_hi)),
+        "p_boot_le_0": p_le_0,
+        "p_boot_two": p_two,
+        "n_boot": n_boot,
+        "n_days": t,
+        "mean_daily_delta": float(delta_daily.mean()),
+        "std_daily_delta": float(delta_daily.std(ddof=1)),
+    }
+
+
+def fit_and_score_split(
+    train_years: Sequence[int],
+    val_year: int,
+    grid_df: pd.DataFrame,
+    w: csr_matrix,
+    events: pd.DataFrame,
+    n_boot: int,
+) -> dict:
+    print("\n" + "=" * 60)
+    print(f"HOLDOUT {val_year}  |  train={list(train_years)}")
     print("=" * 60)
-    print("HPP / NHPP / cNHPP COMPARISON")
-    print("train_years=", train_years, " val_year=", val_year)
-    print("=" * 60)
 
-    grid_df = gdp.load_grid(str(_require_file(GRID_CSV, "grid_cells.csv")))
-    with open(GRID_W_PKL, "rb") as f:
-        w = pickle.load(f)
-    if not isinstance(w, csr_matrix):
-        w = csr_matrix(w)
-
-    events = load_events(DATA_DIR, list(train_years) + [val_year], grid_df)
-
-    train_x, train_e, train_d = [], [], []
+    train_x, train_e = [], []
     for year in train_years:
-        x, e, d = load_year_bundle(DATA_DIR, year, grid_df, events)
+        x, e, _ = load_year_bundle(DATA_DIR, year, grid_df, events)
         train_x.append(x)
         train_e.append(e)
-        train_d.append(d)
 
     x_train_raw = np.concatenate(train_x, axis=0)
     e_train = np.concatenate(train_e, axis=1)
@@ -74,77 +120,162 @@ def main() -> None:
         f"VAL T={x_val.shape[0]} events={int(e_val.sum())}"
     )
 
-    # ── Fit ─────────────────────────────────────────────────────────────
-    print("\n[FIT] HPP ...")
     hpp = fit_hpp(e_train)
-
-    print("\n[FIT] NHPP ...")
     nhpp = fit_nhpp(x_train, e_train)
+    cnhpp = fit_cnhpp(x_train, e_train, w, verbose=False)
 
-    print("\n[FIT] cNHPP (xi by train LL) ...")
-    cnhpp = fit_cnhpp(x_train, e_train, w)
+    # Val intensities (N, T)
+    hpp_val_h = np.full(e_val.shape, np.log(hpp.lambda_hat), dtype=np.float64)
+    nhpp_val_h = (x_val @ nhpp.beta).T
+    cnhpp_val_h = _mrnn_forward(cnhpp.xi, cnhpp.beta, x_val, w).T
 
-    # ── Out-of-sample forward passes ────────────────────────────────────
-    # HPP: constant lambda from train
-    hpp_val_ll = poisson_ll(
-        np.full(e_val.shape, np.log(hpp.lambda_hat), dtype=np.float32),
-        e_val,
+    hpp_val_ll = float(poisson_ll(hpp_val_h, e_val))
+    nhpp_val_ll = float(poisson_ll(nhpp_val_h, e_val))
+    cnhpp_val_ll = float(poisson_ll(cnhpp_val_h, e_val))
+
+    nhpp_daily = daily_poisson_ll(nhpp_val_h, e_val)
+    cnhpp_daily = daily_poisson_ll(cnhpp_val_h, e_val)
+    # sanity: sums match totals
+    assert abs(nhpp_daily.sum() - nhpp_val_ll) < 1e-3
+    assert abs(cnhpp_daily.sum() - cnhpp_val_ll) < 1e-3
+
+    delta_daily = cnhpp_daily - nhpp_daily
+    boot = bootstrap_delta(delta_daily, n_boot=n_boot)
+
+    print("\n[RESULT]")
+    print(f"  HPP   val LL = {hpp_val_ll:10.3f}")
+    print(f"  NHPP  val LL = {nhpp_val_ll:10.3f}")
+    print(
+        f"  cNHPP val LL = {cnhpp_val_ll:10.3f}  "
+        f"(ξ={cnhpp.xi:.1f} train-selected)"
     )
-    hpp_train_ll = hpp.log_likelihood
+    print(
+        f"  ΔLL (cNHPP−NHPP) = {boot['delta']:+.3f}  "
+        f"({100 * boot['delta'] / abs(nhpp_val_ll):+.3f}% of |NHPP LL|)"
+    )
+    print(
+        f"  day-bootstrap SE = {boot['se_boot']:.3f}  "
+        f"95% CI [{boot['ci95'][0]:+.3f}, {boot['ci95'][1]:+.3f}]"
+    )
+    print(
+        f"  P(Δ≤0) = {boot['p_boot_le_0']:.3f}  "
+        f"two-sided ≈ {boot['p_boot_two']:.3f}  "
+        f"(n_boot={boot['n_boot']}, n_days={boot['n_days']})"
+    )
+    print(
+        f"  daily ΔLL: mean={boot['mean_daily_delta']:+.4f}  "
+        f"sd={boot['std_daily_delta']:.4f}"
+    )
+    z = boot["delta"] / boot["se_boot"] if boot["se_boot"] > 0 else float("nan")
+    print(f"  z ≈ Δ/SE = {z:+.2f}")
 
-    # NHPP: X_val @ beta
-    nhpp_val_h = (x_val @ nhpp.beta).T  # (N, T)
-    nhpp_val_ll = poisson_ll(nhpp_val_h, e_val)
-    nhpp_train_ll = nhpp.log_likelihood
+    return {
+        "val_year": val_year,
+        "train_years": list(train_years),
+        "hpp_val_ll": hpp_val_ll,
+        "nhpp_val_ll": nhpp_val_ll,
+        "cnhpp_val_ll": cnhpp_val_ll,
+        "cnhpp_xi": float(cnhpp.xi),
+        "train_events": int(e_train.sum()),
+        "val_events": int(e_val.sum()),
+        **{f"boot_{k}": v for k, v in boot.items()},
+    }
 
-    # cNHPP: mRNN on val with train-fit xi/beta
-    cnhpp_val_h = _mrnn_forward(cnhpp.xi, cnhpp.beta, x_val, w).T  # (N, T)
-    cnhpp_val_ll = poisson_ll(cnhpp_val_h, e_val)
-    cnhpp_train_ll = cnhpp.log_likelihood
 
-    # Also score deployed val-selected xi=0.2 if env asks (optional note)
-    print("\n" + "=" * 60)
-    print("RESULTS  (Poisson log-likelihood; higher is better)")
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--holdouts",
+        default="2022,2023,2024",
+        help="Comma-separated holdout years",
+    )
+    ap.add_argument("--n-boot", type=int, default=5000)
+    args = ap.parse_args()
+    holdouts = [int(x) for x in args.holdouts.split(",") if x.strip()]
+
     print("=" * 60)
-    header = f"{'model':10s}  {'train LL':>12s}  {'val LL (OOS)':>12s}  {'notes'}"
-    print(header)
-    print("-" * len(header))
-    print(
-        f"{'HPP':10s}  {hpp_train_ll:12.3f}  {hpp_val_ll:12.3f}  "
-        f"λ={hpp.lambda_hat:.6e}"
-    )
-    print(
-        f"{'NHPP':10s}  {nhpp_train_ll:12.3f}  {nhpp_val_ll:12.3f}  "
-        f"β={np.round(nhpp.beta, 3)}"
-    )
-    print(
-        f"{'cNHPP':10s}  {cnhpp_train_ll:12.3f}  {cnhpp_val_ll:12.3f}  "
-        f"ξ={cnhpp.xi:.1f} (train-selected) β={np.round(cnhpp.beta, 3)}"
-    )
+    print("HPP / NHPP / cNHPP  —  LOYO + day-bootstrap ΔLL")
+    print("holdouts=", holdouts, " n_boot=", args.n_boot)
+    print("=" * 60)
 
-    delta_train = cnhpp_train_ll - nhpp_train_ll
-    delta_val = cnhpp_val_ll - nhpp_val_ll
-    print("-" * len(header))
-    print(f"cNHPP − NHPP   train ΔLL = {delta_train:+.3f}")
-    print(f"cNHPP − NHPP   val   ΔLL = {delta_val:+.3f}")
-    if abs(delta_val) < 1.0:
-        print("Verdict: cNHPP ≈ NHPP on OOS LL (tie within 1 nat).")
-    elif delta_val > 0:
-        print("Verdict: cNHPP improves OOS LL vs NHPP.")
+    grid_df = gdp.load_grid(str(_require_file(GRID_CSV, "grid_cells.csv")))
+    with open(GRID_W_PKL, "rb") as f:
+        w = pickle.load(f)
+    if not isinstance(w, csr_matrix):
+        w = csr_matrix(w)
+
+    events = load_events(DATA_DIR, ALL_YEARS, grid_df)
+
+    rows = []
+    for val_year in holdouts:
+        train_years = [y for y in ALL_YEARS if y != val_year]
+        rows.append(
+            fit_and_score_split(
+                train_years, val_year, grid_df, w, events, args.n_boot
+            )
+        )
+
+    print("\n" + "=" * 60)
+    print("SUMMARY")
+    print("=" * 60)
+    print(
+        f"{'holdout':>8s}  {'NHPP val':>10s}  {'cNHPP val':>10s}  "
+        f"{'ΔLL':>8s}  {'SE':>6s}  {'95% CI':>18s}  {'P(Δ≤0)':>7s}  {'ξ':>4s}"
+    )
+    for r in rows:
+        ci = r["boot_ci95"]
+        print(
+            f"{r['val_year']:8d}  {r['nhpp_val_ll']:10.2f}  "
+            f"{r['cnhpp_val_ll']:10.2f}  {r['boot_delta']:+8.2f}  "
+            f"{r['boot_se_boot']:6.2f}  "
+            f"[{ci[0]:+.1f},{ci[1]:+.1f}]  "
+            f"{r['boot_p_boot_le_0']:7.3f}  {r['cnhpp_xi']:4.1f}"
+        )
+
+    signs = [np.sign(r["boot_delta"]) for r in rows]
+    if len(set(signs)) > 1:
+        print(
+            "\nSign of ΔLL flips across holdouts → difference is not stable; "
+            "treat as a tie."
+        )
     else:
-        print("Verdict: NHPP improves OOS LL vs cNHPP.")
+        # check whether any CI excludes 0
+        any_sig = any(
+            (r["boot_ci95"][0] > 0) or (r["boot_ci95"][1] < 0) for r in rows
+        )
+        if not any_sig:
+            print(
+                "\nΔLL sign is stable but every 95% CI covers 0 → "
+                "not distinguishable from a tie."
+            )
+        else:
+            print(
+                "\nAt least one holdout has 95% CI excluding 0; "
+                "inspect that year before claiming a real gap."
+            )
 
-    # Persist a small summary for the repo
     out = DATA_DIR.parent / "outputs" / "model_comparison.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, "w", encoding="utf-8") as f:
-        f.write("model,train_ll,val_ll,xi,notes\n")
-        f.write(f"HPP,{hpp_train_ll},{hpp_val_ll},,{hpp.lambda_hat}\n")
-        f.write(f"NHPP,{nhpp_train_ll},{nhpp_val_ll},,\"{list(np.round(nhpp.beta,4))}\"\n")
-        f.write(
-            f"cNHPP,{cnhpp_train_ll},{cnhpp_val_ll},{cnhpp.xi},"
-            f"\"train-selected; beta={list(np.round(cnhpp.beta,4))}\"\n"
+    flat = []
+    for r in rows:
+        flat.append(
+            {
+                "val_year": r["val_year"],
+                "train_years": ";".join(map(str, r["train_years"])),
+                "hpp_val_ll": r["hpp_val_ll"],
+                "nhpp_val_ll": r["nhpp_val_ll"],
+                "cnhpp_val_ll": r["cnhpp_val_ll"],
+                "delta_ll": r["boot_delta"],
+                "se_boot": r["boot_se_boot"],
+                "ci95_lo": r["boot_ci95"][0],
+                "ci95_hi": r["boot_ci95"][1],
+                "p_le_0": r["boot_p_boot_le_0"],
+                "p_two": r["boot_p_boot_two"],
+                "cnhpp_xi": r["cnhpp_xi"],
+                "val_events": r["val_events"],
+            }
         )
+    pd.DataFrame(flat).to_csv(out, index=False)
     print(f"\n[OUT] Wrote {out}")
 
 
