@@ -86,7 +86,9 @@ Grid cell `461` has all-NaN `NDVI` and `fm100` in every available vegetation Net
 
 ### December 2020 weather in `grid_weather_2020.csv`
 
-`grid_weather_2020.csv` currently reflects corrupt Dec 2–31 values from the raw file `California_HRRR_daily_2020_01.csv` (TMP humidity-scale, SPFH ~0). Sibling hour files (`California_HRRR_daily2006/2012/2018.csv`) have clean Kelvin TMP for those dates. Regenerating from a clean hour file is preferred over dropping days. See the covariate audit notes.
+`California_HRRR_daily_2020_01.csv` has a mid-file column shift for 2020-12-02…12-31 (TMP holds SPFH-scale values; real Kelvin sits under `Total Cloud Cover`). No clean same-hour (01Z) replacement exists. Other hours (06/12/18Z) are clean but systematically colder by ~2–6 K vs 01Z in November (~0.3–0.7× daily TMP std), so they were **not** substituted.
+
+**Resolution:** those 30 days are removed from `grid_weather_2020.csv` and excluded from training. `prep_hrrr_grid.py` now rejects any day whose median TMP is outside 200–330 K. Fit selects `xi` by **2024 validation** log-likelihood (`VAL_YEAR`, default 2024).
 
 ## Scope
 

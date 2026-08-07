@@ -28,8 +28,10 @@ Thumbs.db
 # Large / regenerable data
 *.nc
 grid_weather_*.csv
+grid_weather_*.csv.bak*
 events_*.csv
 *.pkl
+*.bak_corrupt_dec
 
 # Keep small reference grids (must stay tracked)
 !**/grid_cells.csv

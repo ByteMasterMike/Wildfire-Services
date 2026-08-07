@@ -37,6 +37,12 @@ HRRR_COLS = {
 }
 
 
+# Reject days whose median TMP is outside this Kelvin range (catches
+# export/column-shift corruption, e.g. Dec 2020 in California_HRRR_daily_2020_01).
+TMP_MEDIAN_MIN_K = 200.0
+TMP_MEDIAN_MAX_K = 330.0
+
+
 def load_hrrr_file(path: str) -> pd.DataFrame:
     df = pd.read_csv(path, low_memory=False)
     df.columns = df.columns.str.strip()
@@ -47,10 +53,35 @@ def load_hrrr_file(path: str) -> pd.DataFrame:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df = df.dropna(subset=[c["tmp"], c["u"], c["v"]])
     df["wind_speed"] = np.sqrt(df[c["u"]] ** 2 + df[c["v"]] ** 2)
-    return df.rename(columns={
+    out = df.rename(columns={
         c["cell"]: "Cell_ID", c["lat"]: "hrrr_lat", c["lon"]: "hrrr_lon",
         c["tmp"]: "TMP", c["spfh"]: "SPFH",
     })[["date", "Cell_ID", "hrrr_lat", "hrrr_lon", "TMP", "SPFH", "wind_speed"]]
+    return reject_bad_tmp_days(out, source=path)
+
+
+def reject_bad_tmp_days(
+    df: pd.DataFrame,
+    source: str = "",
+    min_k: float = TMP_MEDIAN_MIN_K,
+    max_k: float = TMP_MEDIAN_MAX_K,
+) -> pd.DataFrame:
+    """Drop calendar days whose median TMP is outside [min_k, max_k]."""
+    if df.empty:
+        return df
+    med = df.groupby("date", sort=True)["TMP"].median()
+    bad = med[(med < min_k) | (med > max_k)]
+    if len(bad) == 0:
+        return df
+    label = Path(source).name if source else "HRRR"
+    print(
+        f"  [SANITY] {label}: rejecting {len(bad)} day(s) with median TMP "
+        f"outside [{min_k}, {max_k}] K"
+    )
+    for dt, val in bad.items():
+        print(f"           {pd.Timestamp(dt).date()}  median_TMP={val:.4f}")
+    keep = ~df["date"].isin(bad.index)
+    return df.loc[keep].reset_index(drop=True)
 
 
 def match_grid_to_hrrr(grid_df: pd.DataFrame, hrrr_cells: pd.DataFrame) -> np.ndarray:

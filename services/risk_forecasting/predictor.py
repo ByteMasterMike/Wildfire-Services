@@ -7,7 +7,7 @@ import pickle
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -141,6 +141,18 @@ def _load_year_raw(
     return gdp.build_covariate_matrix(wx, veg_x), date_range
 
 
+def _weather_dates_present(data_dir: Path, years: Sequence[int]) -> set:
+    """Dates that actually exist in grid_weather CSVs (not ffill inventions)."""
+    present: set = set()
+    for year in years:
+        path = Path(data_dir) / f"grid_weather_{year}.csv"
+        if not path.is_file():
+            continue
+        s = pd.read_csv(path, usecols=["date"], parse_dates=["date"])["date"]
+        present.update(pd.to_datetime(s).dt.normalize().unique().tolist())
+    return present
+
+
 def load_covariate_window(
     data_dir: Path,
     grid_df: pd.DataFrame,
@@ -165,6 +177,20 @@ def load_covariate_window(
         f"[PRED] Building window {start.date()} .. {end.date()} "
         f"({len(window_dates)} days, years={years}) ..."
     )
+
+    # Reject target / window days absent from weather CSVs (ffill would invent them)
+    present = _weather_dates_present(Path(data_dir), years)
+    if end not in present:
+        raise ValueError(
+            f"Date {end.date()} has no weather rows in grid_weather CSV "
+            f"(removed or never extracted)"
+        )
+    missing_wx = [d for d in window_dates if d not in present]
+    if missing_wx:
+        raise ValueError(
+            f"Lookback window includes {len(missing_wx)} day(s) without weather "
+            f"rows (e.g. {missing_wx[0].date()} .. {missing_wx[-1].date()})"
+        )
 
     chunks = []
     date_index_parts = []
