@@ -80,6 +80,14 @@ Prediction uses a **full-grid** covariate window (required by the spatial memory
 
 `models.py` and `grid_data_prep.py` are left unchanged on purpose; new code wraps them.
 
+### Cell 461 vegetation is all-NaN
+
+Grid cell `461` has all-NaN `NDVI` and `fm100` in every available vegetation NetCDF year. The fit/predict wrappers mean-fill those values from the training column means, so **predictions for cell 461 are not meaningfully data-driven on vegetation** (weather covariates still apply). Related: cells `71`, `439`, and `521` have all-NaN `fm100` only.
+
+### December 2020 weather in `grid_weather_2020.csv`
+
+`grid_weather_2020.csv` currently reflects corrupt Dec 2–31 values from the raw file `California_HRRR_daily_2020_01.csv` (TMP humidity-scale, SPFH ~0). Sibling hour files (`California_HRRR_daily2006/2012/2018.csv`) have clean Kelvin TMP for those dates. Regenerating from a clean hour file is preferred over dropping days. See the covariate audit notes.
+
 ## Scope
 
 Historical dates only for years with local covariate files. No live HRRR ingestion in this service.
