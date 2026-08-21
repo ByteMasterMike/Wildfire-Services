@@ -5,7 +5,14 @@ Modular service layer for wildfire risk research. The first service wraps an exi
 ## Layout
 
 ```text
-shared/                         # cross-service utilities (paths, etc.)
+shared/                         # cross-service utilities (paths, db)
+db/                             # PostGIS schema + loaders (map layers + risk grid)
+tests/                          # live API verification suite
+frontend/                       # slim UI (API-backed Historical Map; see frontend/README.md)
+services/data_query/            # read API over warehouse tables
+services/visualization/         # styled GeoJSON / time series / detail
+services/comparison/            # cross-utility / region / period metrics
+services/agent/                 # local-LLM routing feasibility harness
 services/risk_forecasting/
   models.py                     # HPP / NHPP / cNHPP (do not modify lightly)
   grid_data_prep.py             # grid data loaders (do not modify lightly)
@@ -25,6 +32,91 @@ python -m venv .venv
 # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+### PostGIS warehouse (map layers + grid)
+
+See [`db/README.md`](db/README.md). Requires Docker. Default DB port is **5433** (so local Windows Postgres on 5432 is not shadowed).
+
+```bash
+cp .env.example .env
+docker compose up -d
+# PowerShell: $env:PYTHONPATH = "."
+python -m db.loaders
+```
+
+Source GeoJSON/CSV is read from the sibling `dataset_demo/assets/data` repo (read-only).
+
+### Data query API
+
+Read endpoints over the warehouse (`services/data_query/`):
+
+```bash
+# PowerShell: $env:PYTHONPATH = "."
+uvicorn services.data_query.app:app --reload --app-dir .
+```
+
+- Docs: http://localhost:8000/docs  
+- Examples: `/ignitions`, `/epss/outages`, `/psps/events`, `/calfire/incidents`, `/circuits`, `/hftd`, `/iou-territories`, `/spatial/point`, `/spatial/summary`  
+- Common params: `utility`, `year`, `county`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`. CPUC `county` is inferred at load from lat/lon against Census TIGER California polygons (`wildfire.counties`). `/spatial/point` returns that county.  
+- Verification: `python tests/report_results.py` (data_query :8000, risk :8001)
+
+**Ignition counts — two definitions:** `utility=` filters use the CSV **attribute** tag; `/spatial/summary` uses **polygon containment**. For PGE 2024 these differ by 4 rows (inside territory but not tagged PGE). See `services/visualization/README.md`.
+
+### Visualization API
+
+Styled GeoJSON / time series / territory / detail for agents and UIs (`services/visualization/`):
+
+```bash
+uvicorn services.visualization.app:app --port 8002 --app-dir .
+```
+
+- Docs: http://localhost:8002/docs  
+- `/map-layer` (EPSS = circuit **lines**), `/time-series`, `/utility-territory`, `/event-detail`
+
+### Comparison API
+
+```bash
+uvicorn services.comparison.app:app --port 8003 --app-dir .
+```
+
+- Docs: http://localhost:8003/docs
+- `/compare-utilities`, `/compare-regions`, `/compare-periods` — see [`services/comparison/README.md`](services/comparison/README.md)
+
+### Agent prototype
+
+Read-only single-exchange router over all four services:
+
+```bash
+uvicorn services.agent.app:app --port 8004 --app-dir .
+```
+
+The deterministic tier handles fully specified reads, maps, comparisons, and
+risk lookups before invoking local Qwen3 through Ollama. Six grouped HTTP tools,
+strict validation, response-contract checks, bounded retries, payload
+summarization, and deterministic caveat injection prevent ungrounded answers.
+
+Run the staged 4B baseline with:
+
+```bash
+python -m services.agent.eval.runner --models qwen3:4b --thinking off --modes prompt
+```
+
+See [`services/agent/README.md`](services/agent/README.md) and the explicit
+[`services/agent/SECURITY.md`](services/agent/SECURITY.md) threat boundary.
+
+### Frontend (Historical Map)
+
+Slim copy of the research website UI, wired to the visualization API. **Does not** include Planning Tool PNGs (~2 GB); those load from a sibling `dataset_demo` checkout.
+
+```bash
+# Terminal A: visualization :8002
+# Terminal B: serve parent folder so sibling plots resolve
+cd "C:\AI Coding Projects"
+python -m http.server 5500
+# Open http://127.0.0.1:5500/Wildfire%20Services/frontend/
+```
+
+Details: [`frontend/README.md`](frontend/README.md), verification: [`frontend/VERIFICATION.md`](frontend/VERIFICATION.md). API base URL is one line in `frontend/assets/js/api-config.js`.
 
 Place (or keep) local data under `services/risk_forecasting/data/`:
 
@@ -58,10 +150,14 @@ uvicorn services.risk_forecasting.app:app --reload --app-dir .
 ```
 
 - `GET /health`
-- `GET /predict?cell_id=0&date=2024-07-15`
+- `GET /predict` — exactly one place: `cell_id` **or** `lat`+`lon` **or** `county` **or** `utility` (PGE/SCE/SDGE), plus required `date`
 - Optional: `&lookback_days=30` (default **90**, overridable via `LOOKBACK_DAYS`)
 
-Prediction uses a **full-grid** covariate window (required by the spatial memory term `W @ h`) and returns `exp(log_lambda)` for the requested cell only.
+The model outputs Poisson intensity λ. The primary `risk` field is **P(≥1 ignition)** for the requested place: `1 - exp(-sum(λ_i))` (independent cells; documented because cNHPP vs NHPP OOS ΔLL is a statistical tie). `expected_count` is `sum(λ)` so large territories that saturate near 1 stay interpretable. Single-cell `intensity` is λ; multi-cell responses include `mean_intensity`. Place cells come from warehouse polygons (`wildfire.grid_cells` ∩ counties / IOU territories). A batch wrapper scores all 824 cells in one forward pass.
+
+Also returned: `local_percentile` (this place’s P(≥1) vs the same place on complete-window days in that calendar month, 2020–2025) and `statewide_percentile` (this place’s mean cell intensity vs all 824 cells on that date).
+
+**Coverage:** weather/vegetation files run through **2025-12-31**. There is **no live HRRR ingest** and no forecast path. Dates after that end (or missing year files) return HTTP 400: `Covariates end 2025-12-31 and no forecast ingestion exists. This service scores historical dates only.` Dec 2–31 2020 were dropped (corrupt HRRR export), not covered by the 2025 message.
 
 ## Configuration
 

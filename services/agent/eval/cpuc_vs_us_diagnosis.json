@@ -1,0 +1,258 @@
+{
+  "question": "Compare CPUC and US ignition counts in 2024 and explain the difference.",
+  "baseline_trials": [
+    {
+      "answer_origin": "model",
+      "status": "answer",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 1,
+      "primary_tools": [
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [
+        "cpuc_ignitions"
+      ],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": true,
+      "answer_text": "CPUC recorded 741 utility-caused ignitions in 2024, but this count excludes non-utility causes and is not comparable to US ignition counts. The US ignition count is not provided in the evidence, so the difference cannot be quantified from this dataset. CPUC ignitions are utility-attributed only, meaning they do not include all wildfire causes.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "synthesis_start",
+        "model_turn",
+        "schema_success"
+      ],
+      "elapsed_s": 70.7,
+      "compare_hint": false
+    },
+    {
+      "answer_origin": "model",
+      "status": "answer",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 1,
+      "primary_tools": [
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [
+        "cpuc_ignitions"
+      ],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": true,
+      "answer_text": "CPUC recorded 741 utility-caused ignitions in 2024, but this count excludes all wildfire causes and is not comparable to US ignition counts. The US ignition count is not provided in the evidence, so the difference cannot be quantified from this dataset. CPUC ignitions are utility-attributed only and do not include non-utility causes.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "synthesis_start",
+        "model_turn",
+        "schema_success"
+      ],
+      "elapsed_s": 48.9,
+      "compare_hint": false
+    },
+    {
+      "answer_origin": "model",
+      "status": "answer",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 1,
+      "primary_tools": [
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [
+        "cpuc_ignitions"
+      ],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": true,
+      "answer_text": "CPUC recorded 741 utility-caused ignitions in 2024 (from the cpuc_ignitions dataset with filters for 2024-01-01 to 2024-12-31). This count excludes non-utility causes and is not comparable to US ignition counts, which are typically all-cause wildfire ignitions. The evidence specifies that CPUC ignitions are utility-attributed only, so they do not represent total wildfire ignitions.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "synthesis_start",
+        "model_turn",
+        "schema_success"
+      ],
+      "elapsed_s": 56.4,
+      "compare_hint": false
+    },
+    {
+      "answer_origin": "model",
+      "status": "answer",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 1,
+      "primary_tools": [
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [
+        "cpuc_ignitions"
+      ],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": true,
+      "answer_text": "CPUC recorded 741 utility-caused ignitions in California for 2024, but this count excludes non-utility causes and is not comparable to US wildfire ignitions. The US ignition count is not provided in the evidence, so the comparison cannot be made directly. CPUC ignitions are utility-attributed only and do not include all wildfire causes.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "synthesis_start",
+        "model_turn",
+        "schema_success"
+      ],
+      "elapsed_s": 86.2,
+      "compare_hint": false
+    },
+    {
+      "answer_origin": "model",
+      "status": "answer",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 1,
+      "primary_tools": [
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [
+        "cpuc_ignitions"
+      ],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": true,
+      "answer_text": "CPUC recorded 741 utility-caused ignitions in California for 2024, but this count excludes non-utility causes and is not comparable to US wildfire ignition counts. The US ignition count is not provided in the evidence, so the difference cannot be quantified directly. CPUC ignitions are utility-attributed only and do not include all wildfire causes.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "synthesis_start",
+        "model_turn",
+        "schema_success"
+      ],
+      "elapsed_s": 54.4,
+      "compare_hint": false
+    }
+  ],
+  "prompt_hint_trials": [
+    {
+      "answer_origin": "error",
+      "status": "error",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 2,
+      "primary_tools": [
+        "data_query_records",
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": false,
+      "answer_text": "I could not form a valid query for the available services. Try naming the dataset, an explicit year, and (when relevant) a utility or county. Ranking and open-ended 'which has the most' questions are not supported.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "tool_call",
+        "schema_retry_bound",
+        "schema_retry_bound_stop"
+      ],
+      "elapsed_s": 42.6,
+      "compare_hint": true
+    },
+    {
+      "answer_origin": "error",
+      "status": "error",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 2,
+      "primary_tools": [
+        "data_query_records",
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": false,
+      "answer_text": "I could not form a valid query for the available services. Try naming the dataset, an explicit year, and (when relevant) a utility or county. Ranking and open-ended 'which has the most' questions are not supported.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "tool_call",
+        "schema_retry_bound",
+        "schema_retry_bound_stop"
+      ],
+      "elapsed_s": 32.0,
+      "compare_hint": true
+    },
+    {
+      "answer_origin": "error",
+      "status": "error",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 2,
+      "primary_tools": [
+        "data_query_records",
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": false,
+      "answer_text": "I could not form a valid query for the available services. Try naming the dataset, an explicit year, and (when relevant) a utility or county. Ranking and open-ended 'which has the most' questions are not supported.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "tool_call",
+        "schema_retry_bound",
+        "schema_retry_bound_stop"
+      ],
+      "elapsed_s": 30.6,
+      "compare_hint": true
+    },
+    {
+      "answer_origin": "error",
+      "status": "error",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 2,
+      "primary_tools": [
+        "data_query_records",
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": false,
+      "answer_text": "I could not form a valid query for the available services. Try naming the dataset, an explicit year, and (when relevant) a utility or county. Ranking and open-ended 'which has the most' questions are not supported.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "tool_call",
+        "schema_retry_bound",
+        "schema_retry_bound_stop"
+      ],
+      "elapsed_s": 27.9,
+      "compare_hint": true
+    },
+    {
+      "answer_origin": "error",
+      "status": "error",
+      "routing_turns": 1,
+      "tool_calls_in_first_routing_turn": 2,
+      "primary_tools": [
+        "data_query_records",
+        "data_query_records"
+      ],
+      "primary_ok_datasets": [],
+      "emitted_two_datasets": false,
+      "went_to_synthesis_after_single_success": false,
+      "answer_text": "I could not form a valid query for the available services. Try naming the dataset, an explicit year, and (when relevant) a utility or county. Ranking and open-ended 'which has the most' questions are not supported.",
+      "trajectory_types": [
+        "tool_catalog",
+        "model_turn",
+        "tool_call",
+        "tool_call",
+        "schema_retry_bound",
+        "schema_retry_bound_stop"
+      ],
+      "elapsed_s": 28.8,
+      "compare_hint": true
+    }
+  ],
+  "summary": {
+    "baseline_two_dataset_rate": 0.0,
+    "baseline_single_then_synth_rate": 1.0,
+    "hint_two_dataset_rate": 0.0,
+    "hint_single_then_synth_rate": 0.0
+  }
+}

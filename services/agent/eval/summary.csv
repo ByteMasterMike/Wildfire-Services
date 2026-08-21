@@ -1,0 +1,2 @@
+model,thinking,mode,routing_accuracy_all,routing_accuracy_model_tier,caveat_surfacing_rate,schema_validity_first_pass,schema_validity_eventual,recovery_rate,direct_answer_without_tool_attempts,no_tool_response_attempts_before_evidence,direct_answer_without_tool_rate_per_model_turn,no_tool_response_rate_per_model_turn,request_p50_ms,request_p95_ms,model_call_p50_ms,model_call_p95_ms,runtime_seconds
+qwen3:4b,off,constrained,1.0,1.0,1.0,1.0,1.0,1.0,0,0,0.0,0.0,178.82,2036.11,,,6.45

@@ -1,0 +1,182 @@
+[
+  {
+    "id": "sacramento_tell_me_about",
+    "question": "Tell me about wildfire incidents in Sacramento County during 2024",
+    "elapsed_s": 96.1,
+    "status": "answer",
+    "answer_origin": "model",
+    "answer_text": "CAL FIRE recorded 11 wildfire incidents in Sacramento County during 2024 under the default incident-type filter. This count excludes untyped events (1,234 statewide records without incident type) and utility-tagged incidents (282 records without utility data), so it does not represent all fire events. One example is the Marsh Fire.",
+    "qualifications": [
+      "calfire_missingness"
+    ],
+    "qualification_texts": [
+      "CAL FIRE has 1,234 records without incident type and 282 without utility tags; default counts include only Wildfire/Fire incident types."
+    ],
+    "trajectory_types": [
+      "tool_catalog",
+      "model_turn",
+      "tool_call",
+      "tool_call",
+      "exploratory_sample_enrichment",
+      "synthesis_start",
+      "model_turn",
+      "schema_success"
+    ],
+    "synthesis_start": {
+      "type": "synthesis_start",
+      "estimated_prompt_chars": 3551,
+      "configured_num_ctx": 32768,
+      "effective_num_ctx": 32768,
+      "timeout_seconds": 180.0,
+      "structured_mode": "constrained",
+      "synthesis_thinking": false,
+      "synthesis_model": "qwen3:4b-agent-nothink"
+    },
+    "synthesis_latencies_ms": [
+      60200.75
+    ],
+    "grounding_errors": [],
+    "tools": [
+      {
+        "tool": "data_query_records",
+        "ok": true,
+        "args": {
+          "dataset": "calfire_incidents",
+          "result_mode": "count",
+          "year": 2024,
+          "county": "Sacramento",
+          "incident_type_mode": "wildfire_default",
+          "limit": 10
+        },
+        "qualification_call": false
+      },
+      {
+        "tool": "data_query_records",
+        "ok": true,
+        "args": {
+          "dataset": "calfire_incidents",
+          "result_mode": "records",
+          "year": 2024,
+          "county": "Sacramento",
+          "incident_type_mode": "wildfire_default",
+          "limit": 5
+        },
+        "qualification_call": true
+      }
+    ]
+  },
+  {
+    "id": "model_cpuc_tell_me_about_2023",
+    "question": "Tell me about CPUC ignitions in 2023",
+    "elapsed_s": 88.8,
+    "status": "answer",
+    "answer_origin": "model",
+    "answer_text": "CPUC recorded 480 utility-caused ignitions in California for 2023 under the default filters. This count represents utility-attributed ignitions only and excludes non-utility causes, as noted in the caveats. The dataset includes 480 total events with 5 returned examples from January 2023, but the number does not represent all-cause wildfire counts or comparable metrics to CAL FIRE or US ignitions.",
+    "qualifications": [
+      "cpuc_utility_caused"
+    ],
+    "qualification_texts": [
+      "CPUC ignitions in this warehouse are utility-caused / utility-attributed only; they are not all-cause wildfire counts and are not comparable to CAL FIRE or US ignitions."
+    ],
+    "trajectory_types": [
+      "tool_catalog",
+      "model_turn",
+      "tool_call",
+      "tool_call",
+      "exploratory_sample_enrichment",
+      "synthesis_start",
+      "model_turn",
+      "schema_success"
+    ],
+    "synthesis_start": {
+      "type": "synthesis_start",
+      "estimated_prompt_chars": 2704,
+      "configured_num_ctx": 32768,
+      "effective_num_ctx": 32768,
+      "timeout_seconds": 180.0,
+      "structured_mode": "constrained",
+      "synthesis_thinking": false,
+      "synthesis_model": "qwen3:4b-agent-nothink"
+    },
+    "synthesis_latencies_ms": [
+      73363.81
+    ],
+    "grounding_errors": [],
+    "tools": [
+      {
+        "tool": "data_query_records",
+        "ok": true,
+        "args": {
+          "dataset": "cpuc_ignitions",
+          "result_mode": "count",
+          "start_date": "2023-01-01",
+          "end_date": "2023-12-31",
+          "limit": 10
+        },
+        "qualification_call": false
+      },
+      {
+        "tool": "data_query_records",
+        "ok": true,
+        "args": {
+          "dataset": "cpuc_ignitions",
+          "result_mode": "records",
+          "start_date": "2023-01-01",
+          "end_date": "2023-12-31",
+          "limit": 5
+        },
+        "qualification_call": true
+      }
+    ]
+  },
+  {
+    "id": "cpuc_vs_us",
+    "question": "Compare CPUC and US ignition counts in 2024 and explain the difference.",
+    "elapsed_s": 61.2,
+    "status": "answer",
+    "answer_origin": "model",
+    "answer_text": "CPUC recorded 741 utility-caused ignitions in 2024, but this count excludes all wildfire causes and is not comparable to US ignition counts. The US ignition count is not provided in the evidence, so the difference cannot be quantified from this dataset. CPUC ignitions are utility-attributed only and do not include non-utility causes.",
+    "qualifications": [
+      "cpuc_utility_caused"
+    ],
+    "qualification_texts": [
+      "CPUC ignitions in this warehouse are utility-caused / utility-attributed only; they are not all-cause wildfire counts and are not comparable to CAL FIRE or US ignitions."
+    ],
+    "trajectory_types": [
+      "tool_catalog",
+      "model_turn",
+      "tool_call",
+      "synthesis_start",
+      "model_turn",
+      "schema_success"
+    ],
+    "synthesis_start": {
+      "type": "synthesis_start",
+      "estimated_prompt_chars": 2149,
+      "configured_num_ctx": 32768,
+      "effective_num_ctx": 32768,
+      "timeout_seconds": 180.0,
+      "structured_mode": "constrained",
+      "synthesis_thinking": false,
+      "synthesis_model": "qwen3:4b-agent-nothink"
+    },
+    "synthesis_latencies_ms": [
+      42213.17
+    ],
+    "grounding_errors": [],
+    "tools": [
+      {
+        "tool": "data_query_records",
+        "ok": true,
+        "args": {
+          "dataset": "cpuc_ignitions",
+          "result_mode": "count",
+          "start_date": "2024-01-01",
+          "end_date": "2024-12-31",
+          "limit": 10
+        },
+        "qualification_call": false
+      }
+    ]
+  }
+]

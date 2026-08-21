@@ -1,0 +1,968 @@
+{
+  "queried_at": "2026-08-14T18:07:56",
+  "target": "localhost:5433/wildfire",
+  "csv_path": "C:\\AI Coding Projects\\dataset_demo\\assets\\data\\calfire_incidents.csv",
+  "table_count": 3747,
+  "by_year": [
+    {
+      "year": 2009,
+      "all_dated": 1,
+      "default_wf": 1,
+      "untyped": 0,
+      "other_type": 0,
+      "calfire_true": 1,
+      "calfire_false": 0,
+      "calfire_null": 0
+    },
+    {
+      "year": 2013,
+      "all_dated": 141,
+      "default_wf": 0,
+      "untyped": 141,
+      "other_type": 0,
+      "calfire_true": 116,
+      "calfire_false": 25,
+      "calfire_null": 0
+    },
+    {
+      "year": 2014,
+      "all_dated": 76,
+      "default_wf": 1,
+      "untyped": 75,
+      "other_type": 0,
+      "calfire_true": 56,
+      "calfire_false": 20,
+      "calfire_null": 0
+    },
+    {
+      "year": 2015,
+      "all_dated": 99,
+      "default_wf": 2,
+      "untyped": 97,
+      "other_type": 0,
+      "calfire_true": 83,
+      "calfire_false": 16,
+      "calfire_null": 0
+    },
+    {
+      "year": 2016,
+      "all_dated": 155,
+      "default_wf": 0,
+      "untyped": 155,
+      "other_type": 0,
+      "calfire_true": 127,
+      "calfire_false": 28,
+      "calfire_null": 0
+    },
+    {
+      "year": 2017,
+      "all_dated": 429,
+      "default_wf": 11,
+      "untyped": 418,
+      "other_type": 0,
+      "calfire_true": 329,
+      "calfire_false": 100,
+      "calfire_null": 0
+    },
+    {
+      "year": 2018,
+      "all_dated": 303,
+      "default_wf": 28,
+      "untyped": 274,
+      "other_type": 1,
+      "calfire_true": 234,
+      "calfire_false": 69,
+      "calfire_null": 0
+    },
+    {
+      "year": 2019,
+      "all_dated": 263,
+      "default_wf": 207,
+      "untyped": 56,
+      "other_type": 0,
+      "calfire_true": 186,
+      "calfire_false": 77,
+      "calfire_null": 0
+    },
+    {
+      "year": 2020,
+      "all_dated": 259,
+      "default_wf": 257,
+      "untyped": 2,
+      "other_type": 0,
+      "calfire_true": 160,
+      "calfire_false": 99,
+      "calfire_null": 0
+    },
+    {
+      "year": 2021,
+      "all_dated": 186,
+      "default_wf": 172,
+      "untyped": 14,
+      "other_type": 0,
+      "calfire_true": 108,
+      "calfire_false": 78,
+      "calfire_null": 0
+    },
+    {
+      "year": 2022,
+      "all_dated": 150,
+      "default_wf": 150,
+      "untyped": 0,
+      "other_type": 0,
+      "calfire_true": 93,
+      "calfire_false": 57,
+      "calfire_null": 0
+    },
+    {
+      "year": 2023,
+      "all_dated": 133,
+      "default_wf": 133,
+      "untyped": 0,
+      "other_type": 0,
+      "calfire_true": 90,
+      "calfire_false": 43,
+      "calfire_null": 0
+    },
+    {
+      "year": 2024,
+      "all_dated": 612,
+      "default_wf": 611,
+      "untyped": 0,
+      "other_type": 1,
+      "calfire_true": 372,
+      "calfire_false": 240,
+      "calfire_null": 0
+    },
+    {
+      "year": 2025,
+      "all_dated": 556,
+      "default_wf": 555,
+      "untyped": 0,
+      "other_type": 1,
+      "calfire_true": 412,
+      "calfire_false": 144,
+      "calfire_null": 0
+    },
+    {
+      "year": 2026,
+      "all_dated": 382,
+      "default_wf": 381,
+      "untyped": 0,
+      "other_type": 1,
+      "calfire_true": 283,
+      "calfire_false": 99,
+      "calfire_null": 0
+    }
+  ],
+  "undated": 2,
+  "acres": [
+    {
+      "year": 2009,
+      "n": 1,
+      "n_acres": 1,
+      "acres_null": 0,
+      "under_10": 0,
+      "under_100": 0,
+      "ge_1000": 0,
+      "p10": 122.0,
+      "p25": 122.0,
+      "median": 122.0,
+      "p75": 122.0,
+      "p90": 122.0,
+      "mean": 122.0,
+      "sum_acres": 122.0
+    },
+    {
+      "year": 2014,
+      "n": 1,
+      "n_acres": 1,
+      "acres_null": 0,
+      "under_10": 0,
+      "under_100": 0,
+      "ge_1000": 1,
+      "p10": 4240.0,
+      "p25": 4240.0,
+      "median": 4240.0,
+      "p75": 4240.0,
+      "p90": 4240.0,
+      "mean": 4240.0,
+      "sum_acres": 4240.0
+    },
+    {
+      "year": 2015,
+      "n": 2,
+      "n_acres": 2,
+      "acres_null": 0,
+      "under_10": 0,
+      "under_100": 0,
+      "ge_1000": 2,
+      "p10": 14332.7,
+      "p25": 23755.25,
+      "median": 39459.5,
+      "p75": 55163.75,
+      "p90": 64586.3,
+      "mean": 39459.5,
+      "sum_acres": 78919.0
+    },
+    {
+      "year": 2017,
+      "n": 11,
+      "n_acres": 11,
+      "acres_null": 0,
+      "under_10": 0,
+      "under_100": 4,
+      "ge_1000": 6,
+      "p10": 14.0,
+      "p25": 62.5,
+      "median": 9989.0,
+      "p75": 40690.0,
+      "p90": 51624.0,
+      "mean": 42034.818181818184,
+      "sum_acres": 462383.0
+    },
+    {
+      "year": 2018,
+      "n": 28,
+      "n_acres": 28,
+      "acres_null": 0,
+      "under_10": 0,
+      "under_100": 7,
+      "ge_1000": 12,
+      "p10": 41.60000000000001,
+      "p25": 104.75,
+      "median": 494.0,
+      "p75": 40736.0,
+      "p90": 113865.10000000003,
+      "mean": 42440.32142857143,
+      "sum_acres": 1188329.0
+    },
+    {
+      "year": 2019,
+      "n": 207,
+      "n_acres": 205,
+      "acres_null": 2,
+      "under_10": 1,
+      "under_100": 106,
+      "ge_1000": 29,
+      "p10": 16.400000000000002,
+      "p25": 34.0,
+      "median": 95.0,
+      "p75": 283.0,
+      "p90": 1753.1999999999982,
+      "mean": 1305.1170731707316,
+      "sum_acres": 267549.0
+    },
+    {
+      "year": 2020,
+      "n": 257,
+      "n_acres": 244,
+      "acres_null": 13,
+      "under_10": 4,
+      "under_100": 86,
+      "ge_1000": 55,
+      "p10": 20.0,
+      "p25": 55.75,
+      "median": 161.0,
+      "p75": 710.5,
+      "p90": 6556.400000000007,
+      "mean": 12056.803278688525,
+      "sum_acres": 2941860.0
+    },
+    {
+      "year": 2021,
+      "n": 172,
+      "n_acres": 166,
+      "acres_null": 6,
+      "under_10": 0,
+      "under_100": 79,
+      "ge_1000": 30,
+      "p10": 25.0,
+      "p25": 44.25,
+      "median": 112.5,
+      "p75": 528.5,
+      "p90": 4165.5,
+      "mean": 13794.060240963856,
+      "sum_acres": 2289814.0
+    },
+    {
+      "year": 2022,
+      "n": 150,
+      "n_acres": 134,
+      "acres_null": 16,
+      "under_10": 0,
+      "under_100": 69,
+      "ge_1000": 17,
+      "p10": 21.0,
+      "p25": 38.25,
+      "median": 91.5,
+      "p75": 323.0,
+      "p90": 3507.300000000004,
+      "mean": 2076.4626865671644,
+      "sum_acres": 278246.0
+    },
+    {
+      "year": 2023,
+      "n": 133,
+      "n_acres": 121,
+      "acres_null": 12,
+      "under_10": 1,
+      "under_100": 71,
+      "ge_1000": 18,
+      "p10": 15.0,
+      "p25": 32.0,
+      "median": 70.0,
+      "p75": 296.0,
+      "p90": 2487.0,
+      "mean": 2669.280991735537,
+      "sum_acres": 322983.0
+    },
+    {
+      "year": 2024,
+      "n": 611,
+      "n_acres": 609,
+      "acres_null": 2,
+      "under_10": 15,
+      "under_100": 422,
+      "ge_1000": 54,
+      "p10": 11.0,
+      "p25": 17.0,
+      "median": 43.0,
+      "p75": 150.0,
+      "p90": 864.2000000000003,
+      "mean": 1684.2692939244664,
+      "sum_acres": 1025720.0
+    },
+    {
+      "year": 2025,
+      "n": 555,
+      "n_acres": 555,
+      "acres_null": 0,
+      "under_10": 23,
+      "under_100": 425,
+      "ge_1000": 36,
+      "p10": 10.0,
+      "p25": 15.0,
+      "median": 30.0,
+      "p75": 86.0,
+      "p90": 481.6,
+      "mean": 950.8234234234234,
+      "sum_acres": 527707.0
+    },
+    {
+      "year": 2026,
+      "n": 381,
+      "n_acres": 381,
+      "acres_null": 0,
+      "under_10": 20,
+      "under_100": 271,
+      "ge_1000": 31,
+      "p10": 10.0,
+      "p25": 17.0,
+      "median": 31.0,
+      "p75": 138.0,
+      "p90": 665.0,
+      "mean": 541.9081364829397,
+      "sum_acres": 206467.0
+    }
+  ],
+  "acres_2023_vs_2024": [
+    {
+      "year": 2023,
+      "min_positive": 5.0,
+      "max_acres": 95107.0
+    },
+    {
+      "year": 2024,
+      "min_positive": 2.0,
+      "max_acres": 429603.0
+    }
+  ],
+  "monthly_default": [
+    {
+      "year": 2022,
+      "month": 1,
+      "n": 1
+    },
+    {
+      "year": 2022,
+      "month": 2,
+      "n": 2
+    },
+    {
+      "year": 2022,
+      "month": 3,
+      "n": 8
+    },
+    {
+      "year": 2022,
+      "month": 4,
+      "n": 3
+    },
+    {
+      "year": 2022,
+      "month": 5,
+      "n": 18
+    },
+    {
+      "year": 2022,
+      "month": 6,
+      "n": 33
+    },
+    {
+      "year": 2022,
+      "month": 7,
+      "n": 33
+    },
+    {
+      "year": 2022,
+      "month": 8,
+      "n": 26
+    },
+    {
+      "year": 2022,
+      "month": 9,
+      "n": 24
+    },
+    {
+      "year": 2022,
+      "month": 10,
+      "n": 2
+    },
+    {
+      "year": 2023,
+      "month": 4,
+      "n": 1
+    },
+    {
+      "year": 2023,
+      "month": 5,
+      "n": 6
+    },
+    {
+      "year": 2023,
+      "month": 6,
+      "n": 24
+    },
+    {
+      "year": 2023,
+      "month": 7,
+      "n": 38
+    },
+    {
+      "year": 2023,
+      "month": 8,
+      "n": 36
+    },
+    {
+      "year": 2023,
+      "month": 9,
+      "n": 6
+    },
+    {
+      "year": 2023,
+      "month": 10,
+      "n": 10
+    },
+    {
+      "year": 2023,
+      "month": 11,
+      "n": 7
+    },
+    {
+      "year": 2023,
+      "month": 12,
+      "n": 5
+    },
+    {
+      "year": 2024,
+      "month": 2,
+      "n": 2
+    },
+    {
+      "year": 2024,
+      "month": 4,
+      "n": 7
+    },
+    {
+      "year": 2024,
+      "month": 5,
+      "n": 65
+    },
+    {
+      "year": 2024,
+      "month": 6,
+      "n": 137
+    },
+    {
+      "year": 2024,
+      "month": 7,
+      "n": 182
+    },
+    {
+      "year": 2024,
+      "month": 8,
+      "n": 88
+    },
+    {
+      "year": 2024,
+      "month": 9,
+      "n": 53
+    },
+    {
+      "year": 2024,
+      "month": 10,
+      "n": 45
+    },
+    {
+      "year": 2024,
+      "month": 11,
+      "n": 26
+    },
+    {
+      "year": 2024,
+      "month": 12,
+      "n": 6
+    },
+    {
+      "year": 2025,
+      "month": 1,
+      "n": 28
+    },
+    {
+      "year": 2025,
+      "month": 2,
+      "n": 3
+    },
+    {
+      "year": 2025,
+      "month": 3,
+      "n": 5
+    },
+    {
+      "year": 2025,
+      "month": 4,
+      "n": 15
+    },
+    {
+      "year": 2025,
+      "month": 5,
+      "n": 82
+    },
+    {
+      "year": 2025,
+      "month": 6,
+      "n": 114
+    },
+    {
+      "year": 2025,
+      "month": 7,
+      "n": 108
+    },
+    {
+      "year": 2025,
+      "month": 8,
+      "n": 106
+    },
+    {
+      "year": 2025,
+      "month": 9,
+      "n": 70
+    },
+    {
+      "year": 2025,
+      "month": 10,
+      "n": 18
+    },
+    {
+      "year": 2025,
+      "month": 11,
+      "n": 5
+    },
+    {
+      "year": 2025,
+      "month": 12,
+      "n": 1
+    }
+  ],
+  "last_update": [
+    {
+      "year": 2009,
+      "n": 1,
+      "n_update": 1,
+      "earliest_update": "2020-09-16T21:07:35+00:00",
+      "latest_update": "2020-09-16T21:07:35+00:00",
+      "median_lag_days": 4132.966377314815,
+      "updated_after_create_year": 1,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2014,
+      "n": 1,
+      "n_update": 1,
+      "earliest_update": "2022-10-24T18:28:11+00:00",
+      "latest_update": "2022-10-24T18:28:11+00:00",
+      "median_lag_days": 3012.787627314815,
+      "updated_after_create_year": 1,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2015,
+      "n": 2,
+      "n_update": 2,
+      "earliest_update": "2022-10-24T18:17:51+00:00",
+      "latest_update": "2022-10-24T18:19:23+00:00",
+      "median_lag_days": 2626.3705671296293,
+      "updated_after_create_year": 2,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2017,
+      "n": 11,
+      "n_update": 11,
+      "earliest_update": "2019-07-09T20:52:05+00:00",
+      "latest_update": "2024-09-23T23:01:41+00:00",
+      "median_lag_days": 746.4618634259259,
+      "updated_after_create_year": 11,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2018,
+      "n": 28,
+      "n_update": 28,
+      "earliest_update": "2019-10-25T16:01:35+00:00",
+      "latest_update": "2025-07-07T16:59:35+00:00",
+      "median_lag_days": 489.76909722222223,
+      "updated_after_create_year": 28,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2019,
+      "n": 207,
+      "n_update": 207,
+      "earliest_update": "2019-07-03T20:12:42+00:00",
+      "latest_update": "2024-06-03T23:12:54+00:00",
+      "median_lag_days": 3.8386574074074074,
+      "updated_after_create_year": 24,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2020,
+      "n": 257,
+      "n_update": 257,
+      "earliest_update": "2020-02-16T17:24:05+00:00",
+      "latest_update": "2025-08-14T05:01:35+00:00",
+      "median_lag_days": 6.620891203703704,
+      "updated_after_create_year": 40,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2021,
+      "n": 172,
+      "n_update": 172,
+      "earliest_update": "2021-01-20T23:25:41+00:00",
+      "latest_update": "2025-06-03T21:45:57+00:00",
+      "median_lag_days": 6.101493055555556,
+      "updated_after_create_year": 20,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2022,
+      "n": 150,
+      "n_update": 150,
+      "earliest_update": "2022-02-24T19:56:41+00:00",
+      "latest_update": "2024-12-11T23:00:48+00:00",
+      "median_lag_days": 6.1944386574074075,
+      "updated_after_create_year": 36,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2023,
+      "n": 133,
+      "n_update": 133,
+      "earliest_update": "2023-05-23T15:52:30+00:00",
+      "latest_update": "2025-01-18T08:13:34+00:00",
+      "median_lag_days": 2.9416435185185184,
+      "updated_after_create_year": 19,
+      "y2023_touched_in_2024_or_later": 19
+    },
+    {
+      "year": 2024,
+      "n": 611,
+      "n_update": 611,
+      "earliest_update": "2024-02-26T23:25:20+00:00",
+      "latest_update": "2025-07-29T20:30:24+00:00",
+      "median_lag_days": 3.0463078703703705,
+      "updated_after_create_year": 99,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2025,
+      "n": 555,
+      "n_update": 555,
+      "earliest_update": "2025-01-03T06:04:25+00:00",
+      "latest_update": "2026-08-02T15:29:25+00:00",
+      "median_lag_days": 1.9177314814814814,
+      "updated_after_create_year": 72,
+      "y2023_touched_in_2024_or_later": 0
+    },
+    {
+      "year": 2026,
+      "n": 381,
+      "n_update": 381,
+      "earliest_update": "2026-01-29T19:27:24+00:00",
+      "latest_update": "2026-08-03T16:00:25+00:00",
+      "median_lag_days": 1.445451388888889,
+      "updated_after_create_year": 0,
+      "y2023_touched_in_2024_or_later": 0
+    }
+  ],
+  "y2023_update_year": [
+    {
+      "update_year": 2023,
+      "n": 114
+    },
+    {
+      "update_year": 2024,
+      "n": 18
+    },
+    {
+      "update_year": 2025,
+      "n": 1
+    }
+  ],
+  "types_2023_2024": [
+    {
+      "year": 2023,
+      "incident_type": "Fire",
+      "n": 1
+    },
+    {
+      "year": 2023,
+      "incident_type": "Wildfire",
+      "n": 132
+    },
+    {
+      "year": 2024,
+      "incident_type": "Earthquake",
+      "n": 1
+    },
+    {
+      "year": 2024,
+      "incident_type": "Fire",
+      "n": 2
+    },
+    {
+      "year": 2024,
+      "incident_type": "Wildfire",
+      "n": 609
+    }
+  ],
+  "share_under_10_default": [
+    {
+      "year": 2019,
+      "pct_under_10": 0.5,
+      "pct_under_100": 51.7
+    },
+    {
+      "year": 2020,
+      "pct_under_10": 1.6,
+      "pct_under_100": 35.2
+    },
+    {
+      "year": 2021,
+      "pct_under_10": 0.0,
+      "pct_under_100": 47.6
+    },
+    {
+      "year": 2022,
+      "pct_under_10": 0.0,
+      "pct_under_100": 51.5
+    },
+    {
+      "year": 2023,
+      "pct_under_10": 0.8,
+      "pct_under_100": 58.7
+    },
+    {
+      "year": 2024,
+      "pct_under_10": 2.5,
+      "pct_under_100": 69.3
+    },
+    {
+      "year": 2025,
+      "pct_under_10": 4.1,
+      "pct_under_100": 76.6
+    },
+    {
+      "year": 2026,
+      "pct_under_10": 5.2,
+      "pct_under_100": 71.1
+    }
+  ],
+  "current_csv": {
+    "rows": 3747,
+    "by_year": {
+      "2009": 1,
+      "2013": 141,
+      "2014": 76,
+      "2015": 99,
+      "2016": 155,
+      "2017": 429,
+      "2018": 303,
+      "2019": 263,
+      "2020": 259,
+      "2021": 186,
+      "2022": 150,
+      "2023": 133,
+      "2024": 612,
+      "2025": 556,
+      "2026": 382,
+      "None": 2
+    },
+    "by_type": {
+      "NULL": 1234,
+      "Wildfire": 2471,
+      "Flood": 2,
+      "Fire": 38,
+      "Earthquake": 1,
+      "Hazmat": 1
+    },
+    "y2023": 133,
+    "y2024": 612
+  },
+  "csv_git_snapshots": [
+    {
+      "rows": 3747,
+      "by_year": {
+        "2009": 1,
+        "2013": 141,
+        "2014": 76,
+        "2015": 99,
+        "2016": 155,
+        "2017": 429,
+        "2018": 303,
+        "2019": 263,
+        "2020": 259,
+        "2021": 186,
+        "2022": 150,
+        "2023": 133,
+        "2024": 612,
+        "2025": 556,
+        "2026": 382,
+        "None": 2
+      },
+      "by_type": {
+        "NULL": 1234,
+        "Wildfire": 2471,
+        "Flood": 2,
+        "Fire": 38,
+        "Earthquake": 1,
+        "Hazmat": 1
+      },
+      "y2023": 133,
+      "y2024": 612,
+      "sha": "461532a",
+      "git": "2026-08-03 Auto-refresh CAL FIRE data"
+    },
+    {
+      "rows": 3717,
+      "by_year": {
+        "2009": 1,
+        "2013": 141,
+        "2014": 76,
+        "2015": 99,
+        "2016": 155,
+        "2017": 429,
+        "2018": 303,
+        "2019": 263,
+        "2020": 259,
+        "2021": 186,
+        "2022": 150,
+        "2023": 133,
+        "2024": 612,
+        "2025": 556,
+        "2026": 352,
+        "None": 2
+      },
+      "by_type": {
+        "NULL": 1234,
+        "Wildfire": 2441,
+        "Flood": 2,
+        "Fire": 38,
+        "Earthquake": 1,
+        "Hazmat": 1
+      },
+      "y2023": 133,
+      "y2024": 612,
+      "sha": "9fd3088",
+      "git": "2026-07-28 Attribute CAL FIRE incidents to IOU territories and wire utility filtering."
+    },
+    {
+      "rows": 3730,
+      "by_year": {
+        "2009": 1,
+        "2013": 141,
+        "2014": 76,
+        "2015": 99,
+        "2016": 155,
+        "2017": 429,
+        "2018": 303,
+        "2019": 263,
+        "2020": 259,
+        "2021": 186,
+        "2022": 150,
+        "2023": 133,
+        "2024": 612,
+        "2025": 556,
+        "2026": 365,
+        "None": 2
+      },
+      "by_type": {
+        "NULL": 1234,
+        "Wildfire": 2454,
+        "Flood": 2,
+        "Fire": 38,
+        "Earthquake": 1,
+        "Hazmat": 1
+      },
+      "y2023": 133,
+      "y2024": 612,
+      "sha": "dcbecdb",
+      "git": "2026-07-27 Auto-refresh CAL FIRE data"
+    },
+    {
+      "rows": 3717,
+      "by_year": {
+        "2009": 1,
+        "2013": 141,
+        "2014": 76,
+        "2015": 99,
+        "2016": 155,
+        "2017": 429,
+        "2018": 303,
+        "2019": 263,
+        "2020": 259,
+        "2021": 186,
+        "2022": 150,
+        "2023": 133,
+        "2024": 612,
+        "2025": 556,
+        "2026": 352,
+        "None": 2
+      },
+      "by_type": {
+        "NULL": 1234,
+        "Wildfire": 2441,
+        "Flood": 2,
+        "Fire": 38,
+        "Earthquake": 1,
+        "Hazmat": 1
+      },
+      "y2023": 133,
+      "y2024": 612,
+      "sha": "44f0224",
+      "git": "2026-07-23 Add scheduled workflow to auto-refresh CAL FIRE data"
+    }
+  ]
+}

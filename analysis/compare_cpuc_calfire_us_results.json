@@ -1,0 +1,1349 @@
+{
+  "generated_at": "2026-08-13T23:31:20",
+  "connection": "localhost:5433/wildfire",
+  "filters_legend": {
+    "cpuc": "wildfire.cpuc_ignitions; already CA-scoped utility-attributed ignitions from cpuc_fire_incidents_combined.csv; county via ST_Covers vs wildfire.counties (Census TIGER CA, STATEFP=06)",
+    "calfire_default": "wildfire.calfire_incidents WHERE incident_type IN ('Wildfire','Fire') (null types excluded)",
+    "calfire_all": "wildfire.calfire_incidents, all incident_type including NULL",
+    "calfire_untyped": "wildfire.calfire_incidents WHERE incident_type IS NULL",
+    "us_all": "wildfire.us_ignitions (CONUS positives; synthetic controls excluded at extract)",
+    "us_ca": "US ignitions with ST_Covers(wildfire.counties.geom, us.geom); same PIP as CPUC county tagging. No state column on the table.",
+    "dates": {
+      "cpuc": "event_date",
+      "us": "event_date (first Wildfire=Yes day of 75-day sequence)",
+      "calfire": "date_only_created (incident_dateonly_created; 1970-01-01 sentinels are NULL)"
+    }
+  },
+  "columns": {
+    "cpuc_ignitions": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "utility",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "event_date",
+        "data_type": "date",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "year",
+        "data_type": "smallint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "source_file",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "county",
+        "data_type": "text",
+        "is_nullable": "YES"
+      }
+    ],
+    "calfire_incidents": [
+      {
+        "column_name": "incident_id",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "incident_name",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "incident_type",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "acres_burned",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "containment",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "control",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "county",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "location",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "administrative_unit",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "cooperating_agencies",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "utility",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "date_created",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "date_only_created",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "date_last_update",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "date_extinguished",
+        "data_type": "timestamp with time zone",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "date_only_extinguished",
+        "data_type": "date",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_final",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_active",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "is_calfire_incident",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "notification_desired",
+        "data_type": "boolean",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "incident_url",
+        "data_type": "text",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      }
+    ],
+    "us_ignitions": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "event_date",
+        "data_type": "date",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "year",
+        "data_type": "smallint",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "latitude",
+        "data_type": "double precision",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "longitude",
+        "data_type": "double precision",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "pr",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rmax",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "rmin",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "sph",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "srad",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "tmmn",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "tmmx",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "vs",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "bi",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fm100",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "fm1000",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "erc",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "etr",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "pet",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "vpd",
+        "data_type": "double precision",
+        "is_nullable": "YES"
+      },
+      {
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      }
+    ],
+    "counties": [
+      {
+        "column_name": "geoid",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "name",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "statefp",
+        "data_type": "text",
+        "is_nullable": "NO"
+      },
+      {
+        "column_name": "geom",
+        "data_type": "USER-DEFINED",
+        "is_nullable": "NO"
+      }
+    ]
+  },
+  "cross_checks": {
+    "us_total": 33457,
+    "cpuc_total": 3745,
+    "cpuc_county_resolved": 3743,
+    "cpuc_county_null": 2,
+    "pge_2024_attribute": 532,
+    "pge_2024_spatial": 536,
+    "calfire_total": 3747,
+    "calfire_wildfire_fire": 2509,
+    "calfire_null_incident_type": 1234,
+    "calfire_null_utility": 282,
+    "counties_n": 58,
+    "counties_statefp": [
+      {
+        "statefp": "06",
+        "n": 58
+      }
+    ]
+  },
+  "completeness": {
+    "cpuc": {
+      "n": 3745,
+      "geom_null": 0,
+      "date_null": 0,
+      "min_date": "2020-01-01",
+      "max_date": "2025-12-24",
+      "min_year": 2020,
+      "max_year": 2025
+    },
+    "calfire": {
+      "n": 3747,
+      "geom_null": 0,
+      "date_only_created_null": 2,
+      "date_created_null": 2,
+      "min_date_only_created": "2009-05-24",
+      "max_date_only_created": "2026-08-03",
+      "min_date_created": "2009-05-24T21:56:00+00:00",
+      "max_date_created": "2026-08-03T02:37:17+00:00"
+    },
+    "us": {
+      "n": 33457,
+      "geom_null": 0,
+      "date_null": 0,
+      "min_date": "2014-03-10",
+      "max_date": "2025-02-05",
+      "min_year": 2014,
+      "max_year": 2025
+    }
+  },
+  "calfire_types": [
+    {
+      "incident_type": "Wildfire",
+      "n": 2471
+    },
+    {
+      "incident_type": "<NULL>",
+      "n": 1234
+    },
+    {
+      "incident_type": "Fire",
+      "n": 38
+    },
+    {
+      "incident_type": "Flood",
+      "n": 2
+    },
+    {
+      "incident_type": "Earthquake",
+      "n": 1
+    },
+    {
+      "incident_type": "Hazmat",
+      "n": 1
+    }
+  ],
+  "calfire_acres": {
+    "n_default": 2509,
+    "acres_null": 51,
+    "acres_zero": 0,
+    "acres_0_10": 64,
+    "acres_10_100": 1476,
+    "acres_ge_100": 918,
+    "median_acres": 53.5,
+    "median_acres_positive": 53.5
+  },
+  "cpuc_utilities": [
+    {
+      "utility": "PGE",
+      "n": 2774
+    },
+    {
+      "utility": "SCE",
+      "n": 824
+    },
+    {
+      "utility": "SDGE",
+      "n": 133
+    },
+    {
+      "utility": "PACIFICORP",
+      "n": 14
+    }
+  ],
+  "calfire_county_text_samples": [
+    {
+      "county": "Riverside",
+      "n": 273
+    },
+    {
+      "county": "Fresno",
+      "n": 166
+    },
+    {
+      "county": "Kern",
+      "n": 162
+    },
+    {
+      "county": "San Diego",
+      "n": 131
+    },
+    {
+      "county": "Los Angeles",
+      "n": 104
+    },
+    {
+      "county": "San Bernardino",
+      "n": 97
+    },
+    {
+      "county": "San Luis Obispo",
+      "n": 82
+    },
+    {
+      "county": "Merced",
+      "n": 77
+    },
+    {
+      "county": "Siskiyou",
+      "n": 77
+    },
+    {
+      "county": "Shasta",
+      "n": 64
+    },
+    {
+      "county": "Tulare",
+      "n": 62
+    },
+    {
+      "county": "Lassen",
+      "n": 60
+    },
+    {
+      "county": "Madera",
+      "n": 59
+    },
+    {
+      "county": "Butte",
+      "n": 55
+    },
+    {
+      "county": "Tehama",
+      "n": 53
+    },
+    {
+      "county": "Monterey",
+      "n": 48
+    },
+    {
+      "county": "Alameda",
+      "n": 47
+    },
+    {
+      "county": "Tuolumne",
+      "n": 41
+    },
+    {
+      "county": "Contra Costa",
+      "n": 41
+    },
+    {
+      "county": "Mariposa",
+      "n": 41
+    }
+  ],
+  "calfire_multi_county_text": 55,
+  "us_california_pip": {
+    "us_total": 33457,
+    "ca_covers": 13413,
+    "ca_intersects_not_covers": 0,
+    "outside_ca_counties": 20044
+  },
+  "us_ca_by_year": [
+    {
+      "year": 2014,
+      "n": 347
+    },
+    {
+      "year": 2015,
+      "n": 358
+    },
+    {
+      "year": 2016,
+      "n": 275
+    },
+    {
+      "year": 2017,
+      "n": 620
+    },
+    {
+      "year": 2018,
+      "n": 754
+    },
+    {
+      "year": 2019,
+      "n": 891
+    },
+    {
+      "year": 2020,
+      "n": 1346
+    },
+    {
+      "year": 2021,
+      "n": 1808
+    },
+    {
+      "year": 2022,
+      "n": 2262
+    },
+    {
+      "year": 2023,
+      "n": 2239
+    },
+    {
+      "year": 2024,
+      "n": 2225
+    },
+    {
+      "year": 2025,
+      "n": 288
+    }
+  ],
+  "established_us_ca_state_pip": {
+    "source": "data/north_america/_us_ignitions_state_breakdown.json",
+    "method": "point-in-polygon vs PublicaMundi us-states.geojson + 0.5\u00b0 nearest fallback",
+    "overall_ca": 13432,
+    "overall_total": 33457,
+    "overall_share": 0.4015,
+    "y2024_ca": 2225,
+    "y2024_total": 3789,
+    "y2024_share": 0.5872,
+    "note": "Re-measured below with ST_Covers vs wildfire.counties (cartographic CA counties). Expect a small difference vs state-polygon + nearest fallback."
+  },
+  "yearly": [
+    {
+      "year": 2009,
+      "cpuc": 0,
+      "calfire_default": 1,
+      "calfire_all_dated": 1,
+      "calfire_untyped": 0,
+      "us_conus": 0,
+      "us_ca": 0
+    },
+    {
+      "year": 2010,
+      "cpuc": 0,
+      "calfire_default": 0,
+      "calfire_all_dated": 0,
+      "calfire_untyped": 0,
+      "us_conus": 0,
+      "us_ca": 0
+    },
+    {
+      "year": 2011,
+      "cpuc": 0,
+      "calfire_default": 0,
+      "calfire_all_dated": 0,
+      "calfire_untyped": 0,
+      "us_conus": 0,
+      "us_ca": 0
+    },
+    {
+      "year": 2012,
+      "cpuc": 0,
+      "calfire_default": 0,
+      "calfire_all_dated": 0,
+      "calfire_untyped": 0,
+      "us_conus": 0,
+      "us_ca": 0
+    },
+    {
+      "year": 2013,
+      "cpuc": 0,
+      "calfire_default": 0,
+      "calfire_all_dated": 141,
+      "calfire_untyped": 141,
+      "us_conus": 0,
+      "us_ca": 0
+    },
+    {
+      "year": 2014,
+      "cpuc": 0,
+      "calfire_default": 1,
+      "calfire_all_dated": 76,
+      "calfire_untyped": 75,
+      "us_conus": 1581,
+      "us_ca": 347
+    },
+    {
+      "year": 2015,
+      "cpuc": 0,
+      "calfire_default": 2,
+      "calfire_all_dated": 99,
+      "calfire_untyped": 97,
+      "us_conus": 2445,
+      "us_ca": 358
+    },
+    {
+      "year": 2016,
+      "cpuc": 0,
+      "calfire_default": 0,
+      "calfire_all_dated": 155,
+      "calfire_untyped": 155,
+      "us_conus": 2609,
+      "us_ca": 275
+    },
+    {
+      "year": 2017,
+      "cpuc": 0,
+      "calfire_default": 11,
+      "calfire_all_dated": 429,
+      "calfire_untyped": 418,
+      "us_conus": 2857,
+      "us_ca": 620
+    },
+    {
+      "year": 2018,
+      "cpuc": 0,
+      "calfire_default": 28,
+      "calfire_all_dated": 303,
+      "calfire_untyped": 274,
+      "us_conus": 2798,
+      "us_ca": 754
+    },
+    {
+      "year": 2019,
+      "cpuc": 0,
+      "calfire_default": 207,
+      "calfire_all_dated": 263,
+      "calfire_untyped": 56,
+      "us_conus": 2867,
+      "us_ca": 891
+    },
+    {
+      "year": 2020,
+      "cpuc": 684,
+      "calfire_default": 257,
+      "calfire_all_dated": 259,
+      "calfire_untyped": 2,
+      "us_conus": 3211,
+      "us_ca": 1346
+    },
+    {
+      "year": 2021,
+      "cpuc": 672,
+      "calfire_default": 172,
+      "calfire_all_dated": 186,
+      "calfire_untyped": 14,
+      "us_conus": 3518,
+      "us_ca": 1808
+    },
+    {
+      "year": 2022,
+      "cpuc": 613,
+      "calfire_default": 150,
+      "calfire_all_dated": 150,
+      "calfire_untyped": 0,
+      "us_conus": 3725,
+      "us_ca": 2262
+    },
+    {
+      "year": 2023,
+      "cpuc": 480,
+      "calfire_default": 133,
+      "calfire_all_dated": 133,
+      "calfire_untyped": 0,
+      "us_conus": 3695,
+      "us_ca": 2239
+    },
+    {
+      "year": 2024,
+      "cpuc": 741,
+      "calfire_default": 611,
+      "calfire_all_dated": 612,
+      "calfire_untyped": 0,
+      "us_conus": 3789,
+      "us_ca": 2225
+    },
+    {
+      "year": 2025,
+      "cpuc": 555,
+      "calfire_default": 555,
+      "calfire_all_dated": 556,
+      "calfire_untyped": 0,
+      "us_conus": 362,
+      "us_ca": 288
+    },
+    {
+      "year": 2026,
+      "cpuc": 0,
+      "calfire_default": 381,
+      "calfire_all_dated": 382,
+      "calfire_untyped": 0,
+      "us_conus": 0,
+      "us_ca": 0
+    }
+  ],
+  "calfire_dated_null": 2,
+  "match_universes": {
+    "cpuc": 3745,
+    "calfire_default_dated": 2509,
+    "us_ca": 13413
+  },
+  "pair_year_windows": {
+    "cpuc_calfire": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "cpuc_us": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "calfire_us": [
+      2014,
+      2015,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ]
+  },
+  "matching": {
+    "cpuc_calfire": {
+      "year_window": [
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "year_min": 2020,
+      "year_max": 2025,
+      "src": "cpuc",
+      "dst": "calfire",
+      "n_src": 3745,
+      "n_dst": 1878,
+      "loose_pair_rows": 229,
+      "grid": [
+        {
+          "distance_m": 1000,
+          "time_days": 1,
+          "cpuc_n": 3745,
+          "cpuc_matched": 51,
+          "cpuc_unmatched": 3694,
+          "cpuc_match_pct": 1.36,
+          "calfire_n": 1878,
+          "calfire_matched": 52,
+          "calfire_unmatched": 1826,
+          "calfire_match_pct": 2.77
+        },
+        {
+          "distance_m": 1000,
+          "time_days": 3,
+          "cpuc_n": 3745,
+          "cpuc_matched": 52,
+          "cpuc_unmatched": 3693,
+          "cpuc_match_pct": 1.39,
+          "calfire_n": 1878,
+          "calfire_matched": 53,
+          "calfire_unmatched": 1825,
+          "calfire_match_pct": 2.82
+        },
+        {
+          "distance_m": 1000,
+          "time_days": 7,
+          "cpuc_n": 3745,
+          "cpuc_matched": 52,
+          "cpuc_unmatched": 3693,
+          "cpuc_match_pct": 1.39,
+          "calfire_n": 1878,
+          "calfire_matched": 53,
+          "calfire_unmatched": 1825,
+          "calfire_match_pct": 2.82
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 1,
+          "cpuc_n": 3745,
+          "cpuc_matched": 91,
+          "cpuc_unmatched": 3654,
+          "cpuc_match_pct": 2.43,
+          "calfire_n": 1878,
+          "calfire_matched": 89,
+          "calfire_unmatched": 1789,
+          "calfire_match_pct": 4.74
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 3,
+          "cpuc_n": 3745,
+          "cpuc_matched": 103,
+          "cpuc_unmatched": 3642,
+          "cpuc_match_pct": 2.75,
+          "calfire_n": 1878,
+          "calfire_matched": 101,
+          "calfire_unmatched": 1777,
+          "calfire_match_pct": 5.38
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 7,
+          "cpuc_n": 3745,
+          "cpuc_matched": 109,
+          "cpuc_unmatched": 3636,
+          "cpuc_match_pct": 2.91,
+          "calfire_n": 1878,
+          "calfire_matched": 107,
+          "calfire_unmatched": 1771,
+          "calfire_match_pct": 5.7
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 1,
+          "cpuc_n": 3745,
+          "cpuc_matched": 127,
+          "cpuc_unmatched": 3618,
+          "cpuc_match_pct": 3.39,
+          "calfire_n": 1878,
+          "calfire_matched": 121,
+          "calfire_unmatched": 1757,
+          "calfire_match_pct": 6.44
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 3,
+          "cpuc_n": 3745,
+          "cpuc_matched": 164,
+          "cpuc_unmatched": 3581,
+          "cpuc_match_pct": 4.38,
+          "calfire_n": 1878,
+          "calfire_matched": 157,
+          "calfire_unmatched": 1721,
+          "calfire_match_pct": 8.36
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 7,
+          "cpuc_n": 3745,
+          "cpuc_matched": 208,
+          "cpuc_unmatched": 3537,
+          "cpuc_match_pct": 5.55,
+          "calfire_n": 1878,
+          "calfire_matched": 202,
+          "calfire_unmatched": 1676,
+          "calfire_match_pct": 10.76
+        }
+      ],
+      "mid_threshold": {
+        "distance_m": 5000,
+        "time_days": 3,
+        "src_with_any_match": 103,
+        "dst_with_any_match": 101,
+        "src_match_mean_partners": 1.02,
+        "dst_match_mean_partners": 1.04,
+        "src_with_gt1_partner": 2,
+        "dst_with_gt1_partner": 4
+      }
+    },
+    "cpuc_us": {
+      "year_window": [
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "year_min": 2020,
+      "year_max": 2025,
+      "src": "cpuc",
+      "dst": "us_ca",
+      "n_src": 3745,
+      "n_dst": 10168,
+      "loose_pair_rows": 936,
+      "grid": [
+        {
+          "distance_m": 1000,
+          "time_days": 1,
+          "cpuc_n": 3745,
+          "cpuc_matched": 72,
+          "cpuc_unmatched": 3673,
+          "cpuc_match_pct": 1.92,
+          "us_ca_n": 10168,
+          "us_ca_matched": 71,
+          "us_ca_unmatched": 10097,
+          "us_ca_match_pct": 0.7
+        },
+        {
+          "distance_m": 1000,
+          "time_days": 3,
+          "cpuc_n": 3745,
+          "cpuc_matched": 77,
+          "cpuc_unmatched": 3668,
+          "cpuc_match_pct": 2.06,
+          "us_ca_n": 10168,
+          "us_ca_matched": 76,
+          "us_ca_unmatched": 10092,
+          "us_ca_match_pct": 0.75
+        },
+        {
+          "distance_m": 1000,
+          "time_days": 7,
+          "cpuc_n": 3745,
+          "cpuc_matched": 88,
+          "cpuc_unmatched": 3657,
+          "cpuc_match_pct": 2.35,
+          "us_ca_n": 10168,
+          "us_ca_matched": 86,
+          "us_ca_unmatched": 10082,
+          "us_ca_match_pct": 0.85
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 1,
+          "cpuc_n": 3745,
+          "cpuc_matched": 144,
+          "cpuc_unmatched": 3601,
+          "cpuc_match_pct": 3.85,
+          "us_ca_n": 10168,
+          "us_ca_matched": 149,
+          "us_ca_unmatched": 10019,
+          "us_ca_match_pct": 1.47
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 3,
+          "cpuc_n": 3745,
+          "cpuc_matched": 193,
+          "cpuc_unmatched": 3552,
+          "cpuc_match_pct": 5.15,
+          "us_ca_n": 10168,
+          "us_ca_matched": 216,
+          "us_ca_unmatched": 9952,
+          "us_ca_match_pct": 2.12
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 7,
+          "cpuc_n": 3745,
+          "cpuc_matched": 270,
+          "cpuc_unmatched": 3475,
+          "cpuc_match_pct": 7.21,
+          "us_ca_n": 10168,
+          "us_ca_matched": 352,
+          "us_ca_unmatched": 9816,
+          "us_ca_match_pct": 3.46
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 1,
+          "cpuc_n": 3745,
+          "cpuc_matched": 246,
+          "cpuc_unmatched": 3499,
+          "cpuc_match_pct": 6.57,
+          "us_ca_n": 10168,
+          "us_ca_matched": 269,
+          "us_ca_unmatched": 9899,
+          "us_ca_match_pct": 2.65
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 3,
+          "cpuc_n": 3745,
+          "cpuc_matched": 363,
+          "cpuc_unmatched": 3382,
+          "cpuc_match_pct": 9.69,
+          "us_ca_n": 10168,
+          "us_ca_matched": 462,
+          "us_ca_unmatched": 9706,
+          "us_ca_match_pct": 4.54
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 7,
+          "cpuc_n": 3745,
+          "cpuc_matched": 543,
+          "cpuc_unmatched": 3202,
+          "cpuc_match_pct": 14.5,
+          "us_ca_n": 10168,
+          "us_ca_matched": 827,
+          "us_ca_unmatched": 9341,
+          "us_ca_match_pct": 8.13
+        }
+      ],
+      "mid_threshold": {
+        "distance_m": 5000,
+        "time_days": 3,
+        "src_with_any_match": 193,
+        "dst_with_any_match": 216,
+        "src_match_mean_partners": 1.15,
+        "dst_match_mean_partners": 1.03,
+        "src_with_gt1_partner": 24,
+        "dst_with_gt1_partner": 6
+      }
+    },
+    "calfire_us": {
+      "year_window": [
+        2014,
+        2015,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "year_min": 2014,
+      "year_max": 2025,
+      "src": "calfire",
+      "dst": "us_ca",
+      "n_src": 2127,
+      "n_dst": 13138,
+      "loose_pair_rows": 463,
+      "grid": [
+        {
+          "distance_m": 1000,
+          "time_days": 1,
+          "calfire_n": 2127,
+          "calfire_matched": 70,
+          "calfire_unmatched": 2057,
+          "calfire_match_pct": 3.29,
+          "us_ca_n": 13138,
+          "us_ca_matched": 70,
+          "us_ca_unmatched": 13068,
+          "us_ca_match_pct": 0.53
+        },
+        {
+          "distance_m": 1000,
+          "time_days": 3,
+          "calfire_n": 2127,
+          "calfire_matched": 75,
+          "calfire_unmatched": 2052,
+          "calfire_match_pct": 3.53,
+          "us_ca_n": 13138,
+          "us_ca_matched": 75,
+          "us_ca_unmatched": 13063,
+          "us_ca_match_pct": 0.57
+        },
+        {
+          "distance_m": 1000,
+          "time_days": 7,
+          "calfire_n": 2127,
+          "calfire_matched": 80,
+          "calfire_unmatched": 2047,
+          "calfire_match_pct": 3.76,
+          "us_ca_n": 13138,
+          "us_ca_matched": 82,
+          "us_ca_unmatched": 13056,
+          "us_ca_match_pct": 0.62
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 1,
+          "calfire_n": 2127,
+          "calfire_matched": 125,
+          "calfire_unmatched": 2002,
+          "calfire_match_pct": 5.88,
+          "us_ca_n": 13138,
+          "us_ca_matched": 127,
+          "us_ca_unmatched": 13011,
+          "us_ca_match_pct": 0.97
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 3,
+          "calfire_n": 2127,
+          "calfire_matched": 150,
+          "calfire_unmatched": 1977,
+          "calfire_match_pct": 7.05,
+          "us_ca_n": 13138,
+          "us_ca_matched": 158,
+          "us_ca_unmatched": 12980,
+          "us_ca_match_pct": 1.2
+        },
+        {
+          "distance_m": 5000,
+          "time_days": 7,
+          "calfire_n": 2127,
+          "calfire_matched": 188,
+          "calfire_unmatched": 1939,
+          "calfire_match_pct": 8.84,
+          "us_ca_n": 13138,
+          "us_ca_matched": 209,
+          "us_ca_unmatched": 12929,
+          "us_ca_match_pct": 1.59
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 1,
+          "calfire_n": 2127,
+          "calfire_matched": 180,
+          "calfire_unmatched": 1947,
+          "calfire_match_pct": 8.46,
+          "us_ca_n": 13138,
+          "us_ca_matched": 190,
+          "us_ca_unmatched": 12948,
+          "us_ca_match_pct": 1.45
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 3,
+          "calfire_n": 2127,
+          "calfire_matched": 244,
+          "calfire_unmatched": 1883,
+          "calfire_match_pct": 11.47,
+          "us_ca_n": 13138,
+          "us_ca_matched": 260,
+          "us_ca_unmatched": 12878,
+          "us_ca_match_pct": 1.98
+        },
+        {
+          "distance_m": 10000,
+          "time_days": 7,
+          "calfire_n": 2127,
+          "calfire_matched": 327,
+          "calfire_unmatched": 1800,
+          "calfire_match_pct": 15.37,
+          "us_ca_n": 13138,
+          "us_ca_matched": 398,
+          "us_ca_unmatched": 12740,
+          "us_ca_match_pct": 3.03
+        }
+      ],
+      "mid_threshold": {
+        "distance_m": 5000,
+        "time_days": 3,
+        "src_with_any_match": 150,
+        "dst_with_any_match": 158,
+        "src_match_mean_partners": 1.09,
+        "dst_match_mean_partners": 1.04,
+        "src_with_gt1_partner": 12,
+        "dst_with_gt1_partner": 6
+      }
+    }
+  },
+  "calfire_spatial_county_coverage": {
+    "default_dated": 2509,
+    "assigned_via_ST_Covers": 2494,
+    "unassigned": 15,
+    "note": "CAL FIRE incident_county text can list multiple counties; county tables below use ST_Covers vs Census polygons for all three datasets."
+  },
+  "three_way_year_window": [
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "counties": [
+    {
+      "county": "Sacramento",
+      "year_min": 2020,
+      "year_max": 2025,
+      "cpuc": 13,
+      "calfire_spatial": 27,
+      "us_ca": 13,
+      "calfire_text_exact": 27,
+      "cpuc_to_calfire_ratio": 0.481,
+      "us_to_calfire_ratio": 0.481
+    },
+    {
+      "county": "Los Angeles",
+      "year_min": 2020,
+      "year_max": 2025,
+      "cpuc": 264,
+      "calfire_spatial": 78,
+      "us_ca": 2294,
+      "calfire_text_exact": 79,
+      "cpuc_to_calfire_ratio": 3.385,
+      "us_to_calfire_ratio": 29.41
+    },
+    {
+      "county": "Butte",
+      "year_min": 2020,
+      "year_max": 2025,
+      "cpuc": 110,
+      "calfire_spatial": 44,
+      "us_ca": 392,
+      "calfire_text_exact": 43,
+      "cpuc_to_calfire_ratio": 2.5,
+      "us_to_calfire_ratio": 8.909
+    },
+    {
+      "county": "Lake",
+      "year_min": 2020,
+      "year_max": 2025,
+      "cpuc": 26,
+      "calfire_spatial": 25,
+      "us_ca": 73,
+      "calfire_text_exact": 24,
+      "cpuc_to_calfire_ratio": 1.04,
+      "us_to_calfire_ratio": 2.92
+    },
+    {
+      "county": "Imperial",
+      "year_min": 2020,
+      "year_max": 2025,
+      "cpuc": 0,
+      "calfire_spatial": 6,
+      "us_ca": 6,
+      "calfire_text_exact": 5,
+      "cpuc_to_calfire_ratio": 0.0,
+      "us_to_calfire_ratio": 1.0
+    },
+    {
+      "county": "San Francisco",
+      "year_min": 2020,
+      "year_max": 2025,
+      "cpuc": 4,
+      "calfire_spatial": 0,
+      "us_ca": 1,
+      "calfire_text_exact": 0,
+      "cpuc_to_calfire_ratio": null,
+      "us_to_calfire_ratio": null
+    }
+  ],
+  "statewide_three_way": {
+    "year_min": 2020,
+    "year_max": 2025,
+    "cpuc": 3745,
+    "calfire_default": 1878,
+    "us_ca": 10168,
+    "cpuc_to_calfire_ratio": 1.994,
+    "us_to_calfire_ratio": 5.414
+  },
+  "county_match_mid": [
+    {
+      "county": "Sacramento",
+      "distance_m": 5000,
+      "time_days": 3,
+      "cpuc_n": 13,
+      "cpuc_matched_to_calfire": 0,
+      "cpuc_match_pct": 0.0,
+      "us_n": 13,
+      "us_matched_to_calfire": 0,
+      "us_match_pct": 0.0,
+      "calfire_spatial_n": 27
+    },
+    {
+      "county": "Los Angeles",
+      "distance_m": 5000,
+      "time_days": 3,
+      "cpuc_n": 264,
+      "cpuc_matched_to_calfire": 1,
+      "cpuc_match_pct": 0.38,
+      "us_n": 2294,
+      "us_matched_to_calfire": 5,
+      "us_match_pct": 0.22,
+      "calfire_spatial_n": 78
+    },
+    {
+      "county": "Butte",
+      "distance_m": 5000,
+      "time_days": 3,
+      "cpuc_n": 110,
+      "cpuc_matched_to_calfire": 6,
+      "cpuc_match_pct": 5.45,
+      "us_n": 392,
+      "us_matched_to_calfire": 4,
+      "us_match_pct": 1.02,
+      "calfire_spatial_n": 44
+    },
+    {
+      "county": "Lake",
+      "distance_m": 5000,
+      "time_days": 3,
+      "cpuc_n": 26,
+      "cpuc_matched_to_calfire": 1,
+      "cpuc_match_pct": 3.85,
+      "us_n": 73,
+      "us_matched_to_calfire": 0,
+      "us_match_pct": 0.0,
+      "calfire_spatial_n": 25
+    },
+    {
+      "county": "Imperial",
+      "distance_m": 5000,
+      "time_days": 3,
+      "cpuc_n": 0,
+      "cpuc_matched_to_calfire": 0,
+      "cpuc_match_pct": null,
+      "us_n": 6,
+      "us_matched_to_calfire": 0,
+      "us_match_pct": 0.0,
+      "calfire_spatial_n": 6
+    },
+    {
+      "county": "San Francisco",
+      "distance_m": 5000,
+      "time_days": 3,
+      "cpuc_n": 4,
+      "cpuc_matched_to_calfire": 0,
+      "cpuc_match_pct": 0.0,
+      "us_n": 1,
+      "us_matched_to_calfire": 0,
+      "us_match_pct": 0.0,
+      "calfire_spatial_n": 0
+    }
+  ],
+  "sampling_rate": {
+    "definition": "Estimate only: US CA count / CAL FIRE default (Wildfire/Fire, dated) in the three-way overlapping year window. CAL FIRE is not a perfect census. US table is positives-only (synthetic controls dropped at extract).",
+    "year_window": [
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "us_ca": 10168,
+    "calfire_default": 1878,
+    "ratio": 5.414,
+    "us_events_vs_controls": "Loaded wildfire.us_ignitions contains positive sequences only. extract_us_ignitions.py drops negatives (0 Yes days) and full-sentinel sequences. Unique (lat, lon, event_date). Cannot distinguish controls in the loaded table because they were never inserted."
+  }
+}

@@ -1,0 +1,579 @@
+"""FastAPI read service over the wildfire PostGIS warehouse."""
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from typing import Any, Generator, Optional
+from urllib.parse import unquote
+
+import psycopg
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from services.data_query import queries
+from services.data_query.filters import (
+    DEFAULT_LIMIT,
+    MAX_LIMIT,
+    parse_circuit_id,
+    parse_date_param,
+    parse_format,
+    parse_tier,
+    parse_utility,
+    validate_date_range,
+)
+from services.data_query.filters import parse_bbox as parse_bbox_filter
+from services.data_query.geo import respond
+from shared.db import connect, get_settings
+
+_db_ok: Optional[str] = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _db_ok
+    settings = get_settings()
+    print(f"[data_query] Startup: connecting to {settings.safe_target} ...")
+    try:
+        with connect(settings) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT PostGIS_Version()")
+                ver = cur.fetchone()[0]
+            _db_ok = f"postgis {ver}"
+        print(f"[data_query] Startup OK ({_db_ok})")
+    except Exception as exc:  # noqa: BLE001
+        _db_ok = None
+        print(f"[data_query] Startup WARNING: DB unavailable: {exc}")
+    yield
+    print("[data_query] Shutdown.")
+
+
+app = FastAPI(
+    title="Wildfire Data Query",
+    description="Read endpoints over map-layer tables in PostGIS.",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def get_conn() -> Generator[psycopg.Connection, None, None]:
+    try:
+        conn = connect()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    qs = str(request.query_params)
+    print(f"[data_query] {request.method} {request.url.path}" + (f"?{qs}" if qs else ""))
+    response = await call_next(request)
+    print(f"[data_query] → {response.status_code} {request.url.path}")
+    return response
+
+
+@app.get("/health")
+def health(conn: psycopg.Connection = Depends(get_conn)) -> dict[str, Any]:
+    try:
+        counts = queries.table_counts(conn)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {
+        "status": "ok",
+        "database": get_settings().safe_target,
+        "detail": _db_ok,
+        "tables": counts,
+    }
+
+
+@app.get("/ignitions")
+def ignitions(
+    utility: Optional[str] = Query(None),
+    include_untagged: bool = Query(False),
+    county: Optional[str] = Query(None, description="Census county name, e.g. Sacramento"),
+    year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    bbox: Optional[str] = Query(None, description="min_lon,min_lat,max_lon,max_lat"),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    util = parse_utility(utility)
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    bb = parse_bbox_filter(bbox)
+    fmt = parse_format(format)
+    county_filter = county.strip() if county and county.strip() else None
+
+    rows, total = queries.query_ignitions(
+        conn,
+        utility=util,
+        include_untagged=include_untagged,
+        year=year,
+        start_date=start,
+        end_date=end,
+        county=county_filter,
+        bbox=bb,
+        limit=limit,
+        offset=offset,
+    )
+    filters = {
+        "utility": util,
+        "include_untagged": include_untagged or None,
+        "county": county_filter,
+        "year": year,
+        "start_date": start,
+        "end_date": end,
+        "bbox": bbox,
+    }
+    extra = {}
+    if util and util != "untagged":
+        # Ignitions always have utility tags; still surface pattern consistency for CAL FIRE sibling
+        pass
+    return respond(
+        rows,
+        total=total,
+        limit=limit,
+        offset=offset,
+        filters=filters,
+        fmt=fmt,
+        include_geometry=geometry,
+        extra_meta=extra or None,
+    )
+
+
+US_IGNITIONS_META = {
+    "source": "firecastrl_irwin_sample",
+    "utility_attributed": False,
+    "census": False,
+    "coverage": "CONUS",
+    "not_comparable_to": "cpuc_ignitions",
+    "sample_geography": {
+        "method": "point-in-polygon vs Census-derived state boundaries",
+        "california_share_overall": 0.4015,
+        "california_share_2024": 0.5872,
+        "west_region_share_overall": 0.7343,
+        "west_region_share_2024": 0.7828,
+        "note": (
+            "Sample is California-heavy (≈40% of all rows; ≈59% of 2024). "
+            "A national map view overstates geographic balance."
+        ),
+    },
+    "notes": (
+        "All-cause IRWIN-derived ignitions from FireCastRL Kaggle dataset. "
+        "Classification sample (event windows), not a complete census. "
+        "Not utility-attributed — do not compare counts to California CPUC ignitions. "
+        "Geographically skewed: California ≈40% overall / ≈59% of 2024 "
+        "(Census region West ≈73% / ≈78%)."
+    ),
+}
+
+
+@app.get("/us-ignitions")
+def us_ignitions(
+    year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    bbox: Optional[str] = Query(None, description="min_lon,min_lat,max_lon,max_lat"),
+    state: Optional[str] = Query(
+        None,
+        description="Not supported in v1 — use bbox (no state polygons loaded)",
+    ),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    if state is not None and state.strip() != "":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "state filter is not available (no US state boundary layer loaded); "
+                "use bbox=min_lon,min_lat,max_lon,max_lat instead"
+            ),
+        )
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    bb = parse_bbox_filter(bbox)
+    fmt = parse_format(format)
+    rows, total = queries.query_us_ignitions(
+        conn,
+        year=year,
+        start_date=start,
+        end_date=end,
+        bbox=bb,
+        limit=limit,
+        offset=offset,
+    )
+    return respond(
+        rows,
+        total=total,
+        limit=limit,
+        offset=offset,
+        filters={
+            "year": year,
+            "start_date": start,
+            "end_date": end,
+            "bbox": bbox,
+        },
+        fmt=fmt,
+        include_geometry=geometry,
+        extra_meta=dict(US_IGNITIONS_META),
+    )
+
+
+@app.get("/epss/outages")
+def epss_outages(
+    circuit_id: Optional[str] = Query(None),
+    utility: Optional[str] = Query(None, description="PGE only; other utilities return empty"),
+    county: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    outage_type: Optional[str] = Query(None),
+    cause: Optional[str] = Query(None),
+    bbox: Optional[str] = Query(None),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    cid = parse_circuit_id(circuit_id) if circuit_id else None
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    bb = parse_bbox_filter(bbox)
+    fmt = parse_format(format)
+
+    rows, total, notes = queries.query_epss(
+        conn,
+        circuit_id=cid,
+        utility=util,
+        county=county,
+        year=year,
+        start_date=start,
+        end_date=end,
+        outage_type=outage_type,
+        cause=cause,
+        bbox=bb,
+        limit=limit,
+        offset=offset,
+    )
+    return respond(
+        rows,
+        total=total,
+        limit=limit,
+        offset=offset,
+        filters={
+            "circuit_id": cid,
+            "utility": util,
+            "county": county,
+            "year": year,
+            "start_date": start,
+            "end_date": end,
+            "outage_type": outage_type,
+            "cause": cause,
+            "bbox": bbox,
+        },
+        fmt=fmt,
+        include_geometry=geometry,
+        extra_meta=notes,
+    )
+
+
+@app.get("/psps/events")
+def psps_events(
+    utility: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    util = parse_utility(utility, allow_untagged=True) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    fmt = parse_format(format)
+
+    rows, total = queries.query_psps_events(
+        conn,
+        utility=util,
+        year=year,
+        start_date=start,
+        end_date=end,
+        limit=limit,
+        offset=offset,
+    )
+    return respond(
+        rows,
+        total=total,
+        limit=limit,
+        offset=offset,
+        filters={
+            "utility": util,
+            "year": year,
+            "start_date": start,
+            "end_date": end,
+        },
+        fmt=fmt,
+        include_geometry=geometry,
+    )
+
+
+@app.get("/psps/events/{event_name:path}/circuits")
+def psps_event_circuits(
+    event_name: str,
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    # :path allows dates like "10/11/21" inside EventName.
+    name = unquote(event_name)
+    fmt = parse_format(format)
+    rows = queries.query_psps_event_circuits(conn, name)
+    if rows is None:
+        raise HTTPException(status_code=404, detail=f"PSPS event not found: {name}")
+    missing = sum(1 for r in rows if r.get("geometry_missing"))
+    return respond(
+        rows,
+        total=len(rows),
+        limit=None,
+        offset=None,
+        filters={"event_name": name},
+        fmt=fmt,
+        include_geometry=geometry,
+        extra_meta={
+            "circuits_missing_geometry": missing,
+            "note": (
+                "Some PSPS circuit IDs have no geometry in wildfire.circuits; "
+                "those are returned with geometry=null."
+            ),
+        },
+    )
+
+
+@app.get("/calfire/incidents")
+def calfire_incidents(
+    utility: Optional[str] = Query(None),
+    include_untagged: bool = Query(
+        False, description="With a named utility, also include utility IS NULL rows"
+    ),
+    county: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    min_acres: Optional[float] = Query(None, ge=0),
+    incident_type: Optional[str] = Query(
+        None,
+        description="Default Wildfire|Fire only. Use 'untyped' for NULL types, 'all' for no filter.",
+    ),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    fmt = parse_format(format)
+
+    rows, total, extra = queries.query_calfire(
+        conn,
+        utility=util,
+        include_untagged=include_untagged,
+        county=county,
+        year=year,
+        start_date=start,
+        end_date=end,
+        min_acres=min_acres,
+        incident_type=incident_type,
+        limit=limit,
+        offset=offset,
+    )
+    if util and util != "untagged" and not include_untagged:
+        extra["null_utility_excluded_by_filter"] = True
+    return respond(
+        rows,
+        total=total,
+        limit=limit,
+        offset=offset,
+        filters={
+            "utility": util,
+            "include_untagged": include_untagged or None,
+            "county": county,
+            "year": year,
+            "start_date": start,
+            "end_date": end,
+            "min_acres": min_acres,
+            "incident_type": incident_type or "Wildfire,Fire",
+        },
+        fmt=fmt,
+        include_geometry=geometry,
+        extra_meta=extra,
+    )
+
+
+@app.get("/circuits")
+def circuits(
+    circuit_id: Optional[str] = Query(None),
+    division: Optional[str] = Query(None),
+    substation: Optional[str] = Query(None),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
+    offset: int = Query(0, ge=0),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    cid = parse_circuit_id(circuit_id) if circuit_id else None
+    fmt = parse_format(format)
+    rows, total = queries.query_circuits(
+        conn,
+        circuit_id=cid,
+        division=division,
+        substation=substation,
+        limit=limit,
+        offset=offset,
+    )
+    return respond(
+        rows,
+        total=total,
+        limit=limit,
+        offset=offset,
+        filters={"circuit_id": cid, "division": division, "substation": substation},
+        fmt=fmt,
+        include_geometry=geometry,
+    )
+
+
+@app.get("/circuits/{circuit_id}")
+def circuit_by_id(
+    circuit_id: str,
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    cid = parse_circuit_id(circuit_id)
+    fmt = parse_format(format)
+    row = queries.get_circuit(conn, cid)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"circuit not found: {cid}")
+    return respond(
+        [row],
+        total=1,
+        limit=None,
+        offset=None,
+        filters={"circuit_id": cid},
+        fmt=fmt,
+        include_geometry=geometry,
+    )
+
+
+@app.get("/hftd")
+def hftd(
+    tier: Optional[str] = Query(None, description="Tier 2 or Tier 3"),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    t = parse_tier(tier)
+    fmt = parse_format(format)
+    rows = queries.query_hftd(conn, tier=t)
+    return respond(
+        rows,
+        total=len(rows),
+        limit=None,
+        offset=None,
+        filters={"tier": t},
+        fmt=fmt,
+        include_geometry=geometry,
+        extra_meta={"note": "No CPZ data in warehouse (known gap)."},
+    )
+
+
+@app.get("/iou-territories")
+def iou_territories(
+    utility: Optional[str] = Query(None),
+    format: str = Query("json"),
+    geometry: bool = Query(True),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    util = parse_utility(utility, allow_untagged=False) if utility else None
+    fmt = parse_format(format)
+    rows = queries.query_iou(conn, utility=util)
+    return respond(
+        rows,
+        total=len(rows),
+        limit=None,
+        offset=None,
+        filters={"utility": util},
+        fmt=fmt,
+        include_geometry=geometry,
+    )
+
+
+@app.get("/spatial/point")
+def spatial_point(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    return queries.spatial_point(conn, lat=lat, lon=lon)
+
+
+@app.get("/spatial/summary")
+def spatial_summary(
+    utility: Optional[str] = Query(None),
+    hftd_tier: Optional[str] = Query(None, description="Tier 2 or Tier 3"),
+    start_date: str = Query(..., description="YYYY-MM-DD"),
+    end_date: str = Query(..., description="YYYY-MM-DD"),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    util = parse_utility(utility, allow_untagged=False) if utility else None
+    tier = parse_tier(hftd_tier)
+    if (util is None) == (tier is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide exactly one of utility or hftd_tier",
+        )
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    if start is None or end is None:
+        raise HTTPException(status_code=400, detail="start_date and end_date are required")
+    validate_date_range(start, end)
+    try:
+        return queries.spatial_summary(
+            conn,
+            utility=util,
+            hftd_tier=tier,
+            start_date=start,
+            end_date=end,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

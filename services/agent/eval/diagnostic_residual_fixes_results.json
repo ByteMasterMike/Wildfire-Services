@@ -1,0 +1,1164 @@
+{
+  "config": {
+    "model": "qwen3:4b",
+    "runtime_model": "qwen3:4b-agent-nothink",
+    "recommended_default": "constrained + domain + lean_enums"
+  },
+  "stages": {
+    "baseline_no_harness": {
+      "harness": {
+        "fill_aliases": false,
+        "fill_year": false,
+        "fill_utility": false
+      },
+      "use_production_candidates": false,
+      "summary": {
+        "selection": 4,
+        "arguments": 2,
+        "end_to_end": 2,
+        "case_count": 5,
+        "selection_rate": "4/5",
+        "arguments_rate": "2/5",
+        "end_to_end_rate": "2/5"
+      },
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "raw_arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "filtered_us_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "selection_correct": true,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ]
+        },
+        {
+          "id": "cross_dataset_counts",
+          "selection_correct": false,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "comparison_run",
+              "raw_arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              },
+              "arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for ComparisonRunArgs\n  Value error, periods requires scope and both complete periods [type=value_error, input_value={'kind': 'periods', 'metr...od_b_end': '2024-12-31'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ]
+        },
+        {
+          "id": "count_plus_trend",
+          "selection_correct": true,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            },
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ]
+        }
+      ]
+    },
+    "alias_normalization": {
+      "harness": {
+        "fill_aliases": true,
+        "fill_year": false,
+        "fill_utility": false
+      },
+      "use_production_candidates": false,
+      "summary": {
+        "selection": 4,
+        "arguments": 2,
+        "end_to_end": 2,
+        "case_count": 5,
+        "selection_rate": "4/5",
+        "arguments_rate": "2/5",
+        "end_to_end_rate": "2/5"
+      },
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "raw_arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "filtered_us_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "selection_correct": true,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ]
+        },
+        {
+          "id": "cross_dataset_counts",
+          "selection_correct": false,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "comparison_run",
+              "raw_arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              },
+              "arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for ComparisonRunArgs\n  Value error, periods requires scope and both complete periods [type=value_error, input_value={'kind': 'periods', 'metr...od_b_end': '2024-12-31'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ]
+        },
+        {
+          "id": "count_plus_trend",
+          "selection_correct": true,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            },
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ]
+        }
+      ]
+    },
+    "alias_plus_slot_fill": {
+      "harness": {
+        "fill_aliases": true,
+        "fill_year": true,
+        "fill_utility": true
+      },
+      "use_production_candidates": false,
+      "summary": {
+        "selection": 4,
+        "arguments": 4,
+        "end_to_end": 4,
+        "case_count": 5,
+        "selection_rate": "4/5",
+        "arguments_rate": "4/5",
+        "end_to_end_rate": "4/5"
+      },
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "raw_arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "filtered_us_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "cross_dataset_counts",
+          "selection_correct": false,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "comparison_run",
+              "raw_arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              },
+              "arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for ComparisonRunArgs\n  Value error, periods requires scope and both complete periods [type=value_error, input_value={'kind': 'periods', 'metr...od_b_end': '2024-12-31'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ]
+        },
+        {
+          "id": "count_plus_trend",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            },
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default",
+                "utility": "PGE",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": true
+            }
+          ]
+        }
+      ],
+      "raw_run": [
+        {
+          "id": "spatial_utility_count",
+          "question": "How many ignitions were spatially inside PG&E territory in 2024?",
+          "candidates": [
+            "data_query_spatial",
+            "data_query_records"
+          ],
+          "raw_calls": [
+            {
+              "tool": "data_query_spatial",
+              "arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 33712.93,
+            "prompt_tokens": 792,
+            "completion_tokens": 51,
+            "generation_ms": 6853.52
+          },
+          "content": "{\"calls\":[{\"tool\":\"data_query_spatial\",\"arguments\":{\"kind\":\"summary\",\"utility\":\"PGE\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\"}}]}",
+          "done_reason": "stop"
+        },
+        {
+          "id": "filtered_us_count",
+          "question": "How many US ignition sample events occurred in 2024?",
+          "candidates": [
+            "data_query_records",
+            "data_query_spatial"
+          ],
+          "raw_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 20467.99,
+            "prompt_tokens": 788,
+            "completion_tokens": 54,
+            "generation_ms": 6636.67
+          },
+          "content": "{\"calls\": [\n  {\n    \"tool\": \"data_query_records\",\n    \"arguments\": {\n      \"dataset\": \"us_ignitions\",\n      \"result_mode\": \"count\",\n      \"year\": 2024\n    }\n  }\n]}",
+          "done_reason": "stop"
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "question": "Show the monthly CAL FIRE incident trend for 2024.",
+          "candidates": [
+            "visualization_create",
+            "data_query_records"
+          ],
+          "raw_calls": [
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 23210.29,
+            "prompt_tokens": 845,
+            "completion_tokens": 64,
+            "generation_ms": 8127.91
+          },
+          "content": "{\"calls\": [\n  {\n    \"tool\": \"visualization_create\",\n    \"arguments\": {\n      \"kind\": \"time_series\",\n      \"dataset\": \"calfire\",\n      \"interval\": \"monthly\",\n      \"incident_type_mode\": \"wildfire_default\"\n    }\n  }\n] }",
+          "done_reason": "stop"
+        },
+        {
+          "id": "cross_dataset_counts",
+          "question": "Compare CPUC and US ignition counts in 2024.",
+          "candidates": [
+            "data_query_records",
+            "comparison_run"
+          ],
+          "raw_calls": [
+            {
+              "tool": "comparison_run",
+              "arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 25785.82,
+            "prompt_tokens": 908,
+            "completion_tokens": 111,
+            "generation_ms": 13926.24
+          },
+          "content": "{\"calls\":[{\"tool\":\"comparison_run\",\"arguments\":{\"kind\":\"periods\",\"metric\":\"ignition_count\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\",\"period_a_start\":\"2024-01-01\",\"period_a_end\":\"2024-12-31\",\"period_b_start\":\"2024-01-01\",\"period_b_end\":\"2024-12-31\"}}]}",
+          "done_reason": "stop"
+        },
+        {
+          "id": "count_plus_trend",
+          "question": "Give me the PGE ignition count and its monthly trend for 2024.",
+          "candidates": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "raw_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              }
+            },
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 21413.92,
+            "prompt_tokens": 849,
+            "completion_tokens": 98,
+            "generation_ms": 12452.43
+          },
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"cpuc_ignitions\",\"result_mode\":\"count\",\"utility\":\"PGE\",\"year\":2024,\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\"}},{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"us_ignitions\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}\n]}",
+          "done_reason": "stop"
+        }
+      ]
+    },
+    "boundary_plus_full_harness": {
+      "harness": {
+        "fill_aliases": true,
+        "fill_year": true,
+        "fill_utility": true
+      },
+      "use_production_candidates": true,
+      "comparison_description": "strengthened do-not-use for cross-dataset",
+      "summary": {
+        "selection": 5,
+        "arguments": 4,
+        "end_to_end": 4,
+        "case_count": 5,
+        "selection_rate": "5/5",
+        "arguments_rate": "4/5",
+        "end_to_end_rate": "4/5"
+      },
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "raw_arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "filtered_us_count",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": true
+            }
+          ]
+        },
+        {
+          "id": "cross_dataset_counts",
+          "selection_correct": true,
+          "arguments_correct": false,
+          "end_to_end_correct": false,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "year": 2024,
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "year": 2024,
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            },
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2,
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2,
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQueryRecordsArgs\nyear\n  Input should be greater than or equal to 1900 [type=greater_than_equal, input_value=2, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/greater_than_equal"
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ]
+        },
+        {
+          "id": "count_plus_trend",
+          "selection_correct": true,
+          "arguments_correct": true,
+          "end_to_end_correct": true,
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "raw_arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            },
+            {
+              "tool": "visualization_create",
+              "raw_arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default",
+                "utility": "PGE",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": true
+            }
+          ]
+        }
+      ],
+      "raw_run": [
+        {
+          "id": "spatial_utility_count",
+          "question": "How many ignitions were spatially inside PG&E territory in 2024?",
+          "candidates": [
+            "data_query_spatial"
+          ],
+          "raw_calls": [
+            {
+              "tool": "data_query_spatial",
+              "arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 12936.83,
+            "prompt_tokens": 590,
+            "completion_tokens": 76,
+            "generation_ms": 9529.15
+          },
+          "content": "{\"calls\": [\n  {\n    \"tool\": \"data_query_spatial\",\n    \"arguments\": {\n      \"kind\": \"summary\",\n      \"utility\": \"PGE\",\n      \"start_date\": \"2024-01-01\",\n      \"end_date\": \"2024-12-31\"\n    }\n  }\n]}",
+          "done_reason": "stop"
+        },
+        {
+          "id": "filtered_us_count",
+          "question": "How many US ignition sample events occurred in 2024?",
+          "candidates": [
+            "data_query_records"
+          ],
+          "raw_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 12122.27,
+            "prompt_tokens": 654,
+            "completion_tokens": 32,
+            "generation_ms": 3773.73
+          },
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"us_ignitions\",\"result_mode\":\"count\",\"year\":2024}}]}",
+          "done_reason": "stop"
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "question": "Show the monthly CAL FIRE incident trend for 2024.",
+          "candidates": [
+            "visualization_create"
+          ],
+          "raw_calls": [
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 14036.79,
+            "prompt_tokens": 643,
+            "completion_tokens": 38,
+            "generation_ms": 5210.01
+          },
+          "content": "{\"calls\":[{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"calfire\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}]}",
+          "done_reason": "stop"
+        },
+        {
+          "id": "cross_dataset_counts",
+          "question": "Compare CPUC and US ignition counts in 2024.",
+          "candidates": [
+            "data_query_records"
+          ],
+          "raw_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "year": 2024,
+                "incident_type_mode": "wildfire_default"
+              }
+            },
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2,
+                "incident_type_mode": "wildfire_default"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 18510.99,
+            "prompt_tokens": 654,
+            "completion_tokens": 75,
+            "generation_ms": 8831.62
+          },
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"cpuc_ignitions\",\"result_mode\":\"count\",\"year\":2024,\"incident_type_mode\":\"wildfire_default\"}},{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"us_ignitions\",\"result_mode\":\"count\",\"year\":2, \"incident_type_mode\":\"wildfire_default\"}}]}",
+          "done_reason": "stop"
+        },
+        {
+          "id": "count_plus_trend",
+          "question": "Give me the PGE ignition count and its monthly trend for 2024.",
+          "candidates": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "raw_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              }
+            },
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              }
+            }
+          ],
+          "timing": {
+            "wall_ms": 22239.2,
+            "prompt_tokens": 849,
+            "completion_tokens": 98,
+            "generation_ms": 12386.67
+          },
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"cpuc_ignitions\",\"result_mode\":\"count\",\"utility\":\"PGE\",\"year\":2024,\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\"}},{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"us_ignitions\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}\n]}",
+          "done_reason": "stop"
+        }
+      ]
+    }
+  }
+}

@@ -4,13 +4,21 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from datetime import date
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from services.risk_forecasting.config import DATA_DIR, lookback_days_from_env
-from services.risk_forecasting.predictor import FittedModel, load_fitted_model, predict_cell_risk
+from services.risk_forecasting.place import PlaceNotFound, resolve_place
+from services.risk_forecasting.predictor import (
+    AGGREGATION,
+    AGGREGATION_NOTE,
+    CoverageError,
+    FittedModel,
+    load_fitted_model,
+    score_place,
+)
 
 _model: Optional[FittedModel] = None
 _load_error: Optional[str] = None
@@ -34,18 +42,44 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Wildfire Risk Forecasting",
-    description="Historical ignition risk scores from a fitted cNHPP model.",
-    version="0.1.0",
+    description=(
+        "Historical place-based ignition risk from a fitted cNHPP model. "
+        "Scores dates with local weather/vegetation files only; no live HRRR."
+    ),
+    version="0.2.0",
     lifespan=lifespan,
 )
 
 
+class PlaceScope(BaseModel):
+    type: str
+    name: str
+
+
 class PredictResponse(BaseModel):
-    cell_id: int
     date: date
-    risk: float = Field(..., description="Ignition intensity λ for the cell/day")
+    risk: float = Field(
+        ...,
+        description="P(≥1 ignition) for the requested place: 1 - exp(-sum(λ))",
+    )
+    expected_count: float
     xi: float
     lookback_days: int
+    aggregation: str = AGGREGATION
+    aggregation_note: str = AGGREGATION_NOTE
+    cell_count: int
+    scope: PlaceScope
+    local_percentile: float
+    statewide_percentile: float
+    local_period: str
+    local_n: int
+    cell_id: Optional[int] = None
+    cell_ids: Optional[list[int]] = None
+    intensity: Optional[float] = Field(
+        None, description="Single-cell Poisson intensity λ"
+    )
+    mean_intensity: Optional[float] = None
+    includes_cell_461: bool = False
 
 
 class HealthResponse(BaseModel):
@@ -67,8 +101,12 @@ def health() -> HealthResponse:
 
 @app.get("/predict", response_model=PredictResponse)
 def predict(
-    cell_id: int = Query(..., description="Grid cell ID"),
     date: date = Query(..., description="Historical date YYYY-MM-DD"),
+    cell_id: Optional[int] = Query(None, description="Grid cell ID"),
+    lat: Optional[float] = Query(None, ge=-90, le=90),
+    lon: Optional[float] = Query(None, ge=-180, le=180),
+    county: Optional[str] = Query(None, description="County name (Census TIGER)"),
+    utility: Optional[str] = Query(None, description="PGE, SCE, or SDGE"),
     lookback_days: Optional[int] = Query(
         None,
         ge=1,
@@ -83,16 +121,31 @@ def predict(
         )
 
     lb = lookback_days if lookback_days is not None else lookback_days_from_env()
-    print(f"[API] /predict cell_id={cell_id} date={date} lookback_days={lb}")
+    print(
+        f"[API] /predict date={date} cell_id={cell_id} lat={lat} lon={lon} "
+        f"county={county!r} utility={utility!r} lookback_days={lb}"
+    )
 
     try:
-        risk = predict_cell_risk(
-            _model,
+        place = resolve_place(
             cell_id=cell_id,
+            lat=lat,
+            lon=lon,
+            county=county,
+            utility=utility,
+            known_cell_ids=_model.cell_id_to_idx.keys(),
+        )
+        scored = score_place(
+            _model,
+            place,
             on_date=date,
             data_dir=DATA_DIR,
             lookback_days=lb,
         )
+    except PlaceNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except CoverageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
@@ -100,10 +153,5 @@ def predict(
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return PredictResponse(
-        cell_id=cell_id,
-        date=date,
-        risk=risk,
-        xi=_model.xi,
-        lookback_days=lb,
-    )
+    payload: dict[str, Any] = scored.as_response()
+    return PredictResponse.model_validate(payload)

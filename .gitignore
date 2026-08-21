@@ -12,6 +12,8 @@ env/
 dist/
 build/
 .pytest_cache/
+tests/_results.xml
+tests/__pycache__/
 .mypy_cache/
 .ruff_cache/
 .coverage
@@ -20,6 +22,7 @@ htmlcov/
 # Env / secrets
 .env
 .env.*
+!.env.example
 
 # OS
 .DS_Store
@@ -32,6 +35,22 @@ grid_weather_*.csv.bak*
 events_*.csv
 *.pkl
 *.bak_corrupt_dec
+
+# FireCastRL national ignition source + extract (local only; do not commit)
+data/north_america/Wildfire_Dataset.csv
+data/north_america/us_ignitions_extracted.csv
+data/north_america/_inventory_results*.json
+data/north_america/_us_states.geojson
+data/north_america/_us_ignitions_state_breakdown.json
+
+# Census TIGER county polygons (downloaded at load; CA extract cached)
+data/boundaries/*.zip
+data/boundaries/*.shp
+data/boundaries/*.dbf
+data/boundaries/*.shx
+data/boundaries/*.prj
+data/boundaries/*.cpg
+data/boundaries/*.xml
 
 # Keep small reference grids (must stay tracked)
 !**/grid_cells.csv

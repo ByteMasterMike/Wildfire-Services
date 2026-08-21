@@ -1,0 +1,884 @@
+[
+  {
+    "id": "dq_pge_ignitions_2024",
+    "question": "How many PG&E utility-attributed ignitions were there in 2024?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "stat_card",
+      "map"
+    ]
+  },
+  {
+    "id": "dq_cpuc_sacramento_county_2023",
+    "question": "how many CPUC ignitions in Sacramento County in 2023",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "cpuc_utility_caused"
+    ],
+    "expected_status": "answer",
+    "expected_tool_year": 2023,
+    "answer_must_contain_any": [
+      "sacramento"
+    ],
+    "answer_must_not_contain": [
+      "will not answer",
+      "no county column"
+    ],
+    "expected_view_types": [
+      "stat_card",
+      "map"
+    ]
+  },
+  {
+    "id": "spatial_pge_ignitions_2024",
+    "question": "How many ignitions were spatially inside PG&E territory in 2024?",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_spatial"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge"
+    ],
+    "expected_status": "answer",
+    "force_model": true
+  },
+  {
+    "id": "map_pge_cpuc_2024",
+    "question": "Map PG&E CPUC ignition events for 2024.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "visualization_create"
+    ],
+    "required_caveats": [],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "map"
+    ]
+  },
+  {
+    "id": "trend_calfire_monthly_2024",
+    "question": "Show the monthly CAL FIRE incident trend for 2024.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "visualization_create"
+    ],
+    "required_caveats": [
+      "calfire_missingness"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "time_series"
+    ]
+  },
+  {
+    "id": "spatial_point_context",
+    "question": "Which IOU, HFTD tier, and grid cell contain 38.58,-121.49?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_spatial"
+    ],
+    "required_caveats": [],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "spatial_context"
+    ]
+  },
+  {
+    "id": "risk_cell_date",
+    "question": "Predict historical ignition risk for cell 400 on 2024-08-15.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "risk_forecast"
+    ],
+    "required_caveats": [
+      "cnhpp_grid_resolution",
+      "cnhpp_contagion_tie"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "stat_card",
+      "stat_card",
+      "stat_card"
+    ]
+  },
+  {
+    "id": "list_psps_2021",
+    "question": "List PGE PSPS events in 2021.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "record_table"
+    ]
+  },
+  {
+    "id": "us_ignitions_2024",
+    "question": "How many US ignitions are in the 2024 sample?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "us_ignitions_sample"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "stat_card",
+      "map"
+    ]
+  },
+  {
+    "id": "compare_utilities_ignitions",
+    "question": "Compare PGE versus SCE ignition counts in 2024.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge",
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "comparison"
+    ]
+  },
+  {
+    "id": "compare_hftd_calfire",
+    "question": "Compare CAL FIRE incident counts in HFTD Tier 2 versus Tier 3 for 2024.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "calfire_missingness"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "comparison"
+    ]
+  },
+  {
+    "id": "compare_pge_periods",
+    "question": "Compare PGE ignition counts in 2023 versus 2024.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge_period_a",
+      "ignition_definition_pge_period_b"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "comparison"
+    ]
+  },
+  {
+    "id": "compare_epss_utilities",
+    "question": "Compare EPSS outage counts for PGE versus SCE in 2024.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "epss_pge_only"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "comparison"
+    ]
+  },
+  {
+    "id": "ratio_per_circuit",
+    "question": "Compare PGE versus SCE EPSS-to-ignition ratios per circuit in 2024.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "epss_pge_only"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "comparison"
+    ]
+  },
+  {
+    "id": "coordinate_to_risk",
+    "question": "At 38.58,-121.49, what was fitted risk on 2024-08-15?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_spatial",
+      "risk_forecast"
+    ],
+    "required_caveats": [
+      "cnhpp_grid_resolution",
+      "cnhpp_contagion_tie"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "stat_card",
+      "stat_card",
+      "stat_card",
+      "spatial_context"
+    ]
+  },
+  {
+    "id": "cpuc_vs_us",
+    "question": "Compare CPUC and US ignition counts in 2024 and explain the difference.",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records",
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "us_ignitions_sample"
+    ],
+    "expected_status": "answer",
+    "force_model": true
+  },
+  {
+    "id": "count_plus_trend",
+    "question": "Give me the PGE ignition count and its monthly trend for 2024.",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records",
+      "visualization_create"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge"
+    ],
+    "expected_status": "answer",
+    "force_model": true
+  },
+  {
+    "id": "ambiguous_riskiest",
+    "question": "Which utility is riskiest?",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "ambiguous_near_me",
+    "question": "Show recent fires near me.",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "undefined_north_south",
+    "question": "Compare wildfire incidents in northern and southern California.",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "unsupported_cpz",
+    "question": "Which CPZ had the most ignitions in 2024?",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "unsupported_cost",
+    "question": "What did wildfire mitigation cost each utility in 2024?",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "unsupported_optimize",
+    "question": "Optimize next week's PSPS schedule.",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "unsupported_damage",
+    "question": "What property damage should we expect from ignitions next year?",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "unsupported_live_web",
+    "question": "What active fires are burning right now according to the web?",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "recover_validation",
+    "question": "How many US ignition sample events occurred in 2024?",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "us_ignitions_sample"
+    ],
+    "expected_status": "answer",
+    "force_model": true,
+    "fault_scenario": "validation_error_once"
+  },
+  {
+    "id": "recover_503",
+    "question": "Show a weekly CPUC ignition time series for 2024.",
+    "expected_route": "model",
+    "expected_tools": [
+      "visualization_create"
+    ],
+    "required_caveats": [],
+    "expected_status": "answer",
+    "force_model": true,
+    "fault_scenario": "service_503_once"
+  },
+  {
+    "id": "detect_partial_200",
+    "question": "Map the 2024 US ignition sample.",
+    "expected_route": "model",
+    "expected_tools": [
+      "visualization_create"
+    ],
+    "required_caveats": [],
+    "expected_status": [
+      "answer",
+      "error"
+    ],
+    "force_model": true,
+    "fault_scenario": "partial_200_once"
+  },
+  {
+    "id": "holdout_dq_sce_2023",
+    "question": "How many SCE utility-attributed ignitions were there in 2023?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer"
+  },
+  {
+    "id": "holdout_spatial_sce_2023",
+    "question": "How many ignitions were spatially inside SCE territory in 2023?",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_spatial"
+    ],
+    "required_caveats": [
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer",
+    "force_model": true
+  },
+  {
+    "id": "holdout_compare_epss_sce_sdge_2023",
+    "question": "Compare EPSS outage counts for SCE versus SDGE in 2023.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "epss_pge_only"
+    ],
+    "expected_status": "answer"
+  },
+  {
+    "id": "holdout_count_trend_sce_2023",
+    "question": "Give me the SCE ignition count and its weekly trend for 2023.",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records",
+      "visualization_create"
+    ],
+    "required_caveats": [
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer",
+    "force_model": true
+  },
+  {
+    "id": "holdout_unsupported_budget",
+    "question": "How should we allocate next month's vegetation management budget?",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "collision_count_inside_sce_territory",
+    "question": "How many ignitions happened inside SCE's territory in 2023?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_spatial"
+    ],
+    "required_caveats": [
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer"
+  },
+  {
+    "id": "collision_map_pge_outages_no_year",
+    "question": "Show me the map of PG&E outages",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "collision_compare_territories_last_year",
+    "question": "Compare wildfire activity between PG&E and SCE territories last year",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge",
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer",
+    "expected_resolved_year_offset": -1
+  },
+  {
+    "id": "collision_trend_calfire_sce_territory",
+    "question": "Weekly CAL FIRE trend in SCE territory for 2023",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "visualization_create"
+    ],
+    "required_caveats": [
+      "calfire_missingness"
+    ],
+    "expected_status": "answer"
+  },
+  {
+    "id": "collision_boundary_only_sce",
+    "question": "Show the SCE utility territory boundary",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "visualization_inspect"
+    ],
+    "required_caveats": [],
+    "expected_status": "answer"
+  },
+  {
+    "id": "collision_map_sce_territory_boundary",
+    "question": "Map SCE territory",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "visualization_inspect"
+    ],
+    "required_caveats": [],
+    "expected_status": "answer"
+  },
+  {
+    "id": "collision_riskiest_in_territory",
+    "question": "Which utility is riskiest inside SCE territory?",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "collision_period_not_utilities",
+    "question": "Compare PGE ignitions in 2023 versus 2024",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge_period_a",
+      "ignition_definition_pge_period_b"
+    ],
+    "expected_status": "answer"
+  },
+  {
+    "id": "collision_relative_recent_clarifies",
+    "question": "What were recent ignitions for SCE?",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "collision_relative_past_two_years",
+    "question": "How many ignitions in the past two years for PGE?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge"
+    ],
+    "expected_status": "answer",
+    "expected_resolved_years_offset": [
+      -1,
+      0
+    ]
+  },
+  {
+    "id": "collision_this_year_count",
+    "question": "How many PG&E utility-attributed ignitions were there this year?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge"
+    ],
+    "expected_status": "answer",
+    "expected_resolved_year_offset": 0
+  },
+  {
+    "id": "collision_wrong_kind_model_repair",
+    "question": "Compare ignition counts for PGE versus SCE in one shared year, 2024",
+    "expected_route": "model",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge",
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer",
+    "force_model": true
+  },
+  {
+    "id": "relative_two_years_ago_compare",
+    "question": "Compare wildfire activity between PG&E and SCE territories 2 years ago",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "comparison_run"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge",
+      "ignition_definition_sce"
+    ],
+    "expected_status": "answer",
+    "expected_resolved_year_offset": -2
+  },
+  {
+    "id": "relative_last_year_count",
+    "question": "How many PG&E utility-attributed ignitions were there last year?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "ignition_definition_pge"
+    ],
+    "expected_status": "answer",
+    "expected_resolved_year_offset": -1
+  },
+  {
+    "id": "relative_lately_clarifies",
+    "question": "How many SCE ignitions lately?",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "vague_spatial_near_sacramento",
+    "question": "Show me fires near Sacramento in 2024",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "vague_spatial_around_fresno",
+    "question": "List ignitions around Fresno in 2023",
+    "expected_route": "clarification",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "clarification",
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "schema_retry_bound_persistent",
+    "question": "How many US ignition sample events occurred in 2024?",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [],
+    "expected_status": "error",
+    "force_model": true,
+    "fault_scenario": "validation_error_persistent",
+    "expect_schema_retry_bound": true,
+    "answer_must_not_contain": [
+      "schema validation",
+      "exhausted available tools"
+    ],
+    "answer_must_contain_any": [
+      "could not",
+      "valid query",
+      "retry",
+      "year"
+    ]
+  },
+  {
+    "id": "model_explicit_year_filled",
+    "question": "How many EPSS outages occurred in 2024?",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "epss_pge_only"
+    ],
+    "expected_status": "answer",
+    "force_model": true,
+    "expected_tool_year": 2024
+  },
+  {
+    "id": "model_synthesis_bounded",
+    "question": "How many CAL FIRE wildfire incidents were there in Sacramento County in 2024?",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "calfire_missingness"
+    ],
+    "expected_status": [
+      "answer",
+      "error"
+    ],
+    "force_model": true,
+    "max_elapsed_ms": 240000,
+    "expect_synthesis_finished": true
+  },
+  {
+    "id": "unsupported_ranking_circuit_most",
+    "question": "Find the circuit with the most EPSS outages in 2024 and tell me what division it is in",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "answer_must_contain_any": [
+      "Ranking is not supported",
+      "cannot compute"
+    ],
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "model_cpuc_tell_me_about_2023",
+    "question": "Tell me about CPUC ignitions in 2023",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "cpuc_utility_caused"
+    ],
+    "expected_status": "answer",
+    "expected_answer_origin": "model",
+    "force_model": true,
+    "expected_tool_year": 2023,
+    "max_elapsed_ms": 360000,
+    "answer_must_contain_any": [
+      "cpuc",
+      "2023",
+      "480"
+    ],
+    "answer_must_not_contain": [
+      "cpuc_ignitions count:"
+    ]
+  },
+  {
+    "id": "model_sacramento_tell_me_about_2024",
+    "question": "Tell me about wildfire incidents in Sacramento County during 2024",
+    "expected_route": "model",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "calfire_missingness"
+    ],
+    "expected_status": "answer",
+    "expected_answer_origin": "model",
+    "force_model": true,
+    "expected_tool_year": 2024,
+    "max_elapsed_ms": 360000,
+    "answer_must_contain_any": [
+      "sacramento",
+      "11"
+    ],
+    "answer_must_not_contain": [
+      "calfire_incidents count:"
+    ]
+  },
+  {
+    "id": "silent_filter_drop_cpuc_sacramento_august",
+    "question": "how many wildfires in sacramento 2023 cpuc august",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "cpuc_utility_caused"
+    ],
+    "expected_status": "answer",
+    "answer_must_contain_any": [
+      "sacramento"
+    ],
+    "answer_must_not_contain": [
+      "will not answer",
+      "no county column",
+      "480"
+    ]
+  },
+  {
+    "id": "calfire_sacramento_august_2023",
+    "question": "How many CAL FIRE wildfire incidents were there in Sacramento County in August 2023?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_records"
+    ],
+    "required_caveats": [
+      "calfire_missingness"
+    ],
+    "expected_status": "answer",
+    "answer_must_contain_any": [
+      "calfire_incidents count"
+    ],
+    "expected_view_types": [
+      "stat_card",
+      "time_series"
+    ]
+  },
+  {
+    "id": "utility_not_invented_from_place",
+    "question": "How many wildfires in Sacramento last year?",
+    "expected_route": "unsupported",
+    "expected_tools": [],
+    "required_caveats": [],
+    "expected_status": "unsupported",
+    "answer_must_contain_any": [
+      "county",
+      "CAL FIRE",
+      "will not answer"
+    ],
+    "answer_must_not_contain": [
+      "SCE",
+      "Southern California Edison"
+    ],
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  },
+  {
+    "id": "risk_county_date",
+    "question": "What was fitted ignition risk in Sacramento County on 2024-08-15?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "risk_forecast"
+    ],
+    "required_caveats": [
+      "cnhpp_grid_resolution",
+      "cnhpp_contagion_tie"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "stat_card",
+      "stat_card",
+      "stat_card"
+    ],
+    "answer_must_contain_any": [
+      "chance of at least one",
+      "higher than about"
+    ]
+  },
+  {
+    "id": "risk_utility_date",
+    "question": "What was PGE fitted ignition risk on 2024-08-15?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "risk_forecast"
+    ],
+    "required_caveats": [
+      "cnhpp_grid_resolution",
+      "cnhpp_contagion_tie"
+    ],
+    "expected_status": "answer",
+    "expected_view_types": [
+      "stat_card",
+      "stat_card",
+      "stat_card"
+    ],
+    "answer_must_contain_any": [
+      "chance of at least one",
+      "higher than about"
+    ]
+  },
+  {
+    "id": "risk_out_of_coverage",
+    "question": "Predict historical ignition risk for cell 400 on 2026-08-15.",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "risk_forecast"
+    ],
+    "required_caveats": [],
+    "expected_status": "error",
+    "answer_must_contain_any": [
+      "2025-12-31 and no forecast ingestion"
+    ],
+    "expected_view_types": [],
+    "expected_view_status": "none"
+  }
+]

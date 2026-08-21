@@ -1,0 +1,302 @@
+{
+  "cell": "qwen3-4b__thinking-off__constrained",
+  "trials": 10,
+  "cases": {
+    "cpuc_vs_us": {
+      "n": 10,
+      "failures": 10,
+      "failure_rate": 1.0,
+      "trials": [
+        {
+          "trial": 1,
+          "ok": false,
+          "elapsed_s": 69.2,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 2,
+          "ok": false,
+          "elapsed_s": 25.6,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 3,
+          "ok": false,
+          "elapsed_s": 25.3,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 4,
+          "ok": false,
+          "elapsed_s": 25.1,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 5,
+          "ok": false,
+          "elapsed_s": 26.6,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 6,
+          "ok": false,
+          "elapsed_s": 32.6,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 7,
+          "ok": false,
+          "elapsed_s": 39.7,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 8,
+          "ok": false,
+          "elapsed_s": 45.2,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 9,
+          "ok": false,
+          "elapsed_s": 25.3,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 10,
+          "ok": false,
+          "elapsed_s": 25.3,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [
+            "tools expected=['data_query_records', 'data_query_records'] actual=['data_query_records']",
+            "caveats missing=['us_ignitions_sample']"
+          ],
+          "actual_tools": [
+            "data_query_records"
+          ],
+          "no_tool_attempts": 0
+        }
+      ]
+    },
+    "count_plus_trend": {
+      "n": 10,
+      "failures": 0,
+      "failure_rate": 0.0,
+      "trials": [
+        {
+          "trial": 1,
+          "ok": true,
+          "elapsed_s": 167.1,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 2,
+          "ok": true,
+          "elapsed_s": 144.7,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 3,
+          "ok": true,
+          "elapsed_s": 143.1,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 4,
+          "ok": true,
+          "elapsed_s": 185.9,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 5,
+          "ok": true,
+          "elapsed_s": 190.0,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 6,
+          "ok": true,
+          "elapsed_s": 281.9,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 7,
+          "ok": true,
+          "elapsed_s": 182.8,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 8,
+          "ok": true,
+          "elapsed_s": 148.6,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 9,
+          "ok": true,
+          "elapsed_s": 304.7,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        },
+        {
+          "trial": 10,
+          "ok": true,
+          "elapsed_s": 334.7,
+          "status": "answer",
+          "answer_origin": "synthesis_fallback",
+          "failures": [],
+          "actual_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "no_tool_attempts": 0
+        }
+      ]
+    }
+  },
+  "started_at": "2026-08-11T16:05:51Z",
+  "finished_at": "2026-08-11T16:46:41Z"
+}

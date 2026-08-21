@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: wildfire-postgis
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-wildfire}
+      POSTGRES_USER: ${POSTGRES_USER:-wildfire}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wildfire}
+    ports:
+      # Host port defaults to 5433 so a local Windows Postgres on 5432 does not shadow Docker.
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - wildfire_pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  wildfire_pgdata:

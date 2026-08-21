@@ -1,0 +1,1230 @@
+{
+  "config": {
+    "model": "qwen3:4b",
+    "runtime_model": "qwen3:4b-agent-nothink",
+    "endpoint": "Ollama native /api/chat",
+    "thinking": "off alias plus think=false",
+    "tool_schema_profile": "lean",
+    "max_completion_tokens": 1800,
+    "attempts_per_case": 1,
+    "case_count": 5,
+    "domain_document_token_cap": 300
+  },
+  "cells": {
+    "constrained": {
+      "constrained": true,
+      "domain_document": false,
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "expected_tools": [
+            "data_query_spatial"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "arguments": {
+                "kind": "point",
+                "lat": 37.7749,
+                "lon": -122.4194,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_spatial\",\"arguments\":{\"kind\":\"point\",\"lat\":37.7749,\"lon\":-122.4194,\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\"}}] }",
+          "timing": {
+            "wall_ms": 8038.59,
+            "prompt_eval_ms": 166.33,
+            "generation_ms": 7299.74,
+            "prompt_tokens": 398,
+            "completion_tokens": 68,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "filtered_us_count",
+          "expected_tools": [
+            "data_query_records"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "US ignition",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQueryRecordsArgs\ndataset\n  Input should be 'cpuc_ignitions', 'us_ignitions', 'epss_outages', 'psps_events', 'calfire_incidents', 'circuits', 'hftd' or 'iou_territories' [type=enum, input_value='US ignition', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/enum"
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"US ignition\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\",\"incident_type_mode\":\"wildfire_default\"}}] }",
+          "timing": {
+            "wall_ms": 14609.97,
+            "prompt_eval_ms": 8204.81,
+            "generation_ms": 5828.31,
+            "prompt_tokens": 394,
+            "completion_tokens": 55,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "expected_tools": [
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "wildfire_incidents",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for VisualizationCreateArgs\ndataset\n  Input should be 'ignitions', 'us_ignitions', 'epss', 'psps', 'calfire' or 'hftd' [type=literal_error, input_value='wildfire_incidents', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error"
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"wildfire_incidents\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}]}",
+          "timing": {
+            "wall_ms": 13212.84,
+            "prompt_eval_ms": 8800.64,
+            "generation_ms": 3902.36,
+            "prompt_tokens": 426,
+            "completion_tokens": 36,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "cross_dataset_counts",
+          "expected_tools": [
+            "data_query_records",
+            "data_query_records"
+          ],
+          "actual_calls": [
+            {
+              "tool": "comparison_run",
+              "arguments": {
+                "kind": "utilities",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2",
+                "period_b_end": "2024-12-31"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for ComparisonRunArgs\nperiod_b_start\n  Datetimes provided to dates should have zero time - e.g. be exact dates [type=date_from_datetime_inexact, input_value='2', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/date_from_datetime_inexact"
+            }
+          ],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"comparison_run\",\"arguments\":{\"kind\":\"utilities\",\"metric\":\"ignition_count\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\",\"period_a_start\":\"2024-01-01\",\"period_a_end\":\"2024-12-31\",\"period_b_start\":\"2\",\"period_b_end\":\"2024-12-31\"}}]}",
+          "timing": {
+            "wall_ms": 18172.52,
+            "prompt_eval_ms": 6446.92,
+            "generation_ms": 11120.33,
+            "prompt_tokens": 461,
+            "completion_tokens": 101,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "count_plus_trend",
+          "expected_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "PGE",
+                "county": "All",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQueryRecordsArgs\ndataset\n  Input should be 'cpuc_ignitions', 'us_ignitions', 'epss_outages', 'psps_events', 'calfire_incidents', 'circuits', 'hftd' or 'iou_territories' [type=enum, input_value='PGE', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/enum"
+            }
+          ],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"PGE\",\"county\":\"All\",\"incident_type_mode\":\"wildfire_default\"}}]}",
+          "timing": {
+            "wall_ms": 10740.04,
+            "prompt_eval_ms": 6498.05,
+            "generation_ms": 3355.15,
+            "prompt_tokens": 430,
+            "completion_tokens": 30,
+            "deliberation_tokens_estimate": 0
+          }
+        }
+      ],
+      "summary": {
+        "selection_correct": 3,
+        "arguments_correct": 0,
+        "case_count": 5,
+        "prompt_tokens_total": 2109,
+        "prompt_tokens_mean": 421.8,
+        "completion_tokens_total": 290,
+        "total_tokens_per_successful_call": 799.7,
+        "generation_ms_total": 31505.89,
+        "generation_ms_median": 5828.31,
+        "deliberation_tokens_total": 0
+      }
+    },
+    "constrained_domain": {
+      "constrained": true,
+      "domain_document": true,
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "expected_tools": [
+            "data_query_spatial"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "arguments": {
+                "kind": "summary",
+                "utility": "PG&E",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQuerySpatialArgs\nutility\n  Input should be 'PGE', 'SCE', 'SDGE', 'PACIFICORP', 'Liberty', 'BVES' or 'untagged' [type=enum, input_value='PG&E', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/enum"
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_spatial\",\"arguments\":{\"kind\":\"summary\",\"utility\":\"PG&E\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\"}}]}",
+          "timing": {
+            "wall_ms": 20256.64,
+            "prompt_eval_ms": 13631.74,
+            "generation_ms": 6089.22,
+            "prompt_tokens": 697,
+            "completion_tokens": 51,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "filtered_us_count",
+          "expected_tools": [
+            "data_query_records"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024,
+                "incident_type_mode": "all"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": true,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\": [\n  {\n    \"tool\": \"data_query_records\",\n    \"arguments\": {\n      \"dataset\": \"us_ignitions\",\n      \"result_mode\": \"count\",\n      \"year\": 2024,\n      \"incident_type_mode\": \"all\"\n    }\n  }\n]}",
+          "timing": {
+            "wall_ms": 17478.46,
+            "prompt_eval_ms": 9898.01,
+            "generation_ms": 7084.79,
+            "prompt_tokens": 693,
+            "completion_tokens": 63,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "expected_tools": [
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire_incidents",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for VisualizationCreateArgs\ndataset\n  Input should be 'ignitions', 'us_ignitions', 'epss', 'psps', 'calfire' or 'hftd' [type=literal_error, input_value='calfire_incidents', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error"
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"calfire_incidents\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}]}",
+          "timing": {
+            "wall_ms": 16368.58,
+            "prompt_eval_ms": 11094.16,
+            "generation_ms": 4754.27,
+            "prompt_tokens": 725,
+            "completion_tokens": 39,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "cross_dataset_counts",
+          "expected_tools": [
+            "data_query_records",
+            "data_query_records"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "year": 2024,
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            },
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": true,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"cpuc_ignitions\",\"result_mode\":\"count\",\"year\":2024,\"incident_type_mode\":\"wildfire_default\"}},{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"us_ignitions\",\"result_mode\":\"count\",\"year\":2024}}]}",
+          "timing": {
+            "wall_ms": 20821.62,
+            "prompt_eval_ms": 11878.17,
+            "generation_ms": 8441.89,
+            "prompt_tokens": 760,
+            "completion_tokens": 69,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "count_plus_trend",
+          "expected_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PG&E",
+                "year": 2024,
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQueryRecordsArgs\nutility\n  Input should be 'PGE', 'SCE', 'SDGE', 'PACIFICORP', 'Liberty', 'BVES' or 'untagged' [type=enum, input_value='PG&E', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/enum"
+            },
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "cpuc_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for VisualizationCreateArgs\ndataset\n  Input should be 'ignitions', 'us_ignitions', 'epss', 'psps', 'calfire' or 'hftd' [type=literal_error, input_value='cpuc_ignitions', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error"
+            },
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "epss_outages",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for VisualizationCreateArgs\ndataset\n  Input should be 'ignitions', 'us_ignitions', 'epss', 'psps', 'calfire' or 'hftd' [type=literal_error, input_value='epss_outages', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error"
+            }
+          ],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"cpuc_ignitions\",\"result_mode\":\"count\",\"utility\":\"PG&E\",\"year\":2024,\"incident_type_mode\":\"wildfire_default\"}},{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"cpuc_ignitions\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}},{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"epss_outages\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}] }",
+          "timing": {
+            "wall_ms": 20829.88,
+            "prompt_eval_ms": 6947.38,
+            "generation_ms": 13373.74,
+            "prompt_tokens": 729,
+            "completion_tokens": 112,
+            "deliberation_tokens_estimate": 0
+          }
+        }
+      ],
+      "summary": {
+        "selection_correct": 4,
+        "arguments_correct": 2,
+        "case_count": 5,
+        "prompt_tokens_total": 3604,
+        "prompt_tokens_mean": 720.8,
+        "completion_tokens_total": 334,
+        "total_tokens_per_successful_call": 984.5,
+        "generation_ms_total": 39743.91,
+        "generation_ms_median": 7084.79,
+        "deliberation_tokens_total": 0
+      }
+    },
+    "domain": {
+      "constrained": false,
+      "domain_document": true,
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "expected_tools": [
+            "data_query_spatial"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "arguments": {
+                "kind": "summary",
+                "utility": "PG&E",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQuerySpatialArgs\nutility\n  Input should be 'PGE', 'SCE', 'SDGE', 'PACIFICORP', 'Liberty', 'BVES' or 'untagged' [type=enum, input_value='PG&E', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/enum"
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "Okay, let's tackle this user query: \"How many ignitions were spatially inside PG&E territory in 2024?\"\n\nFirst, I need to understand what the user is asking. They want the count of ignitions that are spatially contained within PG&E's territory for the year 2024.\n\nLooking at the tools provided, there's a data_query_spatial function that handles spatial containment. The description says it's for \"inside <utility> territory\" and requires start_date and end_date. The example given is \"inside SCE territory 2023\" which uses data_query_spatial with kind:summary, utility:SCE, start_date:2023-01-01, end_date:2023-12-31.\n\nThe user is asking about PG&E, so utility should be PG&E. The year is 2024, so start_date is 2024-01-01 and end_date is 2024-12-31.\n\nWait, the datasets mentioned in the problem statement: cpuc_ignitions utility-caused only. But the user is asking about spatially inside PG&E territory. The data_query_spatial function's description says it's for spatial containment, so we need to use that function.\n\nThe data_query_spatial function parameters include kind (enum: \"point\" or \"summary\"), utility, start_date, end_date. The example uses kind:summary. Since the user wants a count (how many ignitions), the kind should be \"summary\" to get the count.\n\nWait, the problem says: \"spatial summary always needs start_date and end_date\". So the function call should be data_query_spatial with kind:summary, utility:PG&E, start_date:2024-01-01, end_date:2024-12-31.\n\nBut wait, the datasets: cpuc_ignitions is utility-caused. The user is asking about ignitions inside PG&E territory. The problem states that cpuc_ignitions is utility-caused only. So maybe the data_query_spatial function uses the cpuc_ignitions dataset implicitly? Wait, the tools provided don't have a dataset parameter in data_query_spatial. The data_query_spatial function's parameters are: kind, end_date, hftd_tier, lat, lon, start_date, utility.\n\nWait, the problem says: \"Territory: 'inside <utility> territory' = spatial containment: data_query_spatial kind=summary with utility.\" So the function is data_query_spatial with kind=summary and utility=PG&E. The start and end dates for 2024 would be 2024-01-01 to 2024-12-31.\n\nWait, the user is asking for ignitions. The cpuc_ignitions dataset is utility-caused, so PG&E's ignitions would be part of that. But the data_query_spatial function here doesn't take a dataset parameter. The problem states that the data_query_spatial is for spatial containment, so maybe the dataset is implied by the utility.\n\nWait, the problem says: \"data_query_spatial kind=summary with utility\". So the function call is data_query_spatial with kind:summary, utility:PG&E, start_date:2024-01-01, end_date:2024-12-31.\n\nBut the problem also mentions that the datasets are cpuc_ignitions (utility-caused), us_ignitions (all-cause sample), etc. However, the user is asking about ignitions spatially inside PG&E territory, so it's likely using the cpuc_ignitions dataset (since it's utility-caused). But the data_query_spatial function doesn't have a dataset parameter. Hmm.\n\nWait, the tools provided have two functions: data_query_spatial and data_query_records. The user is asking for spatial containment, so data_query_spatial is the right tool here.\n\nThe data_query_spatial function's parameters: kind (enum: \"point\" or \"summary\"), utility (string), start_date (string), end_date (string). The example uses kind:summary.\n\nSo for the user's query, the arguments would be:\n\n{\n  \"kind\": \"summary\",\n  \"utility\": \"PG&E\",\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-12-31\"\n}\n\nWait, but the problem says \"spatial summary always needs start_date and end_date\". So the function call is data_query_spatial with those parameters.\n\nWait, the problem states: \"Refuse: CPZ, cost, optimization, damage, live status.\" So we don't need to consider those.\n\nThe user is asking for \"how many ignitions\", so the summary kind would return the count.\n\nYes, the example given is \"inside SCE territory 2023\" -> d",
+          "timing": {
+            "wall_ms": 223151.4,
+            "prompt_eval_ms": 12412.02,
+            "generation_ms": 210195.95,
+            "prompt_tokens": 688,
+            "completion_tokens": 1324,
+            "deliberation_tokens_estimate": 1210
+          }
+        },
+        {
+          "id": "filtered_us_count",
+          "expected_tools": [
+            "data_query_records"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's see. The user is asking: \"How many US ignition sample events occurred in 2024?\"\n\nFirst, I need to figure out which dataset to use. The problem mentions that the datasets include cpuc_ignitions (utility-caused only), us_ignitions (all-cause sample, ~40% CA), epss_outages (PG&E only), calfire_incidents (untyped and untagged rows), and hftd Tier 2/3 only.\n\nThe user is asking about US ignition sample events. The key here is \"US ignition sample events\". The us_ignitions dataset is described as \"all-cause sample\" (~40% CA), so that's probably the right dataset. The term \"sample\" here might refer to the fact that it's a sample dataset, not the full census.\n\nThe function to use here is data_query_records because the user is asking for a count of events. The example given earlier shows that \"SCE ignitions 2023\" uses data_query_records with result_mode:count.\n\nLooking at the parameters for data_query_records: the dataset should be \"us_ignitions\", result_mode is \"count\", year is 2:2024. Wait, the year in the function is an integer. The user says 2024, so year=2024.\n\nWait, the dataset for us_ignitions is specified as \"us_ignitions all-cause sample\". So the dataset parameter is \"us_ignitions\".\n\nThe function data_query_records has parameters: dataset, result_mode, year, etc. The user is asking for the count of ignition events in 2024. The incident_type_mode might be relevant here. The example uses \"wildfire_default\" but the user says \"ignition sample events\". Since the us_ignitions is all-cause sample, maybe the incident_type_mode should be \"all\" or \"wildfire_default\". Wait, the enum for incident_type_mode is [\"wildfire_default\", \"all\", \"untyped\"]. The user is asking for ignition events, which are probably the wildfire events. So maybe incident_type_mode is \"wildfire_default\".\n\nWait, the problem states: \"us_ignitions all-cause sample (~40% CA)\". So it's a sample of all causes. The user wants \"ignition sample events\", so perhaps the incident_type_mode should be \"all\" to include all causes? Or maybe \"wildfire_default\" is the correct one here.\n\nBut the user says \"US ignition sample events\". The term \"ignition\" here might refer to wildfire ignitions. The cpuc_ignitions is utility-caused, but us_ignitions is all-cause. So the correct dataset is us_ignitions.\n\nThe function call would be data_query_records with dataset: \"us_ignitions\", result_mode: \"count\", year: 2024. The other parameters: incident_type_mode? The user says \"ignition events\", so maybe incident_type_mode should be \"wildfire_default\" to get the ignition events. But the problem states that the us_ignitions is all-cause sample, so perhaps the incident_type_mode is \"all\" here. Wait, the example in the problem statement for \"SCE ignitions 2023\" uses data_query_records with dataset:cpuc_ignitions, so maybe for us_ignitions, the incident_type_mode is \"all\" to get all causes.\n\nWait, the problem says: \"us_ignitions all-cause sample\". So it's a sample of all causes. So the user is asking for the count of these sample events in 2024. So the function call would be:\n\n{\n  \"dataset\": \"us_ignitions\",\n  \"result_mode\": \"count\",\n  \"year\": 2024\n}\n\nBut wait, the data_query_records function has parameters: circuit_id, county, dataset, end_date, incident_type_mode, result_mode, start_date, tier, utility, year.\n\nThe user didn't specify any of the other parameters like county, utility, tier, etc. So we can omit those. The year is 2024 as an integer.\n\nWait, the problem says \"How many US ignition sample events occurred in 2024?\" So the answer is the count from us_ignitions dataset for 2024.\n\nSo the tool call is data_query_records with dataset: us_ignitions, result_mode: count, year: 2024.\n\nWait, but the example shows that for \"SCE ignitions 2023\" it's {dataset:cpuc_ignitions,result_mode:count,utility:SCE,year:2023}. So in this case, the user is asking about US ignition sample events, so the utility is not specified (since it's US, not a specific utility), so maybe the utility parameter is omitted",
+          "timing": {
+            "wall_ms": 3679197.43,
+            "prompt_eval_ms": 10696.28,
+            "generation_ms": 3667713.59,
+            "prompt_tokens": 684,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "expected_tools": [
+            "visualization_create"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's tackle this user query: \"Show the monthly CAL FIRE incident trend for 2024.\"\n\nFirst, I need to figure out which tool to use. The user wants a monthly trend, so that's a time series. Looking at the tools provided, there's visualization_create which can do time series. The other tool is data_query_records, which is for counts or samples, not spatial.\n\nThe user mentioned \"CAL FIRE incident trend\". The datasets available include calfire_incidents, which has untyped and untagged rows. The example shows that for \"weekly EPSS trend 2023\" they used visualization_create with kind:time_series, dataset:epss, interval:weekly, year:2023.\n\nWait, the user says \"monthly CAL FIRE incident trend\". So dataset should be calfire_incidents. The visualization_create function has parameters: kind, dataset, interval, start_date, end_date, year, etc.\n\nThe user wants monthly, so interval is \"monthly\". The year is 2024. The start_date would be 2024-01-01 and end_date 2024-12-31. But the function parameters for visualization_create have start_date and end_date as strings, but the example uses year:2023. Wait, the example for \"weekly EPSS trend 2023\" uses year:2023, but the start_date and end_date are not specified there. Hmm.\n\nWait, the problem statement says: \"Time: year=YYYY equals a full-year start_date/end_date\". So for 2024, start_date is 2024-01-01 and end_date is 2024-12-31.\n\nThe visualization_create function's parameters: kind is \"time_series\", dataset is \"calfire_incidents\", interval is \"monthly\", year is 2024. Wait, but the function's year is an integer. The example uses year:2023. So the arguments would be:\n\n{\n  \"kind\": \"time_series\",\n  \"dataset\": \"calfire_incidents\",\n  \"interval\": \"monthly\",\n  \"year\": 2024\n}\n\nWait, but the function also has start_date and end_date. However, the problem states that year=YYYY equals a full-year start_date/end_date. So for 2024, start_date is 2024-01-01 and end_date is 2024-12-31. But the visualization_create function's parameters include start_date and end_date as strings. However, the example given in the problem for \"weekly EPSS trend 2023\" uses year:2023 but doesn't specify start_date and end_date. Wait, the problem says: \"Time: year=YYYY equals a full-year start_date/end_date\". So maybe the tool expects the year, and the start_date and end_date are derived from the year.\n\nBut looking at the function definition for visualization_create: it has start_date and end_date as parameters of type string. However, the problem says that for the time, year=YYYY is a full-year start_date/end_date. So perhaps the tool call should use the year 2024, and the start_date and end_date are automatically set to 2024-01-01 and 2024-12-31.\n\nWait, but the function's parameters include both start_date and end_date. Let me check the example again. The example given is \"weekly EPSS trend 2023\" -> visualization_create with {kind:time_series, dataset:epss, interval:weekly, year:2023}. So in that example, they didn't specify start_date and end_date, but the year is 2023. So maybe the tool uses the year to generate the start and end dates.\n\nBut the function's parameters have start_date and end_date as required fields? Wait, the function definition says: {object <nil> <nil> [kind dataset] ... \"start_date\":{\"type\":\"string\"}, ... \"end_date\":{\"type\":\"string\"}}. So they are required.\n\nHmm, but the problem states that \"year=YYYY equals a full-year start_date/end_date\". So for 2024, start_date is \"2024-01-01\" and end_date is \"2024-12-31\".\n\nSo the tool call should be:\n\n{\n  \"kind\": \"time_series\",\n  \"dataset\": \"calfire_incidents\",\n  \"interval\": \"monthly\",\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-12-31\",\n  \"year\": 2024\n}\n\nWait, but the example uses year:2023 without start_date and end_date. Wait, the problem says: \"Time: year=YYYY equals a full-year start_date/end_date\". So perhaps the tool expects the year, and the start_date and end_date are derived. But the function parameters require start_date and end_date as strings.\n\nWait",
+          "timing": {
+            "wall_ms": 285433.21,
+            "prompt_eval_ms": 10212.2,
+            "generation_ms": 273314.72,
+            "prompt_tokens": 716,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "cross_dataset_counts",
+          "expected_tools": [
+            "data_query_records",
+            "data_query_records"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's tackle this user query: \"Compare CPUC and US ignition counts in 2024.\"\n\nFirst, I need to understand what the user is asking. They want a comparison of ignition counts between CPUC and US for the year 2024. \n\nLooking at the tools provided, there's a comparison_run function. The description says it compares one metric across utilities, regions, or periods. The metric here is ignition counts. The user mentioned CPUC and US, so the utilities would be CPUC and US. Wait, but the datasets available are cpuc_ignitions (utility-caused only) and us_ignitions (all-cause sample). \n\nWait, the user says \"CPUC and US ignition counts\". CPUC is probably the utility here, like California Public Utilities Commission. The us_ignitions dataset is all-cause, so maybe US here refers to the US as a whole. But the problem is that the comparison_run function requires specifying the kind, metric, etc.\n\nLet me check the tools again. The comparison_run function has parameters like kind (utilities, regions, periods), metric, start_date, end_date, utilities, regions, etc.\n\nThe user wants to compare CPUC and US ignition counts in 2:2024. So the metric here is \"ignition counts\". The kind would be \"utilities\" since they're comparing different utilities (CPUC and US). Wait, but US might not be a utility. Hmm, maybe the user means US as in the US government or something else. Wait, the datasets are cpuc_ignitions (utility-caused) and us_ignitions (all-cause sample). So perhaps \"US\" here refers to the us_ignitions dataset, which is all-cause.\n\nWait, the problem states: \"Compare CPUC and US ignition counts in 2024.\" So CPUC is one dataset (cpuc_ignitions) and US is another (us_ignitions). The comparison_run function is for comparing metrics across utilities, regions, etc. So the metric here is \"ignition counts\", and the kind is \"utilities\" because we're comparing two utilities (CPUC and US). Wait, but US isn't a utility. Maybe the user is using \"US\" to mean the US government's data, but in the context of the datasets, us_ignitions is a dataset that's all-cause.\n\nAlternatively, maybe the user wants to compare the count of ignitions caused by CPUC (utility-caused) versus all-cause ignitions (US) in 2024.\n\nThe comparison_run function's parameters: kind can be \"utilities\", \"regions\", or \"periods\". The metric here is probably \"ignition counts\". The start_date and end_date would be 2024-01-01 to 2024-12-31.\n\nThe utilities array would be [\"CPUC\", \"US\"]? Wait, but the dataset names are cpuc_ignitions and us_ignitions. The utility parameter in the data_query_records function is a string, but in comparison_run, the utilities are an array of strings.\n\nWait, the comparison_run function's parameters: \"utilities\" is an array of strings. So the user wants to compare CPUC and US. But in the context of the datasets, CPUC is a utility (like SCE, PG&E), but here CPUC might be the California Public Utilities Commission. The us_ignitions dataset is all-cause, so maybe \"US\" here refers to the US as a whole.\n\nWait, the problem says: \"Compare CPUC and US ignition counts in 2024.\" So the two datasets are cpuc_ignitions (which is utility-caused) and us_ignitions (all-cause). So the comparison is between these two datasets.\n\nThe comparison_run function's kind is \"utilities\" here. The metric would be \"ignition counts\". The start_date and end_date for 2024 would be \"2024-01-01\" and \"2024-12-31\".\n\nWait, the comparison_run function requires start_date and end_date as strings. The user says 2024, so the year is 2024. The function's parameters for start_date and end_date are strings in YYYY-MM-DD format.\n\nSo the arguments for comparison_run would be:\n\nkind: \"utilities\" (since we're comparing two utilities)\nmetric: \"ignition counts\" (but wait, the metric needs to be a specific metric. The problem says \"ignition counts\", so maybe the metric is \"count\" or \"ignition_count\"? Wait, the function's metric parameter is a string. The example in the tools section shows a metric like \"ignition co",
+          "timing": {
+            "wall_ms": 299910.23,
+            "prompt_eval_ms": 13137.77,
+            "generation_ms": 285804.47,
+            "prompt_tokens": 751,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "count_plus_trend",
+          "expected_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's tackle this user query. The user wants the PGE ignition count and its monthly trend for 2024.\n\nFirst, I need to figure out which datasets are relevant. The user mentioned \"PGE ignition count\". From the examples given earlier, the CPUC ignitions dataset is for utility-caused ignitions. The dataset name here is cpuc_ignitions. Also, the user specified \"monthly trend\", so we need a time series with monthly intervals.\n\nLooking at the tools provided, there's data_query_records and visualization_create. The data_query_records function can give counts, and visualization_create can create a time series. \n\nWait, the user wants two things: the count and the monthly trend. So maybe two tool calls? Let me check.\n\nFirst, the ignition count for PGE in 2024. The example shows \"SCE ignitions 2023\" uses data_query_records with dataset:cpuc_ignitions, utility:SCE, year:2023. So for PGE, utility would be PG&E. But in the dataset, it's probably \"PG&E\" as the utility. Wait, the example uses \"SCE\" for Southern California Edison. So PGE is Pacific Gas and Electric, so utility: \"PG&E\".\n\nSo for the count: data_query_records with dataset:cpuc_ignitions, utility:PG&E, year:2024, result_mode:count.\n\nThen the monthly trend. The example \"weekly EPSS trend 2023\" uses visualization_create with kind:time_series, dataset:epss, interval:weekly, year:2023. But here the user wants monthly trend for ignitions. So the dataset for ignitions is cpuc_ignitions again? Wait, the user says \"PGE ignition count and its monthly trend\". So the trend is for the same dataset.\n\nWait, the visualization_create function requires kind:time_series, dataset:cpuc_ignitions (since it's ignitions), interval:monthly, year:2024.\n\nWait, but the dataset for ignitions is cpuc_ignitions (utility-caused only). The user is asking for PGE, so utility:PG&E.\n\nWait, the problem says: \"Give me the PGE ignition count and its monthly trend for 2024.\"\n\nSo first, the count: data_query_records with utility:PG&E, dataset:cpuc_ignitions, year:2024, result_mode:count.\n\nSecond, the monthly trend: visualization_create with kind:time_series, dataset:cpuc_ignitions, utility:PG&E, interval:monthly, year:2024.\n\nWait, but the visualization_create function's parameters: the dataset is a string. The example uses \"epss\" for EPSS outages, but here it's ignitions. The dataset for ignitions is cpuc_ignitions.\n\nWait, the user says \"PGE ignition count\", so the dataset is cpuc_ignitions (since it's utility-caused ignitions), and utility is PG&E.\n\nLet me check the tool definitions.\n\nFor data_query_records: dataset is \"cpuc_ignitions\", utility is \"PG&E\", year:2024, result_mode:count.\n\nFor visualization_create: kind:time_series, dataset:cpuc_ignitions, utility:PG&E, interval:monthly, year:2024.\n\nWait, but the visualization_create function's parameters have a \"year\" as integer. The user says 2024, so year:2024.\n\nWait, the problem says \"monthly trend for 2024\". So the time series should cover 2024.\n\nBut the visualization_create function's start_date and end_date are strings. Wait, the tool's parameters for visualization_create have start_date and end_date as strings (e.g., \"2023-01-01\"), but in the example, they used year:2023 for the weekly trend. Hmm, maybe the year is sufficient here.\n\nWait, the user wants monthly trend for 2024. So the visualization_create would need to have interval:monthly, year:2024.\n\nWait, the tool's visualization_create function has parameters: interval is enum [\"daily\", \"weekly\", \"monthly\"], kind is [\"map\", \"time_series\"], dataset is string, etc.\n\nSo for the monthly trend, the tool call would be:\n\n{\n  \"kind\": \"time_series\",\n  \"dataset\": \"cpuc_ignitions\",\n  \"interval\": \"monthly\",\n  \"year\": 2024,\n  \"utility\": \"PG&E\"\n}\n\nWait, but the user says \"PGE ignition count and its monthly trend\". So two tool calls: one for the count (data_query_records) and one for the visualization (time series).\n\nWait, the problem says \"Call every tool needed and do not answer or explain. Construct complete arguments",
+          "timing": {
+            "wall_ms": 278625.47,
+            "prompt_eval_ms": 6946.95,
+            "generation_ms": 271068.62,
+            "prompt_tokens": 720,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        }
+      ],
+      "summary": {
+        "selection_correct": 1,
+        "arguments_correct": 0,
+        "case_count": 5,
+        "prompt_tokens_total": 3559,
+        "prompt_tokens_mean": 711.8,
+        "completion_tokens_total": 8524,
+        "total_tokens_per_successful_call": 12083.0,
+        "generation_ms_total": 4708097.35,
+        "generation_ms_median": 273314.72,
+        "deliberation_tokens_total": 8410
+      }
+    },
+    "plain": {
+      "constrained": false,
+      "domain_document": false,
+      "schema_profile": "lean",
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "expected_tools": [
+            "data_query_spatial"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's see. The user is asking: \"How many ignitions were spatially inside PG&E territory in 2024?\"\n\nFirst, I need to figure out which tool to use. The tools provided are data_query_spatial and data_query_records.\n\nThe question is about spatial containment, specifically ignitions inside PG&E territory. The data_query_spatial function is for spatial points or counts inside an IOU/HFTD polygon. The other tool, data_query_records, is for filtered counts or samples but not spatial.\n\nSo, the user wants spatial data, so data_query_spatial is the right tool.\n\nLooking at the parameters for data_query_spatial:\n\n- kind: can be \"point\" or \"summary\"\n- hftd_tier: enum [\"Tier 2\", \"Tier 3\"]\n- utility: string (PG&E is a utility, so probably \"PG&E\")\n- start_date and end_date: need to specify 2024. The dates should be in string format, probably YYYY-MM-DD or just YYYY? Wait, the schema says \"string\" for dates. But the user says 2024, so maybe the start_date is \"2024-01-01\" and end_date is \"2024-12-31\" or just \"2024\" as a string? Wait, the tool's parameters for start_date and end_date are strings. The example might expect ISO format. But the user says \"in 2024\", so the dates would be from 2024-01-01 to 2024-12-31.\n\nWait, but the problem says \"spatially inside PG&E territory\". PG&E is a utility, so the utility parameter should be \"PG&E\".\n\nThe function data_query_spatial requires lat and lon? Wait, the schema says: {\"lat\": {\"type\": \"number\"}, \"lon\": {\"type\": \"number\"}}. But the user is asking about PG&E territory, which is a polygon. Wait, maybe the tool expects a polygon, but the parameters here are lat and lon. Hmm, this is confusing.\n\nWait, the tool's description says: \"data_query_spatial Point context or counts inside one IOU/HFTD polygon\". So it's for a single polygon. But the parameters here are lat and lon, which are coordinates. Maybe the tool is designed to query a specific point (lat, lon) within a polygon? Or perhaps the polygon is defined by the utility and tier?\n\nWait, the parameters for data_query_spatial include \"utility\" as a string, and \"hftd_tier\" as Tier 2 or 3. The user is asking about PG&E territory, so utility is \"PG&E\".\n\nBut the problem is that the user wants ignitions (which might be incidents) spatially inside PG&E territory. The data_query_spatial function's kind can be \"point\" or \"summary\". For counts, maybe \"summary\" is the right kind.\n\nWait, the user is asking for the number of ignitions. So the function should return a count. The kind parameter: if \"summary\" is used, maybe it gives a summary count.\n\nWait, the tool's description says: \"Point context or counts inside one IOU/HFTD polygon\". So perhaps \"point\" is for a single point, and \"summary\" is for counts.\n\nBut the user wants the count of ignitions inside PG&E territory. So the function call would be data_query_spatial with kind=\"summary\", utility=\"PG&E\", and dates for 2024.\n\nBut the dates: start_date and end_date. The user says 2024, so start_date is \"2024-01-01\" and end_date is \"2024-12-31\"? Or maybe the tool uses a different date format. The problem says to use exact schema enum values.\n\nWait, the schema for start_date and end_date is string. The user says 2024, so perhaps the dates are in YYYY format? But the tool's parameters are strings, so maybe \"2024\" as a string. Wait, but the example might expect ISO dates. Hmm.\n\nWait, the problem says: \"Construct complete arguments using exact schema enum values.\" So for the dates, the schema says type \"string\", so we have to specify them as strings. Since the user says 2024, perhaps the start_date is \"2024-01-01\" and end_date is \"2024-12-31\", but maybe the tool accepts just \"2024\" as a string. But the tool's parameters are for dates, so probably the full date range.\n\nBut the problem states: \"spatially inside PG&E territory in 2024\". So the time frame is 2024.\n\nWait, the data_query_spatial function's parameters: the start_date and end_date are strings. Let's assume they need to be in ISO format, so \"2024-01-01\" and \"20",
+          "timing": {
+            "wall_ms": 239882.42,
+            "prompt_eval_ms": 120.78,
+            "generation_ms": 238842.79,
+            "prompt_tokens": 389,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "filtered_us_count",
+          "expected_tools": [
+            "data_query_records"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's see. The user is asking how many US ignition sample events occurred in 2024. Hmm, I need to figure out which tool to use here.\n\nFirst, looking at the tools provided. There's data_query_records and data_query_spatial. The question is about ignition sample events in the US for 2024. \n\nThe data_query_records function seems relevant because it's for filtered counts or samples, not spatial. The parameters include dataset, start_date, end_date, year, etc. The user wants counts for 2024, so the year should be 2024. Also, they mentioned \"US ignition sample events\", so maybe the dataset is something like \"ignition\" or \"wildfire\". Wait, the dataset parameter in the function is a string. The enum for incident_type_mode has \"wildfire_default\", \"all\", \"untyped\". Maybe the dataset here refers to the type of data.\n\nWait, the function data_query_records has a parameter \"dataset\" which is a string. The user is asking about ignition sample events, so perhaps the dataset is \"ignition\" or \"wildfire\". But the problem says \"US ignition sample events\", so maybe the dataset is \"us_ignition\" or similar. But the exact dataset name isn't specified here. Hmm.\n\nWait, the user says \"US ignition sample events\", so maybe the dataset is \"wildfire\" or \"ignition\". Let me think. The function's parameters: circuit_id, county, dataset, end_date, incident_type_mode, result_mode, start_date, tier, utility, year.\n\nThe user wants counts for 2024. So start_date and end_date would be 2024-01-01 to 2024-12-31? But the function might accept just the year. Wait, the year is an integer. So year: 2024.\n\nThe result_mode is \"count\" since they want the number of events. The incident_type_mode could be \"wildfire_default\" to get ignition events. The dataset might be \"wildfire\" or \"ignition\". Wait, the problem says \"ignition sample events\", so maybe the dataset is \"ignition\".\n\nWait, the function's dataset parameter is a string. Let me check the possible values. Since it's not specified, but the user says \"US ignition\", perhaps the dataset is \"us_ignition\" or \"ignition\". But the problem states to use exact schema enum values. Wait, the tools' parameters have enums for some fields. For example, incident_type_mode has enum [\"wildfire_default\", \"all\", \"untyped\"], and tier has [\"Tier 2\", \"Tier 3\"].\n\nBut the dataset is a string, so no enum given. Hmm. The user is asking for US ignition events, so maybe the dataset is \"wildfire\" (as a common dataset name) or \"ignition\". Let's assume that the dataset is \"wildfire\" for this context.\n\nAlso, the utility parameter is a string, but the user didn't specify a utility, so maybe leave it as empty or default. Wait, the function's parameters have utility as a string, but the user didn't mention it, so perhaps set to empty string or omit? Wait, the tool's arguments require the parameters to be specified. Wait, the function's arguments are objects with those fields. The user's question doesn't mention utility, so maybe we can set utility to an empty string or omit it? But the tool's schema says utility is a string, so maybe it's required? Wait, looking back at the tool definitions:\n\nFor data_query_records: the parameters are circuit_id (string), county (string), dataset (string), end_date (string), incident_type_mode (string, enum), result_mode (string, enum [\"count\", \"records\"]), start_date (string), tier (string, enum [\"Tier 2\", \"Tier 3\"]), utility (string), year (integer).\n\nSo all parameters except maybe some are required? Wait, the tool's description says \"Filtered counts or samples; not spatial containment.\" So the user wants counts, so result_mode is \"count\".\n\nThe user is asking for US ignition events in 2024. So the year is 2024. The incident_type_mode should be \"wildfire_default\" to get ignition events. The dataset might be \"ignition\" or \"wildfire\". Let's assume the dataset is \"wildfire\" as a common name.\n\nWait, but the problem says \"ignition sample events\", so maybe the dataset is \"ignition\". Hmm. Since the user says \"US\", perhaps",
+          "timing": {
+            "wall_ms": 243600.78,
+            "prompt_eval_ms": 8482.28,
+            "generation_ms": 234530.76,
+            "prompt_tokens": 385,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "expected_tools": [
+            "visualization_create"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's tackle this user query. The user wants to \"Show the monthly CAL FIRE incident trend for 2024.\" So first, I need to figure out which tool to use here.\n\nLooking at the provided tools, there's visualization_create and data_query_records. The user is asking for a trend, which sounds like a time series visualization. The visualization_create function has a kind parameter that can be \"time_series\" and the interval \"monthly\". Also, the dataset should be related to CAL FIRE incidents.\n\nThe parameters needed for visualization_create include:\n- kind: \"time_series\"\n- interval: \"monthly\"\n- dataset: probably \"cal_fire_incidents\" (but the user said CAL FIRE, so maybe the dataset name is specific here)\n- start_date and end_date: since it's 2024, start_date would be \"2024-01-01\" and end_date \"2024-12-31\"\n- year: 2024\n- incident_type_mode: maybe \"wildfire_default\" since it's CAL FIRE incidents\n- tier: could be \"Tier 2\" or \"Tier 3\", but the user didn't specify, so maybe default to \"Tier 2\"?\n- utility: not sure, but maybe \"cal_fire\"?\n- county: the user didn't specify a county, so maybe leave it out or set to a default? Wait, the visualization_create function has a county parameter as a string. Since the user says \"CAL FIRE incident trend\" without a specific county, perhaps we should set county to \"all\" or omit it? Wait, the schema says county is a string, so maybe it's required. Hmm, but the user didn't mention a county. Maybe the dataset is county-level, but the user wants the overall trend. Wait, the problem says to use exact schema enum values.\n\nWait, the visualization_create function's parameters have county as a string. The user didn't specify a county, so maybe we need to set it to a placeholder like \"all\" or perhaps the dataset handles it. But the schema says it's a string, so maybe the correct approach is to omit it? Wait, no, the tool's parameters require county to be a string. Wait, looking back at the tool definition:\n\nFor visualization_create, the parameters are:\n{\n  \"county\": {\"type\": \"string\"},\n  \"dataset\": {\"type\": \"string\"},\n  \"end_date\": {\"type\": \"string\"},\n  \"incident_type_mode\": {\"type\": \"string\", \"enum\": [\"wildfire_default\", \"all\", \"untyped\"]},\n  \"interval\": {\"type\": \"string\", \"enum\": [\"daily\", \"weekly\", \"monthly\"]},\n  \"kind\": {\"type\": \"string\", \"enum\": [\"map\", \"time_series\"]},\n  \"start_date\": {\"type\": \"string\"},\n  \"tier\": {\"type\": \"string\", \"enum\": [\"Tier 2\", \"Tier 3\"]},\n  \"utility\": {\"type\": \"string\"},\n  \"year\": {\"type\": \"integer\"}\n}\n\nSo all these parameters are required? Wait, the tool's object is described as <nil> <nil> [kind dataset], but maybe the parameters are as listed. The user wants monthly trend for 2024, so interval is \"monthly\", kind is \"time_series\", dataset is probably \"cal_fire_incidents\" (but the exact dataset name might be \"wildfire\" or something else). Wait, the user says \"CAL FIRE\", so maybe the dataset is \"cal_fire\".\n\nBut the problem says to use exact schema enum values. Let's think.\n\nThe user is asking for CAL FIRE incidents. So the dataset might be \"wildfire\" (since the incident_type_mode has \"wildfire_default\"). Let's assume the dataset is \"wildfire\".\n\nFor the year, it's 2024. So year: 2024.\n\nstart_date and end_date: since it's monthly for 2024, start_date is \"2024-01-01\", end_date is \"2024-12-31\".\n\nincident_type_mode: since it's CAL FIRE incidents, probably \"wildfire_default\".\n\ntier: the user didn't specify, so maybe default to \"Tier 2\" (since the enum has \"Tier 2\" and \"Tier 3\").\n\ncounty: the user didn't specify a county, so maybe set to \"all\" but the schema says it's a string. Wait, the problem says \"construct complete arguments using exact schema enum values\". Hmm, but the county is a string, not an enum. Wait, the schema for county is just a string, so we can't use enum values for it. The user didn't specify a county, so perhaps we need to set it to a specific value like \"all\" or leave it out? But the tool requires it as a string. Maybe the correct approach is to set county to \"all\" a",
+          "timing": {
+            "wall_ms": 245776.91,
+            "prompt_eval_ms": 9553.7,
+            "generation_ms": 235642.11,
+            "prompt_tokens": 417,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "cross_dataset_counts",
+          "expected_tools": [
+            "data_query_records",
+            "data_query_records"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's tackle this user query: \"Compare CPUC and US ignition counts in 2024.\" \n\nFirst, I need to figure out which tool to use. The user wants to compare two entities—CPUC and US ignition counts for the year 2024. The tools provided are data_query_records and comparison_run.\n\nLooking at the tools:\n\n1. **data_query_records**: This seems to be for querying filtered counts or samples, not spatial containment. It has parameters like circuit_id, county, dataset, end_date, incident_type_mode, result_mode, start_date, tier, utility, year. The user is asking for counts, so maybe this is a candidate, but the query is about comparing two entities (CPUC and US), which might be handled by the comparison_run tool.\n\n2. **comparison_run**: This tool compares one metric across utilities, regions, or periods. The parameters include kind (utilities, regions, periods), metric, end_date, start_date, regions, utilities, etc. The user wants to compare CPUC (a utility) and US (maybe a region?) ignition counts in 2:2024. \n\nWait, the user says \"CPUC and US ignition counts\". CPUC is the California Public Utilities Commission, so they might be referring to a utility. US here might be a region, like the entire US. The metric here is \"ignition counts\". \n\nThe comparison_run tool's kind can be \"utilities\" or \"regions\". Since CPUC is a utility and US is a region (maybe \"hftd\" for High Fire Threat Districts?), but the user says \"US ignition counts\", which might be the entire US as a region.\n\nThe metric here is \"ignition counts\". The comparison_run tool's metric parameter needs to be a string. The user wants to compare the counts for 2024. So the time period is 2024.\n\nLet me check the parameters for comparison_run:\n\n- kind: \"utilities\" (since CPUC is a utility) or \"regions\" (US as a region)\n- metric: \"ignition counts\"\n- start_date and end_date: for 2024, so probably \"2024-01-01\" to \"2024-12-31\"?\n- utilities: [\"CPUC\"] (assuming CPUC is the utility name)\n- regions: [\"US\"]? But the region_type is enum [\"county\", \"hftd\"], so maybe US isn't a county or hftd. Hmm, this is a bit tricky.\n\nWait, the user says \"US ignition counts\". Maybe \"US\" here refers to the entire country, but the tool's regions parameter is an array of strings, and region_type is either \"county\" or \"hftd\". So perhaps the user is using \"US\" as a region type? Or maybe the tool expects specific region names.\n\nAlternatively, maybe the user is comparing two different entities: CPUC (a utility) and US (as a region). The comparison_run tool can handle this if the kind is \"utilities\" for CPUC and \"regions\" for US. Wait, the kind parameter is a string enum: [\"utilities\", \"regions\", \"periods\"]. So the comparison is across utilities and regions? But the tool's kind is singular. Wait, the description says: \"Compare one metric across utilities, regions, or periods\". So the kind here is the category we're comparing across. For example, if we want to compare across utilities, then kind is \"utilities\"; if across regions, kind is \"regions\".\n\nThe user wants to compare CPUC (a utility) and US (a region) ignition counts. So maybe the comparison is between a utility and a region. But the tool's parameters have a \"kind\" which is one of the three. Hmm.\n\nWait, the comparison_run function's parameters include:\n\n- kind: {\"type\": \"string\", \"enum\": [\"utilities\", \"regions\", \"periods\"]}\n- scope: string\n- scope_type: {\"type\": \"string\", \"enum\": [\"utility\", \"county\", \"hftd\"]}\n\nSo perhaps the user is comparing two different scope types. For example, CPUC is a utility (scope_type \"utility\"), and US is a region (maybe scope_type \"county\" or \"hftd\"? Not sure).\n\nAlternatively, maybe the user is asking for ignition counts from CPUC (a utility) and US (the entire country) in 2024. So the metric is \"ignition counts\", time period is 2024.\n\nLet me try to structure the tool call.\n\nThe comparison_run function is designed for comparing metrics across different categories. The user wants to compare two entities: CPUC (a utility) and US (a r",
+          "timing": {
+            "wall_ms": 259339.67,
+            "prompt_eval_ms": 10519.48,
+            "generation_ms": 248181.17,
+            "prompt_tokens": 452,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "count_plus_trend",
+          "expected_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "Okay, let's tackle this user query. The user wants the PGE ignition count and its monthly trend for 2024.\n\nFirst, I need to figure out which tools to use. The available tools are data_query_records and visualization_create.\n\nThe user is asking for two things: the ignition count (which is a count of records) and the monthly trend (which sounds like a time series). \n\nLooking at the data_query_records function: it can filter counts or samples. The parameters include dataset, start_date, end_date, year, etc. The user specified PGE, so utility should be \"PGE\". The year is 2024. They want the count, so result_mode is \"count\". Incident_type_mode might be \"wildfire_default\" since it's about ignitions. Tier could be either Tier 2 or 3, but the user didn't specify, so maybe default to Tier 2? Wait, the problem says to use exact schema enum values. The enum for tier is [\"Tier 2\", \"Tier 3\"], so I need to pick one. Maybe the user expects Tier 2 as the default for such queries. Also, the dataset might be \"wildfires\" or something else, but the user says PGE, so maybe the dataset is \"wildfires\" or a specific one. Wait, the function parameters have a dataset field. The user didn't specify the dataset name, but since it's PGE ignitions, perhaps the dataset is \"wildfires\" or \"pge\". Hmm, but the problem says to use exact schema enum values. Wait, the dataset is a string, so maybe the user expects a specific dataset name. But the user didn't specify, so maybe I have to assume a standard dataset. Alternatively, maybe the dataset is \"wildfires\" as a common one. Let me check the function definitions again.\n\nWait, the data_query_records function has a dataset parameter. The user is asking for PGE ignitions, so the dataset might be \"wildfires\" or \"pge\". But since the problem says to use exact schema enum values, but the dataset is a string, not an enum. Wait, the schema for dataset is a string, so it's not restricted to enums. So I need to pick a dataset name that's appropriate. Maybe the standard dataset for wildfires is \"wildfires\", so I'll go with that.\n\nFor the count, result_mode is \"count\". The start_date and end_date for 2024 would be \"2024-01-01\" and \"2024-12-31\", but the user says \"monthly trend\", so maybe the data_query_records is for the count, and then visualization_create is for the time series.\n\nWait, the user wants both the count and the monthly trend. So first, get the count via data_query_records, then create a time series visualization for the monthly trend using visualization_create.\n\nLet me structure the tool calls.\n\nFirst tool call: data_query_records to get the count for PGE in 2024.\n\nParameters:\n- utility: \"PGE\"\n- year: 2024\n- result_mode: \"count\"\n- incident_type_mode: \"wildfire_default\" (since it's ignitions)\n- dataset: \"wildfires\" (assuming this is the correct dataset)\n- tier: \"Tier 2\" (default)\n- start_date: \"2024-01-01\"\n- end_date: \"2024-12-31\"\n\nWait, but the user says \"ignition count\", so maybe incident_type_mode is \"wildfire_default\" as the default for ignitions.\n\nSecond tool call: visualization_create for the monthly trend.\n\nParameters:\n- kind: \"time_series\"\n- interval: \"monthly\"\n- dataset: \"wildfires\"\n- utility: \"PGE\"\n- year: 2024\n- start_date: \"2024-01-01\"\n- end_date: \"2024-12-31\"\n- tier: \"Tier 2\"\n- incident_type_mode: \"wildfire_default\"\n\nWait, but the visualization_create function's parameters include interval as \"daily\", \"weekly\", \"monthly\". The user wants monthly trend, so interval is \"monthly\".\n\nWait, but the user says \"monthly trend\", so the time series should be monthly. So the visualization_create call would be for time_series with interval \"monthly\".\n\nBut the data_query_records is for the count, so the first tool call gives the total count for 2024, and the second tool call creates the monthly time series.\n\nWait, but the user says \"PGE ignition count and its monthly trend\". So the count is a single number (total for 2024), and the monthly trend is a time series.\n\nSo first, call data_query_records to get the count.",
+          "timing": {
+            "wall_ms": 278099.57,
+            "prompt_eval_ms": 12416.68,
+            "generation_ms": 265166.54,
+            "prompt_tokens": 421,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        }
+      ],
+      "summary": {
+        "selection_correct": 0,
+        "arguments_correct": 0,
+        "case_count": 5,
+        "prompt_tokens_total": 2064,
+        "prompt_tokens_mean": 412.8,
+        "completion_tokens_total": 9000,
+        "total_tokens_per_successful_call": null,
+        "generation_ms_total": 1222363.37,
+        "generation_ms_median": 238842.79,
+        "deliberation_tokens_total": 9000
+      }
+    },
+    "constrained_enums": {
+      "constrained": true,
+      "domain_document": false,
+      "schema_profile": "lean_enums",
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "expected_tools": [
+            "data_query_spatial"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "arguments": {
+                "kind": "point",
+                "hftd_tier": "Tier 2",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31\",\"utility\":\"PGE\"}}]}}  // This is not valid JSON. Let me fix it to be valid JSON with correct syntax and structure for the tool call. The user is asking for ignitions spatially inside PG&E territory in 2024. The tool data_query_spatial is for spatial containment within one IOU/HFTD polygon. The utility is PG&E, so utility="
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQuerySpatialArgs\nend_date\n  Input should be a valid date or datetime, invalid datetime separator, expected `T`, `t`, `_` or space [type=date_from_datetime_parsing, input_value='2024-12-31\",\"utility\":\"P...ty is PG&E, so utility=', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/date_from_datetime_parsing"
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_spatial\",\"arguments\":{\"kind\":\"point\",\"hftd_tier\":\"Tier 2\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\\\",\\\"utility\\\":\\\"PGE\\\"}}]}}  // This is not valid JSON. Let me fix it to be valid JSON with correct syntax and structure for the tool call. The user is asking for ignitions spatially inside PG&E territory in 2024. The tool data_query_spatial is for spatial containment within one IOU/HFTD polygon. The utility is PG&E, so utility=\"\n\n  \t\t\t\t    \t\t\t\t    \t} }] }",
+          "timing": {
+            "wall_ms": 33081.51,
+            "prompt_eval_ms": 12943.11,
+            "generation_ms": 19688.78,
+            "prompt_tokens": 493,
+            "completion_tokens": 150,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "filtered_us_count",
+          "expected_tools": [
+            "data_query_records"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "tier": "Tier 2",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for DataQueryRecordsArgs\n  Value error, tier is valid only for dataset=hftd [type=value_error, input_value={'dataset': 'us_ignitions...de': 'wildfire_default'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"us_ignitions\",\"result_mode\":\"count\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\",\"tier\":\"Tier 2\",\"incident_type_mode\":\"wildfire_default\"}}]}",
+          "timing": {
+            "wall_ms": 23297.81,
+            "prompt_eval_ms": 13600.52,
+            "generation_ms": 9129.06,
+            "prompt_tokens": 489,
+            "completion_tokens": 67,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "expected_tools": [
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"calfire\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}]}",
+          "timing": {
+            "wall_ms": 20861.44,
+            "prompt_eval_ms": 15654.16,
+            "generation_ms": 4669.23,
+            "prompt_tokens": 546,
+            "completion_tokens": 37,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "cross_dataset_counts",
+          "expected_tools": [
+            "data_query_records",
+            "data_query_records"
+          ],
+          "actual_calls": [],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "length",
+          "content": "{\"calls\":[{\"tool\":\"comparison_run\",\"arguments\":{\"kind\":\"periods\",\"metric\":\"ignition_count\",\"end_date\":\"2024-12-31\",\"period_a_end\":\"2024-12-31\",\"period_b_end\":\"2:00:00.000Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T00:00:00Z?2024-12-31T",
+          "timing": {
+            "wall_ms": 276205.19,
+            "prompt_eval_ms": 11445.55,
+            "generation_ms": 264170.26,
+            "prompt_tokens": 600,
+            "completion_tokens": 1800,
+            "deliberation_tokens_estimate": 1800
+          }
+        },
+        {
+          "id": "count_plus_trend",
+          "expected_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "end_date": "2024-12-31",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"cpuc_ignitions\",\"end_date\":\"2024-12-31\",\"incident_type_mode\":\"wildfire_default\"}}\n]}",
+          "timing": {
+            "wall_ms": 13595.8,
+            "prompt_eval_ms": 7716.58,
+            "generation_ms": 5228.63,
+            "prompt_tokens": 550,
+            "completion_tokens": 43,
+            "deliberation_tokens_estimate": 0
+          }
+        }
+      ],
+      "summary": {
+        "selection_correct": 3,
+        "arguments_correct": 0,
+        "case_count": 5,
+        "prompt_tokens_total": 2678,
+        "prompt_tokens_mean": 535.6,
+        "completion_tokens_total": 2097,
+        "total_tokens_per_successful_call": 1591.7,
+        "generation_ms_total": 302885.96,
+        "generation_ms_median": 9129.06,
+        "deliberation_tokens_total": 1800
+      }
+    },
+    "constrained_domain_enums": {
+      "constrained": true,
+      "domain_document": true,
+      "schema_profile": "lean_enums",
+      "cases": [
+        {
+          "id": "spatial_utility_count",
+          "expected_tools": [
+            "data_query_spatial"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_spatial",
+              "arguments": {
+                "kind": "summary",
+                "utility": "PGE",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": true,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_spatial",
+              "arguments_correct": true
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_spatial\",\"arguments\":{\"kind\":\"summary\",\"utility\":\"PGE\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\"}}]}",
+          "timing": {
+            "wall_ms": 30755.84,
+            "prompt_eval_ms": 24066.21,
+            "generation_ms": 6153.42,
+            "prompt_tokens": 792,
+            "completion_tokens": 51,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "filtered_us_count",
+          "expected_tools": [
+            "data_query_records"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "us_ignitions",
+                "result_mode": "count",
+                "year": 2024
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": true,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\": [\n  {\n    \"tool\": \"data_query_records\",\n    \"arguments\": {\n      \"dataset\": \"us_ignitions\",\n      \"result_mode\": \"count\",\n      \"year\": 2024\n    }\n  }\n]}",
+          "timing": {
+            "wall_ms": 19627.7,
+            "prompt_eval_ms": 12837.65,
+            "generation_ms": 6271.29,
+            "prompt_tokens": 788,
+            "completion_tokens": 54,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "calfire_monthly_trend",
+          "expected_tools": [
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "calfire",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\": [\n  {\n    \"tool\": \"visualization_create\",\n    \"arguments\": {\n      \"kind\": \"time_series\",\n      \"dataset\": \"calfire\",\n      \"interval\": \"monthly\",\n      \"incident_type_mode\": \"wildfire_default\"\n    }\n  }\n] }",
+          "timing": {
+            "wall_ms": 22390.36,
+            "prompt_eval_ms": 14126.44,
+            "generation_ms": 7777.9,
+            "prompt_tokens": 845,
+            "completion_tokens": 64,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "cross_dataset_counts",
+          "expected_tools": [
+            "data_query_records",
+            "data_query_records"
+          ],
+          "actual_calls": [
+            {
+              "tool": "comparison_run",
+              "arguments": {
+                "kind": "periods",
+                "metric": "ignition_count",
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "period_a_start": "2024-01-01",
+                "period_a_end": "2024-12-31",
+                "period_b_start": "2024-01-01",
+                "period_b_end": "2024-12-31"
+              },
+              "schema_valid": false,
+              "schema_error": "1 validation error for ComparisonRunArgs\n  Value error, periods requires scope and both complete periods [type=value_error, input_value={'kind': 'periods', 'metr...od_b_end': '2024-12-31'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+            }
+          ],
+          "selection_correct": false,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            },
+            {
+              "tool": "data_query_records",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"comparison_run\",\"arguments\":{\"kind\":\"periods\",\"metric\":\"ignition_count\",\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\",\"period_a_start\":\"2024-01-01\",\"period_a_end\":\"2024-12-31\",\"period_b_start\":\"2024-01-01\",\"period_b_end\":\"2024-12-31\"}}]}",
+          "timing": {
+            "wall_ms": 25268.76,
+            "prompt_eval_ms": 9639.85,
+            "generation_ms": 15086.23,
+            "prompt_tokens": 899,
+            "completion_tokens": 111,
+            "deliberation_tokens_estimate": 0
+          }
+        },
+        {
+          "id": "count_plus_trend",
+          "expected_tools": [
+            "data_query_records",
+            "visualization_create"
+          ],
+          "actual_calls": [
+            {
+              "tool": "data_query_records",
+              "arguments": {
+                "dataset": "cpuc_ignitions",
+                "result_mode": "count",
+                "utility": "PGE",
+                "year": 2024,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            },
+            {
+              "tool": "visualization_create",
+              "arguments": {
+                "kind": "time_series",
+                "dataset": "us_ignitions",
+                "interval": "monthly",
+                "incident_type_mode": "wildfire_default"
+              },
+              "schema_valid": true,
+              "schema_error": null
+            }
+          ],
+          "selection_correct": true,
+          "arguments_correct": false,
+          "expected_call_scores": [
+            {
+              "tool": "data_query_records",
+              "arguments_correct": true
+            },
+            {
+              "tool": "visualization_create",
+              "arguments_correct": false
+            }
+          ],
+          "done_reason": "stop",
+          "content": "{\"calls\":[{\"tool\":\"data_query_records\",\"arguments\":{\"dataset\":\"cpuc_ignitions\",\"result_mode\":\"count\",\"utility\":\"PGE\",\"year\":2024,\"start_date\":\"2024-01-01\",\"end_date\":\"2024-12-31\"}},{\"tool\":\"visualization_create\",\"arguments\":{\"kind\":\"time_series\",\"dataset\":\"us_ignitions\",\"interval\":\"monthly\",\"incident_type_mode\":\"wildfire_default\"}}\n]}",
+          "timing": {
+            "wall_ms": 21581.63,
+            "prompt_eval_ms": 8435.63,
+            "generation_ms": 12682.21,
+            "prompt_tokens": 849,
+            "completion_tokens": 98,
+            "deliberation_tokens_estimate": 0
+          }
+        }
+      ],
+      "summary": {
+        "selection_correct": 4,
+        "arguments_correct": 2,
+        "case_count": 5,
+        "prompt_tokens_total": 4173,
+        "prompt_tokens_mean": 834.6,
+        "completion_tokens_total": 378,
+        "total_tokens_per_successful_call": 1137.8,
+        "generation_ms_total": 47971.05,
+        "generation_ms_median": 7777.9,
+        "deliberation_tokens_total": 0
+      }
+    }
+  }
+}
