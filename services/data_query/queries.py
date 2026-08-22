@@ -601,3 +601,341 @@ def spatial_summary(
             "null_utility_records_in_table": null_utility_count(conn),
         },
     }
+
+
+# ---- Ranking (single-dataset GROUP BY / top-N) ----
+
+RANK_HARD_CAP = 25
+_UNKNOWN_GROUP = "(unknown)"
+
+ALLOWED_RANK_PAIRS = frozenset(
+    {
+        ("cpuc_ignitions", "county", "count"),
+        ("cpuc_ignitions", "utility", "count"),
+        ("calfire_incidents", "county", "count"),
+        ("calfire_incidents", "county", "acres_burned"),
+        ("epss_outages", "circuit", "count"),
+    }
+)
+
+
+class RankQueryError(ValueError):
+    """Invalid ranking request; the route converts this to HTTP 400."""
+
+
+def query_rank(
+    conn: psycopg.Connection,
+    *,
+    dataset: str,
+    group_by: str,
+    metric: str,
+    utility: str | None,
+    include_untagged: bool,
+    county: str | None,
+    year: int | None,
+    start_date: date | None,
+    end_date: date | None,
+    incident_type: str | None,
+    limit: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return ordered {group_value, metric_value} rows plus ranking meta.
+
+    Ties at the requested cutoff are included (DENSE_RANK). If that would
+    exceed RANK_HARD_CAP, extra tied rows are dropped and ties_cut is set.
+    """
+    pair = (dataset, group_by, metric)
+    if pair not in ALLOWED_RANK_PAIRS:
+        raise RankQueryError(
+            f"ranking is not available for dataset={dataset!r} "
+            f"group_by={group_by!r} metric={metric!r}"
+        )
+    if group_by == "county" and county is not None:
+        raise RankQueryError(
+            "county filter cannot be combined with group_by=county"
+        )
+    if limit < 1 or limit > RANK_HARD_CAP:
+        raise RankQueryError(f"limit must be between 1 and {RANK_HARD_CAP}")
+
+    extra: dict[str, Any] = {}
+    if dataset == "cpuc_ignitions":
+        select_sql, count_sql, params = _rank_cpuc_sql(
+            group_by=group_by,
+            utility=utility,
+            include_untagged=include_untagged,
+            year=year,
+            start_date=start_date,
+            end_date=end_date,
+            county=county,
+        )
+    elif dataset == "calfire_incidents":
+        select_sql, count_sql, params, extra = _rank_calfire_sql(
+            metric=metric,
+            utility=utility,
+            include_untagged=include_untagged,
+            year=year,
+            start_date=start_date,
+            end_date=end_date,
+            incident_type=incident_type,
+        )
+        extra["null_incident_type_count"] = null_incident_type_count(conn)
+        extra["null_utility_records_in_table"] = null_utility_count(conn)
+    else:
+        empty_notes = _epss_rank_empty(utility)
+        if empty_notes is not None:
+            return [], {
+                "total": 0,
+                "returned": 0,
+                "limit": limit,
+                "dataset": dataset,
+                "group_by": group_by,
+                "metric": metric,
+                "tie_extended": False,
+                "ties_cut": False,
+                "empty_reason": empty_notes,
+                **extra,
+            }
+        select_sql, count_sql, params = _rank_epss_sql(
+            year=year,
+            start_date=start_date,
+            end_date=end_date,
+            county=county,
+        )
+
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(count_sql, params)
+        total_groups = int(cur.fetchone()["count"])
+        cur.execute(select_sql, params)
+        ranked = list(cur.fetchall())
+
+    if total_groups == 0:
+        empty_reason = "No rows matched these filters, so there is no ranking."
+        if dataset == "us_ignitions":
+            empty_reason = (
+                "No rows matched these filters. The us_ignitions table is empty "
+                "or has no rankable state attribute."
+            )
+        return [], {
+            "total": 0,
+            "returned": 0,
+            "limit": limit,
+            "dataset": dataset,
+            "group_by": group_by,
+            "metric": metric,
+            "tie_extended": False,
+            "ties_cut": False,
+            "empty_reason": empty_reason,
+            **extra,
+        }
+
+    ties_cut = False
+    if ranked:
+        cutoff_index = min(limit, len(ranked)) - 1
+        cutoff_value = ranked[cutoff_index]["metric_value"]
+        ranked = [row for row in ranked if row["metric_value"] >= cutoff_value]
+    if len(ranked) > RANK_HARD_CAP:
+        hard_value = ranked[RANK_HARD_CAP - 1]["metric_value"]
+        ties_cut = any(
+            row["metric_value"] == hard_value for row in ranked[RANK_HARD_CAP:]
+        )
+        ranked = ranked[:RANK_HARD_CAP]
+
+    rows = []
+    for row in ranked:
+        item = {
+            "group_value": row["group_value"],
+            "metric_value": _json_number(row["metric_value"]),
+        }
+        if dataset == "epss_outages":
+            item["division"] = row.get("division")
+            item["circuit_name"] = row.get("circuit_name")
+        rows.append(item)
+
+    return rows, {
+        "total": total_groups,
+        "returned": len(rows),
+        "limit": limit,
+        "dataset": dataset,
+        "group_by": group_by,
+        "metric": metric,
+        "tie_extended": len(rows) > limit,
+        "ties_cut": ties_cut,
+        "empty_reason": None,
+        **extra,
+    }
+
+
+def _json_number(value: Any) -> int | float:
+    if value is None:
+        return 0
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if hasattr(value, "as_integer_ratio") and float(value).is_integer():
+        return int(value)
+    return int(value) if isinstance(value, int) else float(value)
+
+
+def _rank_cpuc_sql(
+    *,
+    group_by: str,
+    utility: str | None,
+    include_untagged: bool,
+    year: int | None,
+    start_date: date | None,
+    end_date: date | None,
+    county: str | None,
+) -> tuple[str, str, list[Any]]:
+    where = ["TRUE"]
+    params: list[Any] = []
+    if utility == "untagged":
+        where.append("i.utility IS NULL")
+    elif utility is not None:
+        if include_untagged:
+            where.append("(i.utility = %s OR i.utility IS NULL)")
+            params.append(utility)
+        else:
+            where.append("i.utility = %s")
+            params.append(utility)
+    if year is not None:
+        where.append("i.year = %s")
+        params.append(year)
+    if start_date is not None:
+        where.append("i.event_date >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("i.event_date <= %s")
+        params.append(end_date)
+    if county is not None:
+        where.append("lower(i.county) = lower(%s)")
+        params.append(county)
+    where_sql = " AND ".join(where)
+    group_expr = (
+        f"COALESCE(NULLIF(TRIM(i.{group_by}), ''), '{_UNKNOWN_GROUP}')"
+    )
+    groups_sql = f"""
+        SELECT {group_expr} AS group_value, COUNT(*)::bigint AS metric_value
+        FROM wildfire.cpuc_ignitions i
+        WHERE {where_sql}
+        GROUP BY 1
+    """
+    return _rank_wrap_sql(groups_sql, extra_cols=(), params=params)
+
+
+def _rank_calfire_sql(
+    *,
+    metric: str,
+    utility: str | None,
+    include_untagged: bool,
+    year: int | None,
+    start_date: date | None,
+    end_date: date | None,
+    incident_type: str | None,
+) -> tuple[str, str, list[Any], dict[str, Any]]:
+    where = ["TRUE"]
+    params: list[Any] = []
+    type_mode = "default_wildfire"
+    if incident_type is None or incident_type.strip() == "":
+        where.append("c.incident_type IN ('Wildfire', 'Fire')")
+    elif incident_type.strip().lower() == "all":
+        type_mode = "all"
+    elif incident_type.strip().lower() == "untyped":
+        where.append("c.incident_type IS NULL")
+        type_mode = "untyped"
+    else:
+        where.append("c.incident_type = %s")
+        params.append(incident_type.strip())
+        type_mode = "explicit"
+    if utility == "untagged":
+        where.append("c.utility IS NULL")
+    elif utility is not None:
+        if include_untagged:
+            where.append("(c.utility = %s OR c.utility IS NULL)")
+            params.append(utility)
+        else:
+            where.append("c.utility = %s")
+            params.append(utility)
+    if year is not None:
+        where.append("EXTRACT(YEAR FROM c.date_only_created) = %s")
+        params.append(year)
+    if start_date is not None:
+        where.append("c.date_only_created >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("c.date_only_created <= %s")
+        params.append(end_date)
+    where_sql = " AND ".join(where)
+    group_expr = f"COALESCE(NULLIF(TRIM(c.county), ''), '{_UNKNOWN_GROUP}')"
+    agg = (
+        "COALESCE(SUM(c.acres_burned), 0)"
+        if metric == "acres_burned"
+        else "COUNT(*)::bigint"
+    )
+    groups_sql = f"""
+        SELECT {group_expr} AS group_value, {agg} AS metric_value
+        FROM wildfire.calfire_incidents c
+        WHERE {where_sql}
+        GROUP BY 1
+    """
+    select_sql, count_sql, params = _rank_wrap_sql(groups_sql, extra_cols=(), params=params)
+    extra = {"incident_type_mode": type_mode}
+    return select_sql, count_sql, params, extra
+
+
+def _epss_rank_empty(utility: str | None) -> str | None:
+    if utility is not None and utility not in ("PGE", "untagged"):
+        return f"EPSS outages are PG&E-only; utility={utility} matches nothing"
+    if utility == "untagged":
+        return "EPSS rows always have implicit utility PGE; untagged matches nothing"
+    return None
+
+
+def _rank_epss_sql(
+    *,
+    year: int | None,
+    start_date: date | None,
+    end_date: date | None,
+    county: str | None,
+) -> tuple[str, str, list[Any]]:
+    where = ["TRUE"]
+    params: list[Any] = []
+    if county is not None:
+        where.append("lower(e.county) = lower(%s)")
+        params.append(county)
+    if year is not None:
+        where.append("e.year = %s")
+        params.append(year)
+    if start_date is not None:
+        where.append("e.start_date >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("e.start_date <= %s")
+        params.append(end_date)
+    where_sql = " AND ".join(where)
+    groups_sql = f"""
+        SELECT e.circuit_id AS group_value,
+               COUNT(*)::bigint AS metric_value,
+               MAX(e.circuit) AS circuit_name,
+               MAX(COALESCE(c.division, e.division)) AS division
+        FROM wildfire.epss_outages e
+        LEFT JOIN wildfire.circuits c ON c.circuit_id = e.circuit_id
+        WHERE {where_sql}
+        GROUP BY e.circuit_id
+    """
+    return _rank_wrap_sql(
+        groups_sql, extra_cols=("circuit_name", "division"), params=params
+    )
+
+
+def _rank_wrap_sql(
+    groups_sql: str,
+    *,
+    extra_cols: tuple[str, ...],
+    params: list[Any] | None = None,
+) -> tuple[str, str, list[Any]]:
+    extras = "".join(f", g.{col}" for col in extra_cols)
+    select_sql = f"""
+        SELECT g.group_value, g.metric_value{extras}
+        FROM ({groups_sql}) g
+        ORDER BY g.metric_value DESC, g.group_value ASC
+    """
+    count_sql = f"SELECT count(*) AS count FROM ({groups_sql}) groups"
+    return select_sql, count_sql, list(params or [])

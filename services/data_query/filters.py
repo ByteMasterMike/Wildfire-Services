@@ -13,6 +13,8 @@ KNOWN_UTILITIES = frozenset(
 HFTD_TIERS = frozenset({"Tier 2", "Tier 3"})
 DEFAULT_LIMIT = 100
 MAX_LIMIT = 1000
+RANK_DEFAULT_LIMIT = 10
+RANK_MAX_LIMIT = 25
 
 
 def parse_circuit_id(value: str) -> str:

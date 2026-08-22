@@ -10,6 +10,7 @@ The deterministic tier handles only high-confidence requests whose operation,
 dataset/metric, scope, and required time/location slots are explicit:
 
 - filtered count/list → `data_query_records`
+- explicit single-dataset ranking → `data_query_rank`
 - coordinate context → `data_query_spatial`
 - map/time series/detail → a visualization tool
 - fully specified utility/region/period comparison → `comparison_run`
@@ -20,11 +21,12 @@ dataset/metric, scope, and required time/location slots are explicit:
 Compositions, cross-dataset questions, and requests not matching those strict
 rules go to the model. Every response logs `path`, `rule`, and tool trajectory.
 
-## Six grouped tools
+## Grouped tools
 
 | Tool | Responsibility |
 |---|---|
 | `data_query_records` | Filtered counts and small record samples |
+| `data_query_rank` | Top-N inside one dataset (county / utility / circuit) |
 | `data_query_spatial` | Point context or one polygon-contained summary |
 | `visualization_create` | Map layer or time series |
 | `visualization_inspect` | Utility territory or one event/circuit detail |

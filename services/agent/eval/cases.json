@@ -706,13 +706,51 @@
   {
     "id": "unsupported_ranking_circuit_most",
     "question": "Find the circuit with the most EPSS outages in 2024 and tell me what division it is in",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_rank"
+    ],
+    "required_caveats": [
+      "epss_pge_only"
+    ],
+    "expected_status": "answer",
+    "answer_must_contain_any": [
+      "top 10 of",
+      "circuit"
+    ],
+    "expected_view_types": [
+      "comparison"
+    ]
+  },
+  {
+    "id": "rank_calfire_counties_2023",
+    "question": "Which counties had the most CAL FIRE incidents in 2023?",
+    "expected_route": "deterministic",
+    "expected_tools": [
+      "data_query_rank"
+    ],
+    "required_caveats": [
+      "calfire_missingness"
+    ],
+    "expected_status": "answer",
+    "expected_tool_year": 2023,
+    "answer_must_contain_any": [
+      "top 10 of"
+    ],
+    "expected_view_types": [
+      "comparison"
+    ]
+  },
+  {
+    "id": "unsupported_rank_cross_dataset",
+    "question": "Which county had the most CAL FIRE incidents and CPUC ignitions in 2023?",
     "expected_route": "unsupported",
     "expected_tools": [],
     "required_caveats": [],
     "expected_status": "unsupported",
     "answer_must_contain_any": [
-      "Ranking is not supported",
-      "cannot compute"
+      "cannot mix datasets",
+      "not comparable"
     ],
     "expected_view_types": [],
     "expected_view_status": "none"

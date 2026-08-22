@@ -130,7 +130,7 @@ class TimeSeriesViewParams(StrictModel):
 
 
 class ComparisonViewParams(StrictModel):
-    kind: Literal["utilities", "regions", "periods"]
+    kind: Literal["utilities", "regions", "periods", "ranking"]
     metric: Metric
     normalize: Literal["none", "per_circuit", "per_km2"] = "none"
     ignition_definition: Literal["attribute", "spatial"] | None = None
@@ -145,6 +145,10 @@ class ComparisonViewParams(StrictModel):
     period_a_end: str | None = None
     period_b_start: str | None = None
     period_b_end: str | None = None
+    dataset: str | None = None
+    group_by: str | None = None
+    year: int | None = Field(None, ge=1900, le=2100)
+    limit: int | None = Field(None, ge=1, le=25)
 
 
 class RecordTableViewParams(StrictModel):
@@ -533,6 +537,14 @@ def _ground_comparison(spec: ComponentSpec, cited: list[ToolExecution]) -> None:
     item = cited[0]
     args = item.arguments or {}
     params = spec.params
+    if item.tool == "data_query_rank":
+        if params.get("kind") != "ranking":
+            raise GroundingError("comparison kind does not match ranking evidence")
+        expected = (item.summary or {}).get("canvas_metric")
+        if expected and params.get("metric") != expected:
+            raise GroundingError("comparison metric does not match ranking evidence")
+        _match_filters(params, item, keys=("start_date", "end_date", "year", "utility", "county"))
+        return
     if args.get("kind") and params.get("kind") != args.get("kind"):
         raise GroundingError("comparison kind does not match evidence")
     if args.get("metric") and params.get("metric") != args.get("metric"):
@@ -670,6 +682,35 @@ def _specs_for_execution(item: ToolExecution) -> list[ComponentSpec]:
                     extent="territory",
                     show_territory=True,
                 ).model_dump(mode="json"),
+                evidence_ids=evidence,
+                artifact_refs=refs,
+            )
+        ]
+    if tool == "data_query_rank":
+        results = summary.get("results") or []
+        if not results:
+            return []
+        year = args.get("year")
+        start = _date_str(args.get("start_date"))
+        end = _date_str(args.get("end_date"))
+        if year and not start:
+            start = f"{year}-01-01"
+            end = f"{year}-12-31"
+        params = ComparisonViewParams(
+            kind="ranking",
+            metric=summary.get("canvas_metric") or "ignition_count",
+            dataset=summary.get("dataset") or args.get("dataset"),
+            group_by=summary.get("group_by") or args.get("group_by"),
+            year=year,
+            limit=args.get("limit") or summary.get("limit"),
+            start_date=start,
+            end_date=end,
+            utilities=[str(args["utility"])] if args.get("utility") else None,
+        )
+        return [
+            ComponentSpec(
+                type="comparison",
+                params=params.model_dump(mode="json"),
                 evidence_ids=evidence,
                 artifact_refs=refs,
             )

@@ -72,6 +72,44 @@ class DataQueryRecordsArgs(StrictModel):
         return self
 
 
+class DataQueryRankArgs(StrictModel):
+    """Single-dataset top-N ranking. Never mix warehouse datasets."""
+
+    dataset: Literal["cpuc_ignitions", "calfire_incidents", "epss_outages"]
+    group_by: Literal["county", "utility", "circuit"]
+    metric: Literal["count", "acres_burned"] = "count"
+    utility: Utility | None = None
+    year: int | None = Field(None, ge=1900, le=2100)
+    start_date: date | None = None
+    end_date: date | None = None
+    county: str | None = None
+    incident_type_mode: Literal["wildfire_default", "all", "untyped"] | None = None
+    limit: int = Field(10, ge=1, le=25)
+
+    @model_validator(mode="after")
+    def validate_rank_pair(self) -> "DataQueryRankArgs":
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValueError("start_date must be <= end_date")
+        allowed = {
+            ("cpuc_ignitions", "county", "count"),
+            ("cpuc_ignitions", "utility", "count"),
+            ("calfire_incidents", "county", "count"),
+            ("calfire_incidents", "county", "acres_burned"),
+            ("epss_outages", "circuit", "count"),
+        }
+        pair = (self.dataset, self.group_by, self.metric)
+        if pair not in allowed:
+            raise ValueError(
+                f"ranking is not available for dataset={self.dataset} "
+                f"group_by={self.group_by} metric={self.metric}"
+            )
+        if self.group_by == "county" and self.county:
+            raise ValueError("county filter cannot be combined with group_by=county")
+        if self.incident_type_mode and self.dataset != "calfire_incidents":
+            raise ValueError("incident_type_mode is valid only for calfire_incidents")
+        return self
+
+
 class DataQuerySpatialArgs(StrictModel):
     """Point context or counts inside one IOU/HFTD region."""
 
@@ -242,6 +280,7 @@ class ComparisonRunArgs(StrictModel):
 
 TOOL_MODELS: dict[str, type[StrictModel]] = {
     "data_query_records": DataQueryRecordsArgs,
+    "data_query_rank": DataQueryRankArgs,
     "data_query_spatial": DataQuerySpatialArgs,
     "visualization_create": VisualizationCreateArgs,
     "visualization_inspect": VisualizationInspectArgs,
@@ -253,6 +292,11 @@ TOOL_DESCRIPTIONS = {
     "data_query_records": (
         "Use for filtered warehouse counts or small record samples. "
         "Do not use for maps, trends, forecasts, spatial containment, or comparisons."
+    ),
+    "data_query_rank": (
+        "Use for a top-N ranking inside one dataset (county, utility, or "
+        "circuit). Do not rank across datasets (CPUC vs CAL FIRE vs US). "
+        "Do not use for EPSS-by-utility or US-by-state."
     ),
     "data_query_spatial": (
         "Use for coordinate context or counts inside one IOU/HFTD polygon. "
@@ -282,6 +326,7 @@ TOOL_DESCRIPTIONS = {
 
 TRIMMED_TOOL_DESCRIPTIONS = {
     "data_query_records": "Filtered counts or samples; not spatial containment.",
+    "data_query_rank": "Top-N inside one dataset; never mix CPUC/CAL FIRE/US.",
     "data_query_spatial": "Point context or counts inside one IOU/HFTD polygon.",
     "visualization_create": "Create a map layer or time series.",
     "visualization_inspect": "Inspect one territory, event, or circuit.",
@@ -298,6 +343,7 @@ TRIMMED_TOOL_DESCRIPTIONS = {
 # particular triggering re-litigation of whether a utility territory needs one.
 HARNESS_MANAGED_FIELDS: dict[str, set[str]] = {
     "data_query_records": {"limit", "min_acres", "bbox"},
+    "data_query_rank": {"limit"},
     "data_query_spatial": set(),
     "visualization_create": set(),
     "visualization_inspect": set(),

@@ -17,6 +17,7 @@ from services.agent.artifacts import ArtifactStore
 from services.agent.config import AgentSettings
 from services.agent.schemas import (
     ComparisonRunArgs,
+    DataQueryRankArgs,
     DataQueryRecordsArgs,
     DataQuerySpatialArgs,
     RiskForecastArgs,
@@ -370,6 +371,8 @@ class ToolExecutor:
     ) -> tuple[str, dict[str, Any]]:
         if tool == "data_query_records":
             return self._map_data_records(parsed)
+        if tool == "data_query_rank":
+            return self._map_data_rank(parsed)
         if tool == "data_query_spatial":
             return self._map_spatial(parsed)
         if tool == "visualization_create":
@@ -410,6 +413,15 @@ class ToolExecutor:
         if "tier" in params:
             params["tier"] = params["tier"]
         return self.settings.data_query_url + path, params
+
+    def _map_data_rank(
+        self, args: DataQueryRankArgs
+    ) -> tuple[str, dict[str, Any]]:
+        params = args.model_dump(mode="json", exclude_none=True)
+        incident_mode = params.pop("incident_type_mode", None)
+        if incident_mode and incident_mode != "wildfire_default":
+            params["incident_type"] = incident_mode
+        return self.settings.data_query_url + "/rank", params
 
     def _map_spatial(
         self, args: DataQuerySpatialArgs
@@ -485,6 +497,45 @@ class ToolExecutor:
                 "returned": len(data),
                 "filters": meta.get("filters") or {},
                 "records": [_human_record(row) for row in data[:5]],
+                "metadata": _select_metadata(meta),
+            }
+        if tool == "data_query_rank":
+            meta = _require_dict(raw, "meta")
+            data = raw.get("data")
+            if not isinstance(data, list):
+                raise ValueError("rank response missing data list")
+            canvas_metric = {
+                ("cpuc_ignitions", "count"): "ignition_count",
+                ("calfire_incidents", "count"): "calfire_incident_count",
+                ("calfire_incidents", "acres_burned"): "acres_burned",
+                ("epss_outages", "count"): "epss_outage_count",
+            }.get((args.dataset, args.metric), args.metric)
+            results = []
+            for row in data:
+                if not isinstance(row, dict):
+                    raise ValueError("rank row must be an object")
+                results.append(
+                    {
+                        "key": row.get("group_value"),
+                        "value": row.get("metric_value"),
+                        "division": row.get("division"),
+                        "circuit_name": row.get("circuit_name"),
+                    }
+                )
+            return {
+                "dataset": args.dataset,
+                "group_by": args.group_by,
+                "metric": args.metric,
+                "canvas_metric": canvas_metric,
+                "kind": "ranking",
+                "total": _require_int(meta, "total"),
+                "returned": int(meta.get("returned") or len(results)),
+                "limit": int(meta.get("limit") or args.limit),
+                "tie_extended": bool(meta.get("tie_extended")),
+                "ties_cut": bool(meta.get("ties_cut")),
+                "empty_reason": meta.get("empty_reason"),
+                "results": results,
+                "filters": meta.get("filters") or {},
                 "metadata": _select_metadata(meta),
             }
         if tool == "data_query_spatial":

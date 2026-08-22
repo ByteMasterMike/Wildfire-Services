@@ -12,7 +12,7 @@ The left column is a **canvas**. The Leaflet map is one component among six, not
 |---|---|
 | **Map** | The existing Leaflet instance (`#historical-map`). Year, layers, utility, county, extent. Same object through apply and restore (`_leaflet_id` must not change). |
 | **TimeSeries** | One dataset’s asked series (daily / weekly / monthly). Replaces the browse chart; title **Asked series**. |
-| **Comparison** | Bar + value table from `comparison_run` (`utilities` / `regions` / `periods`). |
+| **Comparison** | Bar + value table from `comparison_run` (`utilities` / `regions` / `periods`) or `data_query_rank` (`kind=ranking`). |
 | **RecordTable** | Preview of matching rows (cap 25). Full export stays Download CSV in Ask. |
 | **StatCard** | 1–3 scalars (`count` / `risk` / `spatial_metric`) from tool summaries. No artifact fetch. |
 | **SpatialContext** | Point facts: coordinates, IOU, HFTD tier, county, grid cell. |

@@ -1658,18 +1658,18 @@ def _user_facing_tool_failure(
         or "tool_retry_exhausted" in codes
         or "invalid_arguments" in codes
     ):
-        if any("epss" in tool or "comparison" in tool for tool in tools):
+        if any("epss" in tool or "comparison" in tool or "rank" in tool for tool in tools):
             return (
                 "I could not complete that request with the available query tools. "
-                "If you were asking which circuit, county, or utility ranks highest, "
-                "ranking is not supported — ask for a count or list for a known "
-                "circuit, utility, or year instead."
+                "I can rank counties or utilities in CPUC ignitions, counties in "
+                "CAL FIRE incidents, or circuits in EPSS outages — one dataset "
+                "and an explicit year. Cross-dataset ranking, EPSS-by-utility, "
+                "and US-by-state are not available."
             )
         return (
             "I could not form a valid query for the available services. "
             "Try naming the dataset, an explicit year, and (when relevant) a "
-            "utility or county. Ranking and open-ended 'which has the most' "
-            "questions are not supported."
+            "utility or county. Cross-dataset ranking is not supported."
         )
     if tools:
         return (
@@ -2165,6 +2165,53 @@ def _render_risk_answer(summary: dict[str, Any]) -> str:
     return sentence
 
 
+def _render_rank_answer(arguments: dict[str, Any], summary: dict[str, Any]) -> str:
+    empty = summary.get("empty_reason")
+    if empty:
+        return str(empty)
+    dataset = summary.get("dataset") or arguments.get("dataset") or "records"
+    group_by = summary.get("group_by") or arguments.get("group_by") or "groups"
+    metric = summary.get("metric") or "count"
+    total = summary.get("total") or 0
+    returned = summary.get("returned") or 0
+    limit = summary.get("limit") or arguments.get("limit") or 10
+    noun = {
+        "county": "counties",
+        "utility": "utilities",
+        "circuit": "circuits",
+    }.get(str(group_by), "groups")
+    metric_label = {
+        "count": "count",
+        "acres_burned": "acres burned",
+    }.get(str(metric), str(metric))
+    scope = _scope_phrase(arguments, summary)
+    headline = f"The top {limit} of {total:,} {noun}"
+    notes = []
+    if returned > limit:
+        notes.append(f"{returned} shown because of ties at the cutoff")
+    if summary.get("ties_cut"):
+        notes.append(f"additional {noun} tied at the cutoff were not listed")
+    if notes:
+        headline += " (" + "; ".join(notes) + ")"
+    line = f"{headline} by {dataset} {metric_label}"
+    if scope:
+        line += f" ({scope})"
+    rendered = []
+    for row in summary.get("results") or []:
+        key = row.get("key")
+        value = row.get("value")
+        extra = []
+        if row.get("circuit_name"):
+            extra.append(str(row["circuit_name"]))
+        if row.get("division"):
+            extra.append(f"division {row['division']}")
+        label = key if not extra else f"{key} ({', '.join(extra)})"
+        rendered.append(f"{label}={value}")
+    if rendered:
+        line += ": " + ", ".join(rendered)
+    return line + "."
+
+
 def _render_deterministic(executions: list[ToolExecution]) -> str:
     parts = []
     for item in [execution for execution in executions if execution.ok and not execution.qualification_call]:
@@ -2224,6 +2271,8 @@ def _render_deterministic(executions: list[ToolExecution]) -> str:
             )
         elif item.tool == "risk_forecast":
             parts.append(_render_risk_answer(summary))
+        elif item.tool == "data_query_rank":
+            parts.append(_render_rank_answer(item.arguments or {}, summary))
         elif item.tool == "comparison_run":
             if summary.get("kind") in {"utilities", "regions"}:
                 rendered = ", ".join(

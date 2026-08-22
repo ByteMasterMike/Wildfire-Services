@@ -120,6 +120,7 @@
   const humanTool = (tool) =>
     ({
       data_query_records: "Data query",
+      data_query_rank: "Ranking",
       data_query_spatial: "Spatial query",
       visualization_create: "Visualization",
       visualization_inspect: "Inspect",
@@ -138,6 +139,7 @@
       "county",
       "interval",
       "result_mode",
+      "group_by",
       "metric",
       "cell_id",
       "date",

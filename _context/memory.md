@@ -226,4 +226,12 @@
 
 - Ask activity trail was `Risk 0.06624759278909353 (cell null)` on county/utility scores. `summarizeResult` now uses the same 4-decimal / scientific rule as the probability card, shows `(cell N)` only when `cell_id` is present, and otherwise `· 11 cells` from `cell_count`. Cache-bust `?v=risk-trail`.
 
+## 2026-08-21 — Single-dataset ranking
+
+- `GET /rank` lives on data_query (not comparison). Allowed pairs: CPUC county/utility count; CAL FIRE county count or acres; EPSS circuit count. Skipped: US-by-state (no state column), EPSS-by-utility (PGE-only).
+- Ties: include everyone tied with the Nth row; hard cap 25 with `ties_cut`. Answer says “top 10 of 36” and “11 shown because of ties.”
+- Agent: `data_query_rank`, deterministic `ranked_records`, Comparison canvas. Cross-dataset rank stays unsupported.
+- CAL FIRE 2023 county GROUP BY: EXPLAIN ANALYZE ~1.2 ms; no new index.
+- Eval: `unsupported_ranking_circuit_most` now expects a rank answer; added `rank_calfire_counties_2023` and `unsupported_rank_cross_dataset`.
+
 

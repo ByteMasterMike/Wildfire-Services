@@ -13,6 +13,8 @@ from services.data_query import queries
 from services.data_query.filters import (
     DEFAULT_LIMIT,
     MAX_LIMIT,
+    RANK_DEFAULT_LIMIT,
+    RANK_MAX_LIMIT,
     parse_circuit_id,
     parse_date_param,
     parse_format,
@@ -97,6 +99,116 @@ def health(conn: psycopg.Connection = Depends(get_conn)) -> dict[str, Any]:
         "detail": _db_ok,
         "tables": counts,
     }
+
+
+@app.get("/rank")
+def rank(
+    dataset: str = Query(
+        ...,
+        description="cpuc_ignitions | calfire_incidents | epss_outages",
+    ),
+    group_by: str = Query(..., description="county | utility | circuit"),
+    metric: str = Query("count", description="count | acres_burned"),
+    utility: Optional[str] = Query(None),
+    include_untagged: bool = Query(False),
+    county: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    incident_type: Optional[str] = Query(
+        None,
+        description="CAL FIRE only. Default Wildfire|Fire. untyped | all.",
+    ),
+    limit: int = Query(RANK_DEFAULT_LIMIT, ge=1, le=RANK_MAX_LIMIT),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    """Single-dataset top-N ranking. Does not mix warehouse datasets."""
+    dataset_key = dataset.strip().lower()
+    group_key = group_by.strip().lower()
+    metric_key = metric.strip().lower()
+    if dataset_key == "us_ignitions":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "us_ignitions has no state attribute; ranking by state is "
+                "not available"
+            ),
+        )
+    if dataset_key == "epss_outages" and group_key == "utility":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "EPSS outages are PG&E-only; there is no utility dimension "
+                "to rank"
+            ),
+        )
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    try:
+        rows, extra = queries.query_rank(
+            conn,
+            dataset=dataset_key,
+            group_by=group_key,
+            metric=metric_key,
+            utility=util,
+            include_untagged=include_untagged,
+            county=county,
+            year=year,
+            start_date=start,
+            end_date=end,
+            incident_type=incident_type,
+            limit=limit,
+        )
+    except queries.RankQueryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    canvas_metric = {
+        ("cpuc_ignitions", "count"): "ignition_count",
+        ("calfire_incidents", "count"): "calfire_incident_count",
+        ("calfire_incidents", "acres_burned"): "acres_burned",
+        ("epss_outages", "count"): "epss_outage_count",
+    }.get((dataset_key, metric_key), metric_key)
+    envelope = respond(
+        rows,
+        total=int(extra.get("total") or 0),
+        limit=limit,
+        offset=None,
+        filters={
+            "dataset": dataset_key,
+            "group_by": group_key,
+            "metric": metric_key,
+            "utility": util,
+            "include_untagged": include_untagged or None,
+            "county": county,
+            "year": year,
+            "start_date": start,
+            "end_date": end,
+            "incident_type": (
+                incident_type
+                if incident_type is not None
+                else ("Wildfire,Fire" if dataset_key == "calfire_incidents" else None)
+            ),
+        },
+        fmt="json",
+        include_geometry=False,
+        extra_meta={
+            k: v
+            for k, v in extra.items()
+            if k not in {"total", "returned", "limit"}
+        },
+    )
+    envelope["kind"] = "ranking"
+    envelope["metric"] = canvas_metric
+    envelope["results"] = [
+        {
+            "key": row["group_value"],
+            "value": row["metric_value"],
+            "reason": extra.get("empty_reason"),
+        }
+        for row in rows
+    ]
+    return envelope
 
 
 @app.get("/ignitions")

@@ -514,6 +514,8 @@ def _is_calfire_count_comparison(execution: ToolExecution) -> bool:
         return True
     if (execution.summary or {}).get("kind") == "time_series":
         return True
+    if execution.tool == "data_query_rank":
+        return (execution.summary or {}).get("metric") == "count"
     return execution.tool == "data_query_records"
 
 
@@ -583,7 +585,7 @@ def _comparison_ignition_definition(execution: ToolExecution) -> str:
 def _is_attribute_utility_ignition(execution: ToolExecution) -> bool:
     summary = execution.summary
     if (
-        execution.tool == "data_query_records"
+        execution.tool in {"data_query_records", "data_query_rank"}
         and summary.get("dataset") == "cpuc_ignitions"
         and execution.arguments.get("utility")
     ):
@@ -614,7 +616,7 @@ def _is_spatial_utility_ignition(execution: ToolExecution) -> bool:
 
 
 def _utility_scopes(execution: ToolExecution) -> list[str]:
-    if execution.tool == "data_query_records":
+    if execution.tool in {"data_query_records", "data_query_rank"}:
         value = execution.arguments.get("utility")
         return [str(value)] if value and value != "untagged" else []
     if execution.arguments.get("kind") == "periods":
@@ -628,7 +630,7 @@ def _utility_scopes(execution: ToolExecution) -> list[str]:
 def _spatial_companion_args(
     execution: ToolExecution, utility: str
 ) -> tuple[str, dict[str, Any]] | None:
-    if execution.tool == "data_query_records":
+    if execution.tool in {"data_query_records", "data_query_rank"}:
         year = execution.arguments.get("year")
         start = execution.arguments.get("start_date")
         end = execution.arguments.get("end_date")

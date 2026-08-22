@@ -121,29 +121,20 @@ UNSUPPORTED = {
         r"\b(?:current active fires?|active fires?.*right now|live fires?|"
         r"web search|according to the web|today'?s fires?)\b"
     ),
-    # data_query supports filtered counts/lists only — no group-by rank.
-    "ranking": (
-        r"\b(?:circuit|county|utilit(?:y|ies)|division|cell)\s+with\s+the\s+"
-        r"(?:most|highest|largest|greatest)\b|"
-        r"\b(?:which|what)\s+(?:circuit|county|utilit(?:y|ies)|division)\b.{"
-        r"0,40}\b(?:most|highest|largest|greatest|top)\b|"
-        r"\b(?:most|highest|largest)\s+(?:\w+\s+){0,3}"
-        r"(?:outages?|ignitions?|incidents?|fires?)\b|"
-        r"\btop\s+\d+\s+(?:circuit|county|utilit)"
-    ),
 }
 
 UNSUPPORTED_ANSWERS = {
     "ranking": (
-        "Ranking is not supported by the available read-only services. "
-        "I can count or list EPSS outages, ignitions, or incidents for a "
-        "known circuit, utility, county, or year, but I cannot compute "
-        "which circuit/county/utility has the most of something."
+        "Ranking is not supported for that grouping. I can rank counties or "
+        "utilities in CPUC ignitions, counties in CAL FIRE incidents, or "
+        "circuits in EPSS outages — one dataset at a time. I cannot rank "
+        "across datasets, rank EPSS by utility, or rank US ignitions by state."
     ),
 }
 
 ALL_MODEL_TOOLS = [
     "data_query_records",
+    "data_query_rank",
     "data_query_spatial",
     "visualization_create",
     "visualization_inspect",
@@ -161,6 +152,8 @@ def candidate_tools(question: str) -> list[str]:
         re.search(r"\b(?:trend|time series|weekly|monthly|daily)\b", lower)
     )
     has_view = has_map or has_trend
+    if _asks_ranking(lower):
+        return ["data_query_rank"]
     if has_count and has_view:
         return ["data_query_records", "visualization_create"]
     if has_view:
@@ -205,6 +198,8 @@ def candidate_tools(question: str) -> list[str]:
         re.search(r"\bignitions?\b", lower) and not _wants_risk(lower)
     ):
         add("data_query_records")
+    if _asks_ranking(lower):
+        add("data_query_rank")
     if re.search(r"\b(?:compare|comparison|versus|\bvs\.?\b|ratio|period)\b", lower):
         add("comparison_run")
 
@@ -540,6 +535,53 @@ def _has_list_op(lower: str) -> bool:
     return bool(re.search(r"\b(?:list|show me)\b", lower))
 
 
+def _asks_ranking(lower: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:circuit|count(?:y|ies)|utilit(?:y|ies)|states?|division|cell)s?\s+"
+            r"with\s+the\s+(?:most|highest|largest|greatest)\b|"
+            r"\b(?:which|what)\s+(?:circuit|count(?:y|ies)|utilit(?:y|ies)|states?|"
+            r"division|cell)s?\b.{0,60}\b(?:most|highest|largest|greatest|top)\b|"
+            r"\bhad\s+the\s+(?:most|highest|largest|greatest)\b|"
+            r"\b(?:most|highest|largest)\s+(?:\w+\s+){0,4}"
+            r"(?:outages?|ignitions?|incidents?|fires?|acres)\b|"
+            r"\btop\s+\d+\s+(?:circuit|count(?:y|ies)|utilit|states?)",
+            lower,
+        )
+    )
+
+
+def _rank_dimension(lower: str) -> str | None:
+    hits: list[str] = []
+    if re.search(r"\bcircuits?\b", lower):
+        hits.append("circuit")
+    if re.search(r"\bcount(?:y|ies)\b", lower):
+        hits.append("county")
+    if re.search(r"\butilit(?:y|ies)\b", lower):
+        hits.append("utility")
+    if re.search(r"\bstates?\b", lower):
+        hits.append("state")
+    if re.search(r"\bdivisions?\b", lower) and not re.search(
+        r"\bwhat division\b|\btell me what division\b", lower
+    ):
+        hits.append("division")
+    if re.search(r"\bcells?\b", lower) and not re.search(r"\bgrid cell\b", lower):
+        hits.append("cell")
+    # "circuit ... and tell me what division" is circuit ranking, not division.
+    if "circuit" in hits and "division" in hits:
+        hits = [item for item in hits if item != "division"]
+    unique = list(dict.fromkeys(hits))
+    if len(unique) == 1:
+        return unique[0]
+    return None
+
+
+def _rank_metric(lower: str, dataset: str | None) -> str:
+    if dataset == "calfire_incidents" and re.search(r"\bacres\b", lower):
+        return "acres_burned"
+    return "count"
+
+
 def _asks_spatial_containment(lower: str) -> bool:
     return bool(
         re.search(
@@ -698,8 +740,165 @@ def compile_selected_tools(
         "visualization_inspect": 3,
         "risk_forecast": 4,
         "comparison_run": 5,
+        "data_query_rank": 6,
     }
     return sorted(calls, key=lambda item: order[item[0]])
+
+
+def _route_ranking(
+    *,
+    text: str,
+    lower: str,
+    slots: dict[str, Any],
+    dataset: str | None,
+    utilities: list[str],
+    county: str | None,
+    time_resolution,
+) -> RouteDecision | None:
+    """Deterministic ranking, or a specific refusal. None if not a rank question."""
+    if not _asks_ranking(lower):
+        return None
+
+    group_by = _rank_dimension(lower)
+    named = _datasets(text)
+    # "circuit" is the grouping dimension, not the circuits inventory table.
+    if group_by == "circuit":
+        named = [item for item in named if item != "circuits"]
+    unique_datasets = list(dict.fromkeys(named))
+    dataset = unique_datasets[0] if len(unique_datasets) == 1 else dataset
+
+    if len(unique_datasets) >= 2:
+        return RouteDecision(
+            "unsupported",
+            "unsupported_rank_cross_dataset",
+            "Ranking cannot mix warehouse datasets",
+            answer=(
+                "Ranking cannot mix datasets. CPUC ignitions, CAL FIRE incidents, "
+                "and US ignitions count different things and are not comparable. "
+                "Ask for a ranking in one dataset."
+            ),
+            slots=slots,
+        )
+
+    if group_by == "state" or dataset == "us_ignitions":
+        return RouteDecision(
+            "unsupported",
+            "unsupported_rank_us_state",
+            "US ignitions have no state attribute",
+            answer=(
+                "US ignitions have no state attribute in this warehouse, so I "
+                "cannot rank by state. I can count the US sample for a year, "
+                "or rank counties in CAL FIRE or CPUC instead."
+            ),
+            slots=slots,
+        )
+
+    if group_by == "utility" and dataset == "epss_outages":
+        return RouteDecision(
+            "unsupported",
+            "unsupported_rank_epss_utility",
+            "EPSS is PG&E-only; no utility dimension to rank",
+            answer=(
+                "EPSS outages in this warehouse are PG&E-only; there is no "
+                "utility dimension to rank. I can rank EPSS circuits, or "
+                "compare named utilities on a metric that exists for them."
+            ),
+            slots=slots,
+        )
+
+    if group_by in {"cell", "division"}:
+        return RouteDecision(
+            "unsupported",
+            "unsupported_ranking",
+            "That ranking dimension is not available",
+            answer=UNSUPPORTED_ANSWERS["ranking"],
+            slots=slots,
+        )
+
+    if not dataset or not group_by:
+        return RouteDecision(
+            "clarification",
+            "ranking_missing_slots",
+            "Ranking needs one dataset and one grouping dimension",
+            answer=(
+                "Which dataset and grouping should I rank? I can rank counties "
+                "or utilities in CPUC ignitions, counties in CAL FIRE incidents, "
+                "or circuits in EPSS outages — for one year or date range."
+            ),
+            slots=slots,
+        )
+
+    metric = _rank_metric(lower, dataset)
+    allowed = {
+        ("cpuc_ignitions", "county", "count"),
+        ("cpuc_ignitions", "utility", "count"),
+        ("calfire_incidents", "county", "count"),
+        ("calfire_incidents", "county", "acres_burned"),
+        ("epss_outages", "circuit", "count"),
+    }
+    if (dataset, group_by, metric) not in allowed:
+        return RouteDecision(
+            "unsupported",
+            "unsupported_ranking",
+            "That dataset and grouping cannot be ranked",
+            answer=UNSUPPORTED_ANSWERS["ranking"],
+            slots=slots,
+        )
+
+    time_args = _time_filter_args(time_resolution)
+    if not time_args:
+        return RouteDecision(
+            "clarification",
+            "ranking_missing_year",
+            "Ranking lacks a time period",
+            answer="What year or date range should I use?",
+            slots=slots,
+        )
+
+    if group_by == "county" and county:
+        return RouteDecision(
+            "clarification",
+            "ranking_county_contradiction",
+            "Cannot rank counties while filtering to one named county",
+            answer=(
+                "I can rank counties statewide, or count one named county. "
+                "Which do you want?"
+            ),
+            slots=slots,
+        )
+
+    args: dict[str, Any] = {
+        "dataset": dataset,
+        "group_by": group_by,
+        "metric": metric,
+        **time_args,
+    }
+    if utilities and group_by != "utility":
+        args["utility"] = utilities[0]
+    if county and dataset == "epss_outages":
+        args["county"] = county
+    if county and dataset == "cpuc_ignitions" and group_by == "utility":
+        args["county"] = county
+    if dataset == "calfire_incidents":
+        args["incident_type_mode"] = "wildfire_default"
+
+    tool_calls = [("data_query_rank", args)]
+    blocked = _block_unexpressed_constraints(
+        question=text,
+        tool_calls=tool_calls,
+        slots=slots,
+        rule="ranked_records",
+        reason="Dataset, grouping dimension, and year are explicit",
+    )
+    if blocked:
+        return blocked
+    return RouteDecision(
+        "deterministic",
+        "ranked_records",
+        "Dataset, grouping dimension, and year are explicit",
+        tool_calls=tool_calls,
+        slots=slots,
+    )
 
 
 def route_question(question: str, *, force_model: bool = False) -> RouteDecision:
@@ -819,6 +1018,18 @@ def route_question(question: str, *, force_model: bool = False) -> RouteDecision
             "Evaluation case forces model tier",
             slots=slots,
         )
+
+    ranking_decision = _route_ranking(
+        text=text,
+        lower=lower,
+        slots=slots,
+        dataset=dataset,
+        utilities=utilities,
+        county=county,
+        time_resolution=time_resolution,
+    )
+    if ranking_decision is not None:
+        return ranking_decision
 
     # Explicit compositions need orchestration rather than silently dropping a clause.
     has_count_clause = _has_quantity_op(lower)

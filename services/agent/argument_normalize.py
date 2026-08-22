@@ -107,7 +107,7 @@ def normalize_model_arguments(tool: str, arguments: dict[str, Any]) -> dict[str,
                 and normalized["dataset"] == "us_ignitions"
             ):
                 normalized["dataset"] = "ignitions"
-        elif tool == "data_query_records":
+        elif tool in {"data_query_records", "data_query_rank"}:
             normalized["dataset"] = RECORDS_DATASET_ALIASES.get(
                 key, normalized["dataset"]
             )
@@ -125,7 +125,7 @@ def normalize_model_arguments(tool: str, arguments: dict[str, Any]) -> dict[str,
         normalized.pop("tier", None)
     # incident_type_mode is CAL FIRE-only; models sometimes attach it elsewhere.
     if (
-        tool == "data_query_records"
+        tool in {"data_query_records", "data_query_rank"}
         and normalized.get("dataset") != "calfire_incidents"
     ):
         normalized.pop("incident_type_mode", None)
@@ -179,6 +179,7 @@ def fill_year_from_slot(
 
     if tool in {
         "data_query_records",
+        "data_query_rank",
         "visualization_create",
         "visualization_inspect",
     }:

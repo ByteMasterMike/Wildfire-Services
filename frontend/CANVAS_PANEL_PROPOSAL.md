@@ -63,6 +63,7 @@ Selection is **status first, then tool + summary.kind / result_mode**, not the E
 1. If `status !== answer` → AnswerHero + Unsupported/Clarify. Stop.
 2. Else inspect successful, non-qualification evidence in order:
    - `comparison_run` → ComparisonTable (primary)
+   - `data_query_rank` → ComparisonTable (primary; same bar + value table, `kind=ranking`)
    - `visualization_create` + `kind=time_series` → TrendChart (primary)
    - `visualization_create` + `kind=map` → MapSyncNote only; do not duplicate the map
    - `data_query_spatial` + `kind=point` → SpatialContext

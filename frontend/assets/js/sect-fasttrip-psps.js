@@ -2578,6 +2578,22 @@
     else if (params.period_a_start && params.period_b_end) {
       bits.push(`${params.period_a_start} / ${params.period_b_start || params.period_b_end}`);
     }
+    const total = payload.meta?.total;
+    const returned = payload.meta?.returned;
+    const limit = payload.meta?.limit || params.limit;
+    if (
+      (payload.kind === "ranking" || params.kind === "ranking") &&
+      total != null &&
+      limit != null
+    ) {
+      let rankBit = `top ${limit} of ${total}`;
+      if (returned != null && Number(returned) > Number(limit)) {
+        rankBit += ` (${returned} shown; ties at cutoff)`;
+      } else if (payload.meta?.ties_cut) {
+        rankBit += " (ties at cutoff were cut)";
+      }
+      bits.push(rankBit);
+    }
     return bits.filter(Boolean).join(" · ");
   };
 

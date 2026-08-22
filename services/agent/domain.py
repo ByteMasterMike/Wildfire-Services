@@ -34,6 +34,8 @@ Datasets: cpuc_ignitions utility-caused only; us_ignitions all-cause sample
 and untagged rows; hftd Tier 2/3 only.
 
 Refuse: CPZ, cost, optimization, damage, live status.
+Ranking is single-dataset only; never mix CPUC, CAL FIRE, and US ignitions.
+EPSS-by-utility and US-by-state are not available.
 
 Examples:
 "SCE ignitions 2023" -> data_query_records
@@ -42,6 +44,8 @@ Examples:
 {kind:summary,utility:SCE,start_date:2023-01-01,end_date:2023-12-31}
 "PGE vs SCE ignitions 2023" -> comparison_run
 {kind:utilities,utilities:[PGE,SCE],metric:ignition_count,start_date:2023-01-01,end_date:2023-12-31}
+"top CAL FIRE counties 2023" -> data_query_rank
+{dataset:calfire_incidents,group_by:county,metric:count,year:2023}
 "SCE count and weekly trend 2023" -> both
 data_query_records{count,utility:SCE,year:2023} and
 visualization_create{time_series,ignitions,weekly,utility:SCE,year:2023}"""

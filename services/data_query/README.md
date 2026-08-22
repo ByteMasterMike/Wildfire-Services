@@ -34,6 +34,7 @@ Connection settings come from repo-root `.env` via `shared/db.py` (default port 
 | `GET /iou-territories` | |
 | `GET /spatial/point` | IOU + HFTD + grid cell + county (Census TIGER PIP) |
 | `GET /spatial/summary` | Counts inside utility **or** HFTD polygon |
+| `GET /rank` | Single-dataset top-N (`group_by=county\|utility\|circuit`, `metric=count\|acres_burned`, default limit 10, cap 25). Ties at the cutoff are included. Not US-by-state or EPSS-by-utility. |
 
 Common query params: `utility`, `year`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`.
 
