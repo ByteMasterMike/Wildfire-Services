@@ -213,6 +213,20 @@ class OpenAICompatibleProvider:
         )
         request_model = model or self.settings.request_model
 
+        if self.effective_num_ctx is None:
+            try:
+                await self.ensure_context_loaded()
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    json.dumps(
+                        {
+                            "event": "model_lazy_warmup_failed",
+                            "error": str(exc),
+                            "model": request_model,
+                        }
+                    )
+                )
+
         async def _run() -> ModelReply:
             if constrained_tool_routing:
                 return await self._complete_native_tool_envelope(

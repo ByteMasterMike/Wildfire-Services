@@ -61,6 +61,8 @@ Working reference for the agent-driven left surface (six components, planner, gr
 
 ```js
 window.WILDFIRE_API_BASE = "http://127.0.0.1:8002";
+window.WILDFIRE_AGENT_BASE = "http://127.0.0.1:8004";
+window.WILDFIRE_GPU_CONTROL_BASE = "http://127.0.0.1:8005";
 window.WILDFIRE_CALFIRE_INCIDENT_TYPE = "all"; // verification; then "" for Wildfire/Fire default
 ```
 
@@ -70,7 +72,7 @@ Historical Map toggle **US Ignitions (IRWIN / all-cause)** (teal, off by default
 
 Map datasets use one hue each (CPUC burnt orange, CAL FIRE red, US teal, EPSS purple, PSPS blue, HFTD amber with opacity for tier). CAL FIRE magnitude is bubble size, not a second color.
 
-The Ask-data panel can download CSV when an answer produced tabular tool data (records, comparison rows, time-series buckets, spatial counts). Count-only answers do not. Agent visuals on the left canvas: [`CANVAS.md`](CANVAS.md).
+The Ask-data panel can download CSV when an answer produced tabular tool data (records, comparison rows, time-series buckets, spatial counts). Count-only answers do not. Agent visuals on the left canvas: [`CANVAS.md`](CANVAS.md). Ask stays enabled whenever the agent `/health` endpoint is reachable, even if the GPU/model is down; the banner then says counts, maps, and rankings still work. Start/stop for the demo GPU is a strip above the form (`WILDFIRE_GPU_CONTROL_BASE`, port 8005). The token is prompted per action and is not stored.
 
 ## Static map files
 

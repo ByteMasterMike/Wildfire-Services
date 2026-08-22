@@ -61,14 +61,15 @@
   async function probeHealth() {
     try {
       const health = await AgentApi.health();
-      agentAvailable = Boolean(health?.model?.available);
-      if (!agentAvailable) {
+      agentAvailable = true;
+      const modelUp = Boolean(health?.model?.available);
+      if (!modelUp) {
         setBanner(
-          `Agent model unavailable at ${AgentApi.apiBase()}. Map still works.`,
-          true
+          "Counts, maps, and rankings work now; open-ended questions need the GPU.",
+          false
         );
-        if (askBtn) askBtn.disabled = true;
-        if (inputEl) inputEl.disabled = true;
+        if (askBtn) askBtn.disabled = Boolean(abortController);
+        if (inputEl) inputEl.disabled = Boolean(abortController);
         return;
       }
       const degraded = health.status !== "ok";
@@ -780,6 +781,8 @@
   if (formEl) {
     formEl.addEventListener("submit", submitAsk);
   }
+
+  window.WildfireAgentPanel = { refreshHealth: probeHealth };
 
   // Degrade quietly until the panel is opened.
   setOpen(false);

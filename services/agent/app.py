@@ -30,9 +30,20 @@ orchestrator: AgentOrchestrator | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global provider, executor, orchestrator
-    runtime_settings = await ensure_runtime_model(settings)
+    runtime_settings = settings
+    try:
+        runtime_settings = await ensure_runtime_model(settings)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[agent] model unavailable at startup (alias): {exc}")
+        runtime_settings = settings
+
     provider = OpenAICompatibleProvider(runtime_settings)
-    context_info = await provider.ensure_context_loaded()
+    context_info: dict[str, Any] = {}
+    try:
+        context_info = await provider.ensure_context_loaded()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[agent] model unavailable at startup: {exc}")
+
     executor = ToolExecutor(runtime_settings, artifacts)
     orchestrator = AgentOrchestrator(
         runtime_settings, provider, executor
@@ -53,8 +64,10 @@ async def lifespan(app: FastAPI):
             "synthesis may hang or truncate. Check Ollama memory limits."
         )
     yield
-    await provider.close()
-    await executor.close()
+    if provider is not None:
+        await provider.close()
+    if executor is not None:
+        await executor.close()
     print("[agent] Shutdown")
 
 

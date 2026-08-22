@@ -234,4 +234,13 @@
 - CAL FIRE 2023 county GROUP BY: EXPLAIN ANALYZE ~1.2 ms; no new index.
 - Eval: `unsupported_ranking_circuit_most` now expects a rank answer; added `rank_calfire_counties_2023` and `unsupported_rank_cross_dataset`.
 
+## 2026-08-21 — GPU control + agent survives missing model
+
+- Agent lifespan no longer dies if Ollama/warmup fails. Binds `:8004`. Model-tier path short-circuits to HTTP 200 `status=error` with an offline sentence. Lazy `ensure_context_loaded` on first `complete()`. `/health` stays cheap `/v1/models` (no warmup).
+- Ask stays enabled whenever agent `/health` is reachable. Banner when model is down: "Counts, maps, and rankings work now; open-ended questions need the GPU." GPU ready re-probes health (no reload).
+- New `services/gpu_control/` on **8005**: `GET /gpu/status`, `POST /gpu/start|stop` with `X-GPU-Control-Token`. Missing env token → POST 503. No implicit GPU start from Ask/health. EBS ~$20/month still bills when EC2 is stopped.
+- Frontend strip above Ask form; token via `prompt()`, not stored. `WILDFIRE_GPU_CONTROL_BASE`. Cache-bust `?v=gpu-control`.
+- IAM for `wildfire-backend-ssm-role` is documented only (not applied): Start/Stop on `i-09526a2a9268135f2`; DescribeInstances on `*` (no resource-level ARN).
+- Planning Tool method maps still render 1571×1785 after the slice.
+
 

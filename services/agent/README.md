@@ -56,6 +56,12 @@ suppressed rather than returned without its qualification.
 
 ## Run
 
+The process binds `:8004` even when Ollama is unreachable. Deterministic
+routes still answer; model-tier questions return an offline error payload
+instead of failing startup or returning HTTP 500. Context is warmed lazily
+on the first `complete()` after the GPU comes back. `/health` only probes
+`/v1/models` and does not load the model.
+
 Start the four backend services on ports 8000–8003, then:
 
 ```powershell

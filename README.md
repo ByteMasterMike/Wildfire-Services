@@ -13,6 +13,7 @@ services/data_query/            # read API over warehouse tables
 services/visualization/         # styled GeoJSON / time series / detail
 services/comparison/            # cross-utility / region / period metrics
 services/agent/                 # local-LLM routing feasibility harness
+services/gpu_control/           # start/stop demo GPU (Ollama) on port 8005
 services/risk_forecasting/
   models.py                     # HPP / NHPP / cNHPP (do not modify lightly)
   grid_data_prep.py             # grid data loaders (do not modify lightly)
@@ -103,6 +104,24 @@ python -m services.agent.eval.runner --models qwen3:4b --thinking off --modes pr
 
 See [`services/agent/README.md`](services/agent/README.md) and the explicit
 [`services/agent/SECURITY.md`](services/agent/SECURITY.md) threat boundary.
+
+The agent binds `:8004` even when Ollama is down. Deterministic routes
+(counts, maps, rankings) keep working; model-tier questions return a clear
+offline sentence (HTTP 200), not a 500. `/health` stays a cheap `/v1/models`
+probe and does not warm the model.
+
+### GPU control
+
+Website start/stop for the demo GPU instance. Not on the agent or data_query.
+
+```bash
+uvicorn services.gpu_control.app:app --port 8005 --app-dir .
+```
+
+`POST /gpu/start` and `POST /gpu/stop` require `X-GPU-Control-Token`. Missing
+`GPU_CONTROL_TOKEN` returns 503 so start is never open. Status is unauthenticated
+and pollable. Stopping EC2 does not stop EBS (~$20/month). See
+[`services/gpu_control/README.md`](services/gpu_control/README.md).
 
 ### Frontend (Historical Map)
 

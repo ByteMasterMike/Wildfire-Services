@@ -28,6 +28,11 @@ from services.agent.streaming import ProgressCallback
 from services.agent.tools import ToolExecution, ToolExecutor
 from services.agent.views import dump_planned, empty_views_payload, plan_views
 
+MODEL_OFFLINE_ANSWER = (
+    "The language model is offline. Counts, maps, and rankings still work. "
+    "Start the GPU from the Ask panel to answer open-ended questions."
+)
+
 
 SYSTEM_PROMPT = """You are a read-only routing agent for a wildfire policy data system.
 Never answer factual wildfire questions from model knowledge. Use the provided tools.
@@ -167,6 +172,24 @@ class AgentOrchestrator:
         direct_without_tool = 0
         model_turns = 0
         synthesis_fallback = False
+
+        if decision.path == "model" and not await self._provider_available():
+            response = self._response(
+                request_id=request_id,
+                decision=decision,
+                status="error",
+                answer=MODEL_OFFLINE_ANSWER,
+                executions=[],
+                qualifications=[],
+                trajectory=trajectory,
+                started=started,
+                model_latency=0,
+                direct_without_tool=0,
+                model_turns=0,
+                synthesis_fallback=False,
+            )
+            await self._emit(on_event, "error", response)
+            return OrchestrationResult(response=response, raw_log=raw_log)
 
         if decision.path in {"clarification", "unsupported"}:
             response = self._response(
@@ -458,6 +481,16 @@ class AgentOrchestrator:
         if on_event is None:
             return
         await on_event(event, data)
+
+    async def _provider_available(self) -> bool:
+        health = getattr(self.provider, "health", None)
+        if not callable(health):
+            return True
+        try:
+            payload = await health()
+        except Exception:  # noqa: BLE001
+            return False
+        return bool(payload.get("available"))
 
     @staticmethod
     def _raise_if_cancelled(cancel_event: asyncio.Event | None) -> None:
