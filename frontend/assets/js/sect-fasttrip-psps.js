@@ -50,6 +50,7 @@
   const weatherSourcePopover = document.getElementById("historical-weather-source-popover");
   const hftdLegendEl = document.getElementById("historical-hftd-legend");
   const usIgnitionsStripEl = document.getElementById("historical-us-ignitions-strip");
+  const usIgnitionsEmptyEl = document.getElementById("historical-us-ignitions-empty");
   const usIgnitionsZoomNationalBtn = document.getElementById(
     "historical-us-ignitions-zoom-national"
   );
@@ -520,12 +521,25 @@
     // Keep a synthetic all-years view for utility filter when using known list.
     populateHistoricalCountyFilter();
     populateHistoricalUtilityFilter();
+    syncUsIgnitionsEmptyState();
   };
 
   const isUsIgnitionsLayerActive = () => historicalActiveLayers.has("usIgnitions");
 
+  const syncUsIgnitionsEmptyState = () => {
+    if (!usIgnitionsEmptyEl) return;
+    const records = historicalDatasetRecords.usIgnitions;
+    const show =
+      isUsIgnitionsLayerActive() &&
+      historicalUsIgnitionsYearLoaded != null &&
+      Array.isArray(records) &&
+      records.length === 0;
+    usIgnitionsEmptyEl.hidden = !show;
+  };
+
   const syncUsIgnitionsStrip = () => {
     if (usIgnitionsStripEl) usIgnitionsStripEl.hidden = !isUsIgnitionsLayerActive();
+    syncUsIgnitionsEmptyState();
   };
 
   const isAtDefaultCaliforniaView = () => {
@@ -578,6 +592,7 @@
     const records = VisApi.usIgnitionsToRecords(payload);
     historicalDatasetRecords.usIgnitions = records;
     historicalUsIgnitionsYearLoaded = year;
+    syncUsIgnitionsEmptyState();
     if (payload?.meta?.truncated) {
       console.warn(
         `US Ignitions truncated: returned ${records.length} of ${payload.meta.total}`
@@ -1199,7 +1214,11 @@
       } else {
         historicalDatasetRecords.usIgnitions = [];
       }
-      maybeAutoZoomUsIgnitionsOn();
+      syncUsIgnitionsEmptyState();
+      const loaded = historicalDatasetRecords.usIgnitions || [];
+      if (loaded.length) {
+        maybeAutoZoomUsIgnitionsOn();
+      }
     } else {
       maybeRestoreCaliforniaAfterUsIgnitionsOff();
     }

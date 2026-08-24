@@ -243,4 +243,10 @@
 - IAM for `wildfire-backend-ssm-role` is documented only (not applied): Start/Stop on `i-09526a2a9268135f2`; DescribeInstances on `*` (no resource-level ARN).
 - Planning Tool method maps still render 1571×1785 after the slice.
 
+## 2026-08-23 — gpu_control dotenv + empty US ignitions
+
+- `gpu_control/config.py` now `load_dotenv(REPO_ROOT / ".env")` at import and in `from_env()`. Live bug: token in `.env` was invisible until shell-exported. Test: `tests/gpu_control/test_config.py`.
+- US Ignitions toggle stays visible. Empty successful fetch shows “No data loaded for this layer yet.” in the layer strip. Local warehouse still has 33,457 rows so the empty line stays hidden here; deploy table is empty.
+- Systemd units in `deploy/systemd/` (data-query, visualization, comparison, agent, gpu-control, frontend). Ollama left alone. `SYSTEMD_SETUP.md` notes `:8004/health` can lag `systemctl is-active` by several minutes after reboot.
+
 

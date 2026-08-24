@@ -5,7 +5,8 @@ from services.gpu_control import app as gpu_app
 
 def _client(monkeypatch, token=None):
     if token is None:
-        monkeypatch.delenv("GPU_CONTROL_TOKEN", raising=False)
+        # Empty overrides a token loaded from repo .env (dotenv does not override).
+        monkeypatch.setenv("GPU_CONTROL_TOKEN", "")
     else:
         monkeypatch.setenv("GPU_CONTROL_TOKEN", token)
     gpu_app._start_requested_at = None

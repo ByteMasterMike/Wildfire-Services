@@ -5,6 +5,12 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from dotenv import load_dotenv
+
+from shared.db import REPO_ROOT
+
+load_dotenv(REPO_ROOT / ".env")
+
 
 DEFAULT_INSTANCE_ID = "i-09526a2a9268135f2"
 DEFAULT_OLLAMA_URL = "http://172.31.16.67:11434"
@@ -23,6 +29,7 @@ class GpuControlSettings:
 
     @classmethod
     def from_env(cls) -> GpuControlSettings:
+        load_dotenv(REPO_ROOT / ".env")
         region = (
             os.getenv("GPU_AWS_REGION")
             or os.getenv("AWS_REGION")

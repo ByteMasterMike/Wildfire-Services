@@ -1422,6 +1422,15 @@ article.page:has(#sect-fasttrip-psps) .page__content {
   vertical-align: 0.05em;
 }
 
+.sfps-us-ignitions-empty {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: #0f766e;
+}
+
 .sfps-us-ignitions-zoom-btn {
   flex: 0 0 auto;
   font-size: 0.72rem;
