@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hmac
 import time
 from contextlib import asynccontextmanager
@@ -11,11 +12,38 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from services.gpu_control import aws
+from services.gpu_control.bringup import (
+    bring_up_gpu,
+    overlay_boot_pipeline,
+    pipeline,
+    reset_pipeline,
+)
 from services.gpu_control.config import GpuControlSettings
 from services.gpu_control.ollama import probe_ollama
 from services.gpu_control.state import EBS_NOTE, classify_state, eta_fields
 
 _start_requested_at: float | None = None
+_bring_up_task: asyncio.Task[None] | None = None
+
+
+async def _cancel_bring_up() -> None:
+    global _bring_up_task
+    task = _bring_up_task
+    _bring_up_task = None
+    if task is None or task.done():
+        return
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+def _schedule_bring_up(settings: GpuControlSettings) -> None:
+    global _bring_up_task
+    if _bring_up_task is not None and not _bring_up_task.done():
+        return
+    _bring_up_task = asyncio.create_task(bring_up_gpu(settings))
 
 
 @asynccontextmanager
@@ -29,6 +57,7 @@ async def lifespan(app: FastAPI):
         f"token={token_state}"
     )
     yield
+    await _cancel_bring_up()
     print("[gpu_control] Shutdown")
 
 
@@ -93,7 +122,10 @@ async def _status_payload(settings: GpuControlSettings) -> dict[str, Any]:
         ollama_reachable=bool(ollama.get("reachable")),
         model_resident=bool(ollama.get("model_resident")),
     )
-    if reason is None:
+    state = overlay_boot_pipeline(state, pipeline.get("status") or "idle")
+    if pipeline.get("status") == "failed":
+        reason = pipeline.get("reason") or reason
+    elif reason is None:
         reason = classify_reason
     elif classify_reason:
         reason = f"{reason}; {classify_reason}"
@@ -107,6 +139,7 @@ async def _status_payload(settings: GpuControlSettings) -> dict[str, Any]:
         "model": settings.model,
         "ebs_note": EBS_NOTE,
         "reason": reason,
+        "preflight": pipeline.get("preflight"),
     }
     payload.update(
         eta_fields(
@@ -146,6 +179,7 @@ async def gpu_start(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     if _start_requested_at is None:
         _start_requested_at = time.monotonic()
+    _schedule_bring_up(settings)
     return await _status_payload(settings)
 
 
@@ -154,6 +188,8 @@ async def gpu_stop(request: Request) -> dict[str, Any]:
     global _start_requested_at
     settings = _settings()
     _require_token(request, settings)
+    await _cancel_bring_up()
+    reset_pipeline()
     try:
         aws.stop_instance(settings)
     except Exception as exc:  # noqa: BLE001

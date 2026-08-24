@@ -1,6 +1,11 @@
 from fastapi.testclient import TestClient
 
 from services.gpu_control import app as gpu_app
+from services.gpu_control.bringup import reset_pipeline
+
+
+async def _noop_bring_up(settings):  # noqa: ARG001
+    return None
 
 
 def _client(monkeypatch, token=None):
@@ -10,6 +15,9 @@ def _client(monkeypatch, token=None):
     else:
         monkeypatch.setenv("GPU_CONTROL_TOKEN", token)
     gpu_app._start_requested_at = None
+    gpu_app._bring_up_task = None
+    reset_pipeline()
+    monkeypatch.setattr(gpu_app, "bring_up_gpu", _noop_bring_up)
     return TestClient(gpu_app.app)
 
 
@@ -100,3 +108,35 @@ def test_start_sets_eta_then_stop_clears_it(monkeypatch):
     assert stopped.status_code == 200
     assert stopped.json()["state"] == "stopping"
     assert "eta_seconds" not in stopped.json()
+
+
+def test_start_schedules_bring_up(monkeypatch):
+    async def marked(settings):  # noqa: ARG001
+        return None
+
+    monkeypatch.setattr(
+        gpu_app.aws,
+        "start_instance",
+        lambda settings: {
+            "instance_id": "i-09526a2a9268135f2",
+            "ec2_state": "pending",
+            "private_ip": None,
+        },
+    )
+    monkeypatch.setattr(
+        gpu_app.aws,
+        "describe_instance",
+        lambda settings: {
+            "instance_id": "i-09526a2a9268135f2",
+            "ec2_state": "pending",
+            "private_ip": None,
+        },
+    )
+    client = _client(monkeypatch, token="correct-token")
+    monkeypatch.setattr(gpu_app, "bring_up_gpu", marked)
+    started = client.post(
+        "/gpu/start", headers={"X-GPU-Control-Token": "correct-token"}
+    )
+    assert started.status_code == 200
+    assert started.json()["state"] == "starting"
+    assert gpu_app._bring_up_task is not None

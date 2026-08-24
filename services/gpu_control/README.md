@@ -27,10 +27,22 @@ uvicorn services.gpu_control.app:app --port 8005 --app-dir .
 Missing `GPU_CONTROL_TOKEN` → POST returns **503** (start is never open).
 Wrong or missing header → **401**.
 
-`GET /gpu/status` is pollable. `running` is not ready: Ollama must answer and
-the model must be resident in VRAM. ETA is only present while this process
-saw `POST /gpu/start` and the state is `starting` or `loading_model`. Restart
-the control service mid-boot and ETA is omitted.
+`GET /gpu/status` is pollable. `POST /gpu/start` returns immediately after
+`StartInstances` (`state: starting`) and a background task then:
+
+1. Polls until Ollama answers (same `/api/ps` probe as status).
+2. If the model is not in VRAM, loads it with the agent's
+   `ensure_context_loaded()` path (same `num_ctx` / options as Ask).
+3. Pre-fires `POST /ask` on the local agent:
+   `How many CPUC ignitions were there in 2023?`
+
+`ready` requires the model resident **and** that pre-fire to return
+`status=answer`. A failed or timed-out pre-fire is `error` with `reason`,
+not a silent `ready`. `running` alone is not ready.
+
+ETA is only present while this process saw `POST /gpu/start` and the state
+is `starting` or `loading_model`. Restart the control service mid-boot and
+ETA is omitted.
 
 Stopping EC2 does **not** stop the EBS volume (~$20/month). There is no idle
 auto-stop and no implicit start from Ask or `/health`.

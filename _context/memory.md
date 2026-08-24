@@ -249,4 +249,9 @@
 - US Ignitions toggle stays visible. Empty successful fetch shows “No data loaded for this layer yet.” in the layer strip. Local warehouse still has 33,457 rows so the empty line stays hidden here; deploy table is empty.
 - Systemd units in `deploy/systemd/` (data-query, visualization, comparison, agent, gpu-control, frontend). Ollama left alone. `SYSTEMD_SETUP.md` notes `:8004/health` can lag `systemctl is-active` by several minutes after reboot.
 
+## 2026-08-23 — GPU start actually loads the model
+
+- Live bug: `/gpu/start` only called `StartInstances`; status stuck at `loading_model` with 0 MiB VRAM until someone asked a question (or ran `ollama run` by hand).
+- Background bring-up after start returns: poll Ollama `/api/ps` → agent's `ensure_context_loaded()` if not resident → `POST :8004/ask` with “How many CPUC ignitions were there in 2023?”. `ready` only after pre-fire `status=answer`; failure is `error` + `reason`. Frontend polling unchanged.
+
 

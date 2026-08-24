@@ -15,6 +15,7 @@ load_dotenv(REPO_ROOT / ".env")
 DEFAULT_INSTANCE_ID = "i-09526a2a9268135f2"
 DEFAULT_OLLAMA_URL = "http://172.31.16.67:11434"
 DEFAULT_MODEL = "qwen3:32b"
+DEFAULT_AGENT_URL = "http://127.0.0.1:8004"
 START_BUDGET_SECONDS = 190
 
 
@@ -25,6 +26,7 @@ class GpuControlSettings:
     ollama_url: str
     model: str
     control_token: str | None
+    agent_url: str = DEFAULT_AGENT_URL
     start_budget_seconds: int = START_BUDGET_SECONDS
 
     @classmethod
@@ -49,4 +51,7 @@ class GpuControlSettings:
             ).rstrip("/"),
             model=(os.getenv("GPU_MODEL") or DEFAULT_MODEL).strip(),
             control_token=token,
+            agent_url=(
+                os.getenv("GPU_AGENT_URL") or DEFAULT_AGENT_URL
+            ).rstrip("/"),
         )
