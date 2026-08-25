@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sectionalization and Fast-Trip Planning for Ignition Risk Mitigation</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+
+<!-- Leaflet (map for the Historical Data tab) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" crossorigin="" />
+
+<style>
+  .page__inner-wrap { max-width: 3800px; width: 100%; }
+</style>
+
+
+</head>
+<body>
+<div
+  id="sect-fasttrip-psps"
+  class="sfps-page"
+  data-base-path="."
+  data-plots-base="../../dataset_demo/assets/website_plots"
+>
+
+  <div class="sfps-fullbleed">
+    <p class="sfps-intro">
+      Utility-caused wildfires pose severe risks, and operational interventions
+      like PSPS and fast-trip settings reduce ignition likelihood at the cost of
+      service reliability. This visualization highlights how hyperparameter
+      choices shape the tradeoffs between ignition risk mitigation and reliability
+      in our adaptive robust optimization framework for coordinated
+      sectionalization and operational planning.
+    </p>
+    <p class="sfps-intro">
+      See our
+      <a href="https://arxiv.org/abs/2604.01232" rel="noopener noreferrer">paper</a>
+      for the detailed model and case study results.
+    </p>
+    <nav class="sfps-tabs" role="tablist" aria-label="Sectionalization tabs">
+      <button
+        id="sfps-tab-btn-sectionalization"
+        class="sfps-tab-button is-active"
+        type="button" role="tab" aria-selected="true"
+        aria-controls="sfps-tab-sectionalization"
+        data-tab="sfps-tab-sectionalization"
+      >Planning Tool</button>
+      <button
+        id="sfps-tab-btn-historical"
+        class="sfps-tab-button"
+        type="button" role="tab" aria-selected="false"
+        aria-controls="sfps-tab-historical"
+        data-tab="sfps-tab-historical"
+      >Wildfire &amp; Outage Map</button>
+    </nav>
+
+    <div class="sfps-tab-panels">
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 1 · PLANNING TOOL
+           ═══════════════════════════════════════════════════════════════ -->
+      <section
+        id="sfps-tab-sectionalization"
+        class="sfps-section sfps-tab-panel is-active"
+        role="tabpanel"
+        aria-labelledby="sfps-tab-btn-sectionalization"
+      >
+        <div class="sfps-split">
+
+          <!-- Controls panel -->
+          <div class="sfps-panel sfps-controls" id="planning-controls">
+            <div class="sfps-controls-header">
+              <span class="sfps-controls-title">Parameters</span>
+            </div>
+            <div id="image-params" class="sfps-params-grid-ctrl"></div>
+            <div id="image-status" class="sfps-status"></div>
+            <div class="sfps-button-row">
+              <button id="reset-part2" class="sfps-button sfps-button--ghost">↺ Reset</button>
+              <button id="download-results" class="sfps-button sfps-button--ghost">⬇ Download Results</button>
+            </div>
+          </div>
+
+          <!-- Three-method map comparison -->
+          <div class="sfps-content">
+            <div class="sfps-method-compare" id="method-compare">
+
+              <div class="sfps-method-col sfps-method-col--ours">
+                <div class="sfps-method-header sfps-method-header--ours">
+                  <span class="sfps-method-name">Ours</span>
+                </div>
+                <div class="sfps-image-wrap sfps-image-wrap--method">
+                  <img id="decision-image-ours" alt="Ours decision map" loading="lazy" />
+                </div>
+                <div class="sfps-metrics-row" id="metrics-ours">
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Sectionalized</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Fast-Trip</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Actual PSPS</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Eval. Cost</span></div>
+                </div>
+              </div>
+
+              <div class="sfps-method-col sfps-method-col--bonf">
+                <div class="sfps-method-header sfps-method-header--bonf">
+                  <span class="sfps-method-name">Co-Optimized</span>
+                </div>
+                <div class="sfps-image-wrap sfps-image-wrap--method">
+                  <img id="decision-image-bonf" alt="Bonferroni decision map" loading="lazy" />
+                </div>
+                <div class="sfps-metrics-row" id="metrics-bonf">
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Sectionalized</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Fast-Trip</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Actual PSPS</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Eval. Cost</span></div>
+                </div>
+              </div>
+
+              <div class="sfps-method-col sfps-method-col--maxrank">
+                <div class="sfps-method-header sfps-method-header--maxrank">
+                  <span class="sfps-method-name">Planning-Only</span>
+                </div>
+                <div class="sfps-image-wrap sfps-image-wrap--method">
+                  <img id="decision-image-maxrank" alt="Planning only decision map" loading="lazy" />
+                </div>
+                <div class="sfps-metrics-row" id="metrics-maxrank">
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Sectionalized</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Fast-Trip</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Actual PSPS</span></div>
+                  <div class="sfps-metric-card sfps-metric-skeleton"><span class="sfps-metric-value">—</span><span class="sfps-metric-label">Eval. Cost</span></div>
+                </div>
+              </div>
+
+            </div><!-- /method-compare -->
+
+
+          </div><!-- /sfps-content -->
+        </div><!-- /sfps-split -->
+
+        <!-- Understanding parameters section -->
+        <section class="sfps-fullbleed sfps-params-section" aria-labelledby="sfps-params-heading">
+          <h2 id="sfps-params-heading" class="sfps-params-heading">Understanding the key parameters</h2>
+          <p class="sfps-params-intro">
+            We do optimal planning under operational and physical constraints, with statistical control in prediction. Below is a guide to the main modeling assumptions and parameters.
+          </p>
+
+          <div class="sfps-params-group">
+            <h3 class="sfps-params-group-title">Main assumptions</h3>
+            <div class="sfps-params-row">
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Uncertainty set validity</h4>
+                <p>Future ignition risk is uncertain, but its range can be estimated from historical ignition data and weather features through a data-driven uncertainty set.</p>
+              </div>
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Effectiveness of PSPS and fast-trip</h4>
+                <p>PSPS eliminates ignition risk on a de-energized circuit, while fast-trip only reduces a percentage of ignition risk on a protected circuit.</p>
+              </div>
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Optimal PSPS reaction</h4>
+                <p>PSPS decisions are made optimally after ignition risk is realized (or when it can be well predicted), but must conform to a system-level reliability constraint shared with fast-trip devices deployed proactively.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sfps-params-group">
+            <h3 class="sfps-params-group-title">Planning budgets</h3>
+            <p class="sfps-params-group-desc">Limits on how much of the system can adopt sectionalization or fast-trip infrastructure.</p>
+            <div class="sfps-params-row">
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Sect. budget (% of circuits)</h4>
+                <p>The maximum share of all circuits that can be sectionalized—prepared so they can be shut off in segments during a PSPS event instead of all at once. A higher budget allows more granular shutoffs (fewer customers affected per event) but requires more upfront investment and coordination.</p>
+              </div>
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Fast-trip budget (% of circuits)</h4>
+                <p>The maximum share of all circuits that can be assigned fast-trip settings—operational settings that reduce ignition risk by tripping more quickly under fault conditions. More circuits with fast-trip can reduce ignition risk but may increase momentary outages.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sfps-params-group">
+            <h3 class="sfps-params-group-title">Reliability constraint and mitigation impact</h3>
+            <p class="sfps-params-group-desc">Parameters that determine how PSPS and fast-trip actions count toward the system-wide reliability cap.</p>
+            <div class="sfps-params-row">
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">SAIFI Cap</h4>
+                <p>A cap on the average number of interruptions per customer from PSPS and fast-trip actions combined. For example, SAIFI Cap = 0.2 means a California customer should not experience more than 0.2 wildfire-mitigation outages in the planning year. Annual system SAIFI is ~1 by industry standard, so we consider a range of [0.1, 0.3] for mitigation-only interruptions.</p>
+              </div>
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Reliability Impact of PSPS</h4>
+                <p>If circuit <em>i</em> serves <em>h<sub>i</sub></em> customers, one PSPS event contributes (<em>h<sub>i</sub></em> / total system customers) to SAIFI. Since one PSPS action causes a single outage to all customers on that circuit, we use 1 to represent its relative per-event contribution to SAIFI.</p>
+              </div>
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Reliability Impact of Fast-Trip</h4>
+                <p>Fast-trip contributes (<em>h<sub>i</sub></em> × expected activations per circuit-year / total customers) to SAIFI—discounted relative to PSPS because activations per year are typically less than 1. Based on 2024 PG&amp;E data (~2,500 EPSS events across ~3,000 circuits), this averages ~0.83 per circuit-year, so we use a range of [0.8, 0.9, 0.95].</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sfps-params-group">
+            <h3 class="sfps-params-group-title">Physical constraints</h3>
+            <p class="sfps-params-group-desc">Parameters that link mitigation choices to their ignition risk reduction.</p>
+            <div class="sfps-params-row">
+              <div class="sfps-param-block">
+                <h4 class="sfps-param-title">Effectiveness of fast-trip (% of mitigation)</h4>
+                <p>How effective fast-trip (EPSS) is at controlling ignition risk—the degree to which enabling fast-trip on a circuit reduces its ignition probability. Higher effectiveness means the model treats fast-trip as a stronger mitigation lever.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sfps-params-group">
+            <h3 class="sfps-params-group-title">Hierarchical uncertainty set and coverage guarantee</h3>
+            <p>For a given planning window, we build a <strong>hierarchical polyhedral uncertainty set</strong> that encodes plausible future circuit-level ignition counts. The set imposes bounds on each circuit and on the sum of counts within each group (e.g., districts or climate zones).</p>
+            <p>For a prescribed level α ∈ (0, 1), we construct the set so that the probability the realized outcome falls inside the set is at least 1 − α—controlling the chance that the true outcome lies outside the predicted set to at most α. In practice, our method controls the error rate of the predicted uncertainty set for all circuits and groups to (at most) 0.5.</p>
+          </div>
+        </section>
+
+        <!-- Key insights section -->
+        <section class="sfps-fullbleed sfps-params-section" aria-labelledby="sfps-insights-tab1-heading">
+          <h2 id="sfps-insights-tab1-heading" class="sfps-params-heading">Key insights</h2>
+          <div class="sfps-params-row">
+            <div class="sfps-param-block">
+              <h4 class="sfps-param-title">Coordinated planning outperforms separation</h4>
+              <p>Coordinating long-term infrastructure planning with short-term operational decisions can outperform treating them as separate problems.</p>
+            </div>
+            <div class="sfps-param-block">
+              <h4 class="sfps-param-title">Flexibility enables targeted interventions</h4>
+              <p>Infrastructure configurations that improve operational flexibility enable more targeted interventions during high-risk conditions, reducing unnecessary shutoffs.</p>
+            </div>
+            <div class="sfps-param-block">
+              <h4 class="sfps-param-title">Risk reduction within reliability limits</h4>
+              <p>The coordinated approach can reduce wildfire ignition risk while still respecting system-wide reliability constraints on customer interruptions.</p>
+            </div>
+            <div class="sfps-param-block">
+              <h4 class="sfps-param-title">Calibrated uncertainty avoids conservatism</h4>
+              <p>Better-calibrated uncertainty sets avoid unnecessary conservatism, leading to more effective plans that act where risk is truly elevated.</p>
+            </div>
+          </div>
+        </section>
+
+      </section><!-- /tab-sectionalization -->
+
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           TAB 2 · HISTORICAL DATA ANALYSIS
+           ═══════════════════════════════════════════════════════════════ -->
+      <section
+        id="sfps-tab-historical"
+        class="sfps-section sfps-tab-panel"
+        role="tabpanel"
+        aria-labelledby="sfps-tab-btn-historical"
+        hidden
+      >
+        <div class="sfps-historical-layout">
+          <div class="sfps-panel sfps-controls sfps-historical-controls">
+            <div class="sfps-historical-filter-row">
+              <div class="sfps-field sfps-field--year">
+                <label for="historical-year" class="sfps-year-label">Year</label>
+                <input id="historical-year" type="range" />
+                <div id="historical-year-value" class="sfps-year-badge"></div>
+                <button
+                  id="historical-year-play"
+                  type="button"
+                  class="sfps-historical-year-play"
+                  aria-label="Play year animation"
+                  aria-pressed="false"
+                >▶</button>
+              </div>
+              <div class="sfps-historical-filter-pills">
+                <label class="sfps-historical-filter-pill" for="historical-county-filter">
+                  <span class="sfps-historical-filter-pill-label">County</span>
+                  <select id="historical-county-filter" aria-label="County filter">
+                    <option value="">All counties</option>
+                  </select>
+                </label>
+                <label class="sfps-historical-filter-pill" for="historical-utility-filter">
+                  <span class="sfps-historical-filter-pill-label">Utility</span>
+                  <select id="historical-utility-filter" aria-label="Utility filter">
+                    <option value="">All utilities</option>
+                  </select>
+                </label>
+                <button
+                  id="historical-download-data"
+                  type="button"
+                  class="sfps-button sfps-button--ghost sfps-historical-download-data"
+                >Download data</button>
+              </div>
+            </div>
+            <div class="sfps-controls-section-label">Map layers</div>
+            <div id="historical-layer-toggles" class="sfps-historical-layer-toggles"></div>
+          </div>
+
+          <!-- ─────────────────────────────────────────────────────────
+               Interactive map + summary chart (real dataset overlay)
+               ───────────────────────────────────────────────────────── -->
+          <div class="sfps-historical-map-section">
+            <div class="sfps-historical-map-row">
+            <div
+              id="historical-canvas-host"
+              class="sfps-canvas-host"
+              data-layout="browse"
+              data-view-source="user"
+            >
+            <div id="historical-canvas-stats" class="sfps-canvas-stats" hidden role="list" aria-label="Answer summary"></div>
+            <div id="historical-canvas-restore" class="sfps-canvas-restore" hidden>
+              <button
+                type="button"
+                id="historical-canvas-show-map"
+                class="sfps-button sfps-button--ghost"
+              >Show map</button>
+            </div>
+            <p id="historical-canvas-stale" class="sfps-canvas-stale" hidden></p>
+            <div class="sfps-canvas-stage sfps-historical-map-main">
+            <div class="sfps-historical-map-card sfps-canvas-slot sfps-canvas-slot--map">
+              <div class="sfps-historical-map-header">
+                <div class="sfps-historical-map-header-text">
+                  <h3 class="sfps-historical-map-title">Wildfire Dataset Map</h3>
+                  <span class="sfps-historical-map-sub">CPUC ignition events and EPSS outage events for the selected year</span>
+                </div>
+                <button
+                  id="historical-agent-toggle"
+                  type="button"
+                  class="sfps-button sfps-button--ghost sfps-agent-toggle"
+                  aria-expanded="false"
+                  aria-controls="historical-agent-panel"
+                >Ask data</button>
+              </div>
+              <div id="historical-api-banner" class="sfps-api-banner" hidden role="alert"></div>
+              <div id="historical-map" class="sfps-historical-map"></div>
+
+              <div
+                id="historical-us-ignitions-strip"
+                class="sfps-us-ignitions-strip"
+                hidden
+                aria-label="US Ignitions layer notes"
+              >
+                <div class="sfps-us-ignitions-strip-row">
+                  <p class="sfps-us-ignitions-strip-text">
+                    <span class="sfps-us-ignitions-strip-swatch" aria-hidden="true"></span>
+                    <strong>US Ignitions</strong> — IRWIN-derived all-cause sample (FireCastRL),
+                    CONUS 2014–2025. Not a census. Not comparable to CPUC utility-caused ignitions.
+                    Sample is California-heavy (~59% of 2024 points; ~40% overall) — a national
+                    extent does not mean geographically balanced coverage.
+                  </p>
+                  <p
+                    id="historical-us-ignitions-empty"
+                    class="sfps-us-ignitions-empty"
+                    hidden
+                  >No data loaded for this layer yet.</p>
+                  <button
+                    id="historical-us-ignitions-zoom-national"
+                    type="button"
+                    class="sfps-button sfps-button--ghost sfps-us-ignitions-zoom-btn"
+                  >Zoom to national extent</button>
+                </div>
+              </div>
+
+              <div id="historical-hftd-legend" class="sfps-hftd-legend" hidden aria-label="CPUC High Fire-Threat District">
+                <div class="sfps-weather-strip-legend">
+                  <div class="sfps-weather-legend-item">
+                    <span class="sfps-weather-legend-swatch" style="background:#d97706;opacity:0.35"></span>
+                    <span>Tier 2 – elevated wildfire risk</span>
+                  </div>
+                  <div class="sfps-weather-legend-item">
+                    <span class="sfps-weather-legend-swatch" style="background:#d97706;opacity:0.75"></span>
+                    <span>Tier 3 – extreme wildfire risk</span>
+                  </div>
+                </div>
+                <p class="sfps-weather-strip-attribution">
+                  CPUC High Fire-Threat District: areas where utility infrastructure faces stricter fire-safety rules.
+                </p>
+              </div>
+
+              <div id="historical-weather-strip" class="sfps-weather-strip">
+                <div class="sfps-weather-strip-controls">
+                  <button
+                    id="historical-weather-play"
+                    type="button"
+                    class="sfps-historical-year-play sfps-weather-strip-play"
+                    aria-label="Play fire-weather animation"
+                    aria-pressed="false"
+                  >▶</button>
+                  <label class="sfps-weather-strip-speed-label" for="historical-weather-speed">
+                    <span class="sfps-weather-strip-speed-text">Speed</span>
+                    <select id="historical-weather-speed" aria-label="Animation speed">
+                      <option value="1">1x</option>
+                      <option value="2">2x</option>
+                      <option value="4">4x</option>
+                    </select>
+                  </label>
+                  <input id="historical-weather-scrub" type="range" min="0" max="364" value="0" aria-label="Day of year" />
+                  <div id="historical-weather-date" class="sfps-weather-strip-date">—</div>
+                </div>
+                <div id="historical-weather-legend" class="sfps-weather-strip-legend" aria-label="Fire-weather danger bands"></div>
+                <div class="sfps-weather-strip-attribution-row">
+                  <p id="historical-weather-attribution" class="sfps-weather-strip-attribution">—</p>
+                  <button
+                    id="historical-weather-source-info"
+                    type="button"
+                    class="sfps-weather-source-info"
+                    aria-label="Show full data source and citation"
+                    aria-expanded="false"
+                    aria-controls="historical-weather-source-popover"
+                    hidden
+                  >ⓘ</button>
+                  <div
+                    id="historical-weather-source-popover"
+                    class="sfps-weather-source-popover"
+                    role="dialog"
+                    aria-label="Fire-weather data source"
+                    hidden
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sfps-historical-chart-card sfps-canvas-slot sfps-canvas-slot--chart">
+              <div class="sfps-historical-chart-header">
+                <h3 id="historical-chart-title" class="sfps-historical-chart-title">Events over time</h3>
+                <div class="sfps-historical-chart-toggle" id="historical-chart-toggle" role="group" aria-label="Chart type">
+                  <button type="button" class="sfps-button sfps-button--ghost sfps-chart-toggle-btn is-active" data-chart-type="timeseries">Time</button>
+                  <button type="button" class="sfps-button sfps-button--ghost sfps-chart-toggle-btn" data-chart-type="bar">Bar</button>
+                  <button type="button" class="sfps-button sfps-button--ghost sfps-chart-toggle-btn" data-chart-type="donut">Donut</button>
+                </div>
+              </div>
+              <div id="historical-summary-chart" class="sfps-historical-summary-chart"></div>
+              <div id="historical-comparison-table" class="sfps-canvas-facts" hidden></div>
+            </div>
+            </div><!-- /sfps-canvas-stage -->
+            </div><!-- /historical-canvas-host -->
+
+            <aside
+              id="historical-agent-panel"
+              class="sfps-agent-panel"
+              aria-hidden="true"
+              aria-label="Ask the wildfire data agent"
+            >
+              <div class="sfps-agent-panel-header">
+                <div>
+                  <h3 class="sfps-agent-panel-title">Ask the data</h3>
+                  <p class="sfps-agent-panel-sub">One question at a time. No chat memory.</p>
+                </div>
+                <button
+                  id="historical-agent-close"
+                  type="button"
+                  class="sfps-button sfps-button--ghost"
+                  aria-label="Close ask panel"
+                >Close</button>
+              </div>
+              <div id="historical-agent-banner" class="sfps-api-banner" hidden role="alert"></div>
+              <div id="historical-gpu-control" class="sfps-gpu-control">
+                <p id="historical-gpu-status" class="sfps-gpu-status">Checking GPU…</p>
+                <div class="sfps-gpu-actions">
+                  <button id="historical-gpu-start" type="button" class="sfps-button sfps-button--ghost">Start GPU</button>
+                  <button id="historical-gpu-stop" type="button" class="sfps-button sfps-button--ghost">Stop GPU</button>
+                </div>
+                <p id="historical-gpu-note" class="sfps-gpu-note">Stopping the instance does not stop disk cost. The volume still bills about $20/month.</p>
+              </div>
+              <form id="historical-agent-form" class="sfps-agent-form">
+                <label class="sfps-agent-label" for="historical-agent-question">Question</label>
+                <textarea
+                  id="historical-agent-question"
+                  class="sfps-agent-question"
+                  rows="3"
+                  maxlength="2000"
+                  placeholder="Example: How many SCE utility-attributed ignitions were there in 2023?"
+                ></textarea>
+                <div class="sfps-agent-actions">
+                  <button id="historical-agent-ask" type="submit" class="sfps-button" disabled>Ask</button>
+                  <button id="historical-agent-cancel" type="button" class="sfps-button sfps-button--ghost" hidden>Cancel</button>
+                  <button id="historical-agent-download" type="button" class="sfps-button sfps-button--ghost" hidden>Download CSV</button>
+                </div>
+              </form>
+              <ol id="historical-agent-trail" class="sfps-agent-trail" aria-live="polite"></ol>
+              <div id="historical-agent-result" class="sfps-agent-result-host"></div>
+            </aside>
+            </div><!-- /sfps-historical-map-row -->
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /sfps-tab-panels -->
+  </div><!-- /sfps-fullbleed -->
+
+</div><!-- /sect-fasttrip-psps -->
+
+<link rel="stylesheet" href="./assets/css/sect-fasttrip-psps.css?v=us-empty">
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-contour@4"></script>
+<script src="./assets/js/api-config.js"></script>
+<script src="./assets/js/historical-vis-api.js"></script>
+<script src="./assets/js/historical-agent-api.js"></script>
+<script src="./assets/js/historical-gpu-api.js"></script>
+<script src="./assets/js/sect-fasttrip-psps.js?v=us-empty"></script>
+<script src="./assets/js/historical-agent-panel.js?v=gpu-control"></script>
+<script src="./assets/js/historical-gpu-control.js?v=gpu-control"></script>
+</body>
+</html>
