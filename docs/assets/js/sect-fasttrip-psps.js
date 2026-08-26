@@ -241,7 +241,7 @@
     usIgnitions: {
       label: "US Ignitions (IRWIN / all-cause)",
       chartShortLabel: "US Ignitions",
-      color: "#0f766e",
+      color: "#dc2626",
       apiDataset: "us_ignitions",
       defaultActive: false
     }
@@ -2133,7 +2133,7 @@
   const STAT_CARD_COLORS = {
     cpuc_ignitions: "#c0440e",
     ignitions: "#c0440e",
-    us_ignitions: "#0f766e",
+    us_ignitions: "#dc2626",
     epss_outages: "#7c3aed",
     epss: "#7c3aed",
     calfire_incidents: "#b91c1c",

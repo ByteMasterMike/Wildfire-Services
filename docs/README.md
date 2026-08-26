@@ -68,9 +68,9 @@ window.WILDFIRE_CALFIRE_INCIDENT_TYPE = "all"; // verification; then "" for Wild
 
 ## US Ignitions layer
 
-Historical Map toggle **US Ignitions (IRWIN / all-cause)** (teal, off by default) loads `dataset=us_ignitions` from the visualization API. Info strip explains all-cause / sample / not-comparable-to-CPUC / CA concentration (~59% of 2024). Auto-zooms to CONUS only from the default California view with no utility/county filter; otherwise the view is left alone. **Zoom to national extent** is on the strip for on-demand use.
+Historical Map toggle **US Ignitions (IRWIN / all-cause)** (red, off by default) loads `dataset=us_ignitions` from the visualization API. Info strip explains all-cause / sample / not-comparable-to-CPUC / CA concentration (~59% of 2024). Auto-zooms to CONUS only from the default California view with no utility/county filter; otherwise the view is left alone. **Zoom to national extent** is on the strip for on-demand use.
 
-Map datasets use one hue each (CPUC burnt orange, CAL FIRE red, US teal, EPSS purple, PSPS blue, HFTD amber with opacity for tier). CAL FIRE magnitude is bubble size, not a second color.
+Map datasets use one hue each (CPUC burnt orange, CAL FIRE red, US ignitions red `#dc2626`, EPSS purple, PSPS blue, HFTD amber with opacity for tier). CAL FIRE magnitude is bubble size, not a second color.
 
 The Ask-data panel can download CSV when an answer produced tabular tool data (records, comparison rows, time-series buckets, spatial counts). Count-only answers do not. Agent visuals on the left canvas: [`CANVAS.md`](CANVAS.md). Ask stays enabled whenever the agent `/health` endpoint is reachable, even if the GPU/model is down; the banner then says counts, maps, and rankings still work. Start/stop for the demo GPU is a strip above the form (`WILDFIRE_GPU_CONTROL_BASE`, port 8005). The token is prompted per action and is not stored.
 

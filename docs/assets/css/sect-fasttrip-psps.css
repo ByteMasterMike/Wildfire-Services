@@ -1476,7 +1476,7 @@ article.page:has(#sect-fasttrip-psps) .page__content {
 }
 
 .sfps-us-ignitions-strip-text strong {
-  color: #0f766e;
+  color: #dc2626;
   font-weight: 700;
 }
 
@@ -1485,7 +1485,7 @@ article.page:has(#sect-fasttrip-psps) .page__content {
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
-  background: #0f766e;
+  background: #dc2626;
   margin-right: 0.3rem;
   vertical-align: 0.05em;
 }
@@ -1496,7 +1496,7 @@ article.page:has(#sect-fasttrip-psps) .page__content {
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.4;
-  color: #0f766e;
+  color: #dc2626;
 }
 
 .sfps-us-ignitions-zoom-btn {
