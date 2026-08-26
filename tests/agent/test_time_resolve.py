@@ -65,6 +65,39 @@ def test_explicit_month_window():
     assert result.end_date == "2023-08-31"
 
 
+def test_bare_year_is_full_calendar_year():
+    result = resolve_time("cpuc ignitions in 2024", today=TODAY)
+    assert result.status == "explicit"
+    assert result.year == 2024
+    assert result.years == (2024,)
+    assert result.start_date == "2024-01-01"
+    assert result.end_date == "2024-12-31"
+
+
+def test_month_year_to_month_year_span():
+    result = resolve_time(
+        "map cpuc ignitions from august 2023 to september 2024",
+        today=TODAY,
+    )
+    assert result.status == "explicit"
+    assert result.year is None
+    assert result.years == (2023, 2024)
+    assert result.start_date == "2023-08-01"
+    assert result.end_date == "2024-09-30"
+
+
+def test_year_to_year_and_dashed_span():
+    spoken = resolve_time("trend of SCE ignitions 2021 to 2025", today=TODAY)
+    assert spoken.status == "explicit"
+    assert spoken.year is None
+    assert spoken.years == (2021, 2022, 2023, 2024, 2025)
+    assert spoken.start_date == "2021-01-01"
+    assert spoken.end_date == "2025-12-31"
+    dashed = resolve_time("SCE ignitions 2021-2025", today=TODAY)
+    assert dashed.start_date == "2021-01-01"
+    assert dashed.end_date == "2025-12-31"
+
+
 def test_today_and_tomorrow_resolve_to_calendar_days():
     today = resolve_time("today", today=TODAY)
     assert today.start_date == today.end_date == "2026-08-10"

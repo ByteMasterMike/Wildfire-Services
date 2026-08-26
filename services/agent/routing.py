@@ -267,6 +267,26 @@ def _time_filter_args(time_resolution) -> dict[str, Any]:
     return {}
 
 
+def _default_series_interval(lower: str, time_resolution) -> str:
+    """Honor explicit interval words; otherwise match the view planner's window rule."""
+    if "monthly" in lower:
+        return "monthly"
+    if "daily" in lower:
+        return "daily"
+    if "weekly" in lower:
+        return "weekly"
+    start = getattr(time_resolution, "start_date", None)
+    end = getattr(time_resolution, "end_date", None)
+    if isinstance(start, str) and isinstance(end, str):
+        try:
+            days = (date.fromisoformat(end) - date.fromisoformat(start)).days + 1
+        except ValueError:
+            days = 0
+        if days > 62:
+            return "monthly"
+    return "weekly"
+
+
 def _month_expressed(args: dict[str, Any], month_number: int) -> bool:
     start = args.get("start_date")
     end = args.get("end_date")
@@ -301,8 +321,17 @@ def _block_unexpressed_constraints(
     month_hit = month_from_text(question)
     if month_hit is not None:
         month_number, _month_name = month_hit
+        slot_start = slots.get("start_date")
+        slot_end = slots.get("end_date")
         if not any(
-            _month_expressed(args, month_number) for _tool, args in tool_calls
+            _month_expressed(args, month_number)
+            or (
+                bool(slot_start)
+                and bool(slot_end)
+                and args.get("start_date") == slot_start
+                and args.get("end_date") == slot_end
+            )
+            for _tool, args in tool_calls
         ):
             dropped.append("month")
     if not dropped:
@@ -1346,13 +1375,7 @@ def route_question(question: str, *, force_model: bool = False) -> RouteDecision
                     answer="What year should I map and chart?",
                     slots=slots,
                 )
-            interval = (
-                "monthly"
-                if "monthly" in lower
-                else "daily"
-                if "daily" in lower
-                else "weekly"
-            )
+            interval = _default_series_interval(lower, time_resolution)
             shared: dict[str, Any] = {
                 "dataset": viz_dataset,
                 **time_args,
@@ -1438,13 +1461,7 @@ def route_question(question: str, *, force_model: bool = False) -> RouteDecision
                 answer="What year should I chart?",
                 slots=slots,
             )
-        interval = (
-            "monthly"
-            if "monthly" in lower
-            else "daily"
-            if "daily" in lower
-            else "weekly"
-        )
+        interval = _default_series_interval(lower, time_resolution)
         viz_dataset = {
             "cpuc_ignitions": "ignitions",
             "epss_outages": "epss",

@@ -51,6 +51,11 @@ MONTHS = {
     "dec": 12,
 }
 
+_MONTH_ALT = "|".join(
+    re.escape(name) for name, _ in sorted(MONTHS.items(), key=lambda item: -len(item[0]))
+)
+_RANGE_SEP = r"(?:to|through|until|–|—|-)"
+
 
 @dataclass(frozen=True)
 class TimeResolution:
@@ -146,6 +151,68 @@ def _range_for_year_month(year: int, month: int) -> tuple[str, str]:
     return f"{year}-{month:02d}-01", f"{year}-{month:02d}-{last:02d}"
 
 
+def explicit_month_year_range(text: str) -> tuple[str, str, str] | None:
+    """``August 2023 to September 2024`` → first-of-start-month … last-of-end-month."""
+    lower = " ".join(text.lower().split())
+    match = re.search(
+        rf"\b({_MONTH_ALT})\s+(20\d{{2}})\s*{_RANGE_SEP}\s*({_MONTH_ALT})\s+(20\d{{2}})\b",
+        lower,
+    )
+    if not match:
+        return None
+    month_a, year_a = MONTHS[match.group(1)], int(match.group(2))
+    month_b, year_b = MONTHS[match.group(3)], int(match.group(4))
+    start, _ = _range_for_year_month(year_a, month_a)
+    _, end = _range_for_year_month(year_b, month_b)
+    if start > end:
+        start, _ = _range_for_year_month(year_b, month_b)
+        _, end = _range_for_year_month(year_a, month_a)
+    return start, end, match.group(0)
+
+
+def explicit_year_range(text: str) -> tuple[str, str, str] | None:
+    """``2021 to 2025`` / ``2021-2025`` → full inclusive calendar years."""
+    lower = " ".join(text.lower().split())
+    match = re.search(rf"\b(20\d{{2}})\s+(?:to|through|until)\s+(20\d{{2}})\b", lower)
+    if not match:
+        match = re.search(rf"\b(20\d{{2}})\s*[-–—]\s*(20\d{{2}})\b", lower)
+    if not match:
+        return None
+    year_a, year_b = int(match.group(1)), int(match.group(2))
+    if year_a > year_b:
+        year_a, year_b = year_b, year_a
+    return f"{year_a}-01-01", f"{year_b}-12-31", match.group(0)
+
+
+def _span_resolution(
+    start: str, end: str, *, phrase: str, data_max: int
+) -> TimeResolution:
+    start_year = int(start[:4])
+    end_year = int(end[:4])
+    years = tuple(range(start_year, end_year + 1))
+    for year in years:
+        if year < DATA_YEAR_MIN or year > data_max:
+            return TimeResolution(
+                status="out_of_coverage",
+                years=years,
+                source="explicit",
+                phrase=phrase,
+                reason=(
+                    f"Year {year} is outside warehouse coverage "
+                    f"{DATA_YEAR_MIN}-{data_max}"
+                ),
+            )
+    return TimeResolution(
+        status="explicit",
+        year=start_year if start_year == end_year else None,
+        years=years,
+        start_date=start,
+        end_date=end,
+        source="explicit",
+        phrase=phrase,
+    )
+
+
 def resolve_time(text: str, *, today: date | None = None) -> TimeResolution:
     """Resolve explicit or relative time. Never guess vague phrases."""
     ref = today or date.today()
@@ -175,6 +242,16 @@ def resolve_time(text: str, *, today: date | None = None) -> TimeResolution:
             source="explicit",
             phrase=day.isoformat(),
         )
+
+    month_span = explicit_month_year_range(lower)
+    if month_span is not None:
+        start, end, phrase = month_span
+        return _span_resolution(start, end, phrase=phrase, data_max=data_max)
+
+    year_span = explicit_year_range(lower)
+    if year_span is not None:
+        start, end, phrase = year_span
+        return _span_resolution(start, end, phrase=phrase, data_max=data_max)
 
     explicit = list(dict.fromkeys(int(v) for v in re.findall(r"\b(20\d{2})\b", text)))
     if len(set(explicit)) == 1:

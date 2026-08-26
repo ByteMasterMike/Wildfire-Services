@@ -34,6 +34,41 @@ def test_map_outages_without_year_clarifies_not_open_ended():
     assert decision.rule == "map_missing_year"
 
 
+def test_map_month_to_month_range_is_deterministic():
+    decision = route_question(
+        "map cpuc ignitions from august 2023 to september 2024"
+    )
+    assert decision.path == "deterministic"
+    assert decision.rule == "map"
+    args = decision.tool_calls[0][1]
+    assert args["kind"] == "map"
+    assert args["dataset"] == "ignitions"
+    assert args["start_date"] == "2023-08-01"
+    assert args["end_date"] == "2024-09-30"
+
+
+def test_trend_year_to_year_range_is_deterministic():
+    decision = route_question("trend of SCE ignitions 2021 to 2025")
+    assert decision.path == "deterministic"
+    assert decision.rule == "time_series"
+    args = decision.tool_calls[0][1]
+    assert args["kind"] == "time_series"
+    assert args["dataset"] == "ignitions"
+    assert args["utility"] == "SCE"
+    assert args["start_date"] == "2021-01-01"
+    assert args["end_date"] == "2025-12-31"
+    assert args["interval"] == "monthly"
+
+
+def test_bare_year_map_still_uses_year():
+    decision = route_question(
+        "I'd like to see where PG&E's CPUC ignitions happened in 2024"
+    )
+    assert decision.path == "deterministic"
+    assert decision.rule == "map"
+    assert decision.tool_calls[0][1]["year"] == 2024
+
+
 def test_compare_last_year_resolves_and_uses_utilities_kind():
     decision = route_question(
         "Compare wildfire activity between PG&E and SCE territories last year"
