@@ -2,13 +2,13 @@
  * Visualization API base URL — change this one line to point at a deployed host.
  * Local default matches: uvicorn services.visualization.app:app --port 8002
  */
-window.WILDFIRE_API_BASE = "http://127.0.0.1:8002";
+window.WILDFIRE_API_BASE = "https://d3t70p3if3twy3.cloudfront.net/api/visualization";
 
 /**
  * Agent API base URL — change this one line to point at a deployed host.
  * Local default matches: uvicorn services.agent.app:app --port 8004 --app-dir .
  */
-window.WILDFIRE_AGENT_BASE = "http://127.0.0.1:8004";
+window.WILDFIRE_AGENT_BASE = "https://d3t70p3if3twy3.cloudfront.net/api/agent";
 
 /**
  * Data-query API base URL — record-table stale refetch.
@@ -20,7 +20,7 @@ window.WILDFIRE_DATA_QUERY_BASE = "http://127.0.0.1:8000";
  * GPU control API — start/stop the demo Ollama instance.
  * Local default matches: uvicorn services.gpu_control.app:app --port 8005 --app-dir .
  */
-window.WILDFIRE_GPU_CONTROL_BASE = "http://127.0.0.1:8005";
+window.WILDFIRE_GPU_CONTROL_BASE = "https://d3t70p3if3twy3.cloudfront.net/api/gpu-control";
 
 /**
  * CAL FIRE incident_type query value for /map-layer and /time-series.
