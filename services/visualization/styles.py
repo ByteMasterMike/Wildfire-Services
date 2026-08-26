@@ -40,7 +40,7 @@ DATASET_STYLES: dict[str, dict[str, Any]] = {
         "bubble_by_acres": True,
     },
     "us_ignitions": {
-        "color": "#0f766e",
+        "color": "#dc2626",
         "opacity": 0.9,
         "fillOpacity": 0.65,
         "weight": 1,
