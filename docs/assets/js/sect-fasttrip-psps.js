@@ -1548,6 +1548,10 @@
     const colors = entries.map(([, config]) => config.color);
     const values = entries.map(([key]) => countsByDataset[key] || 0);
 
+    if (typeof Plotly !== "undefined" && historicalSummaryChartEl.data) {
+      Plotly.purge(historicalSummaryChartEl);
+    }
+
     const layout = {
       font: { family: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif", size: 12, color: "#1e293b" },
       paper_bgcolor: "transparent",
@@ -1590,6 +1594,8 @@
         zeroline: false,
         automargin: true,
         fixedrange: true,
+        autorange: false,
+        range: [`${year}-01-01`, `${year}-12-31`],
         tickformat: "%b",
         hoverformat: "%Y-%m-%d"
       };
@@ -1647,6 +1653,10 @@
       }));
     } else if (historicalChartType === "donut") {
       layout.margin = { t: 10, r: 110, b: 10, l: 10 };
+      layout.xaxis = { visible: false };
+      layout.yaxis = { visible: false };
+      layout.shapes = [];
+      layout.annotations = [];
       layout.legend = {
         orientation: "v",
         yanchor: "middle",
@@ -1667,17 +1677,22 @@
     } else {
       layout.margin = { t: 10, r: 24, b: 36, l: 96 };
       layout.xaxis = {
+        type: "linear",
         title: { text: "Event count", standoff: 8 },
         gridcolor: "#e2e8f0",
         zeroline: false,
         automargin: true,
+        autorange: true,
         fixedrange: true
       };
       layout.yaxis = {
+        type: "category",
         automargin: true,
         tickfont: { size: 11 },
         fixedrange: true
       };
+      layout.shapes = [];
+      layout.annotations = [];
       data = [{
         type: "bar",
         orientation: "h",
@@ -1690,7 +1705,9 @@
     }
 
     const chartHeight = Math.max(320, historicalSummaryChartEl.clientHeight || 380);
+    const chartWidth = historicalSummaryChartEl.clientWidth;
     layout.height = chartHeight;
+    if (chartWidth > 0) layout.width = chartWidth;
     layout.autosize = false;
 
     Plotly.react(historicalSummaryChartEl, data, layout, { displayModeBar: false, responsive: true });
@@ -2324,9 +2341,12 @@
       typeof Plotly !== "undefined" &&
       historicalSummaryChartEl.data
     ) {
-      if (historicalCanvasHost?.dataset.secondary === "series") {
+      const secondary = historicalCanvasHost?.dataset.secondary;
+      if (secondary === "series") {
         resizeAgentSeriesPlot();
-      } else {
+      } else if (secondary === "comparison") {
+        Plotly.Plots.resize(historicalSummaryChartEl);
+      } else if (historicalChartType === "timeseries") {
         Plotly.Plots.resize(historicalSummaryChartEl);
       }
     }
@@ -2344,7 +2364,8 @@
     });
     if (historicalCanvasHost) canvasRelayoutObserver.observe(historicalCanvasHost);
     if (historicalMapEl) canvasRelayoutObserver.observe(historicalMapEl);
-    if (historicalSummaryChartEl) canvasRelayoutObserver.observe(historicalSummaryChartEl);
+    const chartSlot = historicalSummaryChartEl?.closest(".sfps-canvas-slot--chart");
+    if (chartSlot) canvasRelayoutObserver.observe(chartSlot);
     window.addEventListener("resize", () => scheduleCanvasRelayout("window-resize"));
   };
 
