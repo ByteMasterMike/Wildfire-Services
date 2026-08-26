@@ -24,6 +24,8 @@ from services.gpu_control.state import EBS_NOTE, classify_state, eta_fields
 
 _start_requested_at: float | None = None
 _bring_up_task: asyncio.Task[None] | None = None
+_start_lock = asyncio.Lock()
+_STARTABLE_STATES = frozenset({"stopped", "error"})
 
 
 async def _cancel_bring_up() -> None:
@@ -173,14 +175,18 @@ async def gpu_start(request: Request) -> dict[str, Any]:
     global _start_requested_at
     settings = _settings()
     _require_token(request, settings)
-    try:
-        aws.start_instance(settings)
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    if _start_requested_at is None:
-        _start_requested_at = time.monotonic()
-    _schedule_bring_up(settings)
-    return await _status_payload(settings)
+    async with _start_lock:
+        current = await _status_payload(settings)
+        if current.get("state") not in _STARTABLE_STATES:
+            return current
+        try:
+            aws.start_instance(settings)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        if _start_requested_at is None:
+            _start_requested_at = time.monotonic()
+        _schedule_bring_up(settings)
+        return await _status_payload(settings)
 
 
 @app.post("/gpu/stop")
