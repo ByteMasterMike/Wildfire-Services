@@ -2128,7 +2128,6 @@
   let agentPointMarker = null;
   let agentSeriesActive = false;
   const COMPARISON_BAR_HEIGHT = 200;
-  const SERIES_PLOT_MIN_HEIGHT = 160;
   let lastBrowseChartArgs = null;
   const MAX_STAT_CARDS = 3;
   const STAT_CARD_COLORS = {
@@ -2269,27 +2268,19 @@
     monthly: "Events / month"
   };
 
-  const measureChartPlotHeight = () => {
-    const el = historicalSummaryChartEl;
-    if (!el) return SERIES_PLOT_MIN_HEIGHT;
-    const slot = el.closest(".sfps-canvas-slot--chart");
-    if (slot) {
-      const header = slot.querySelector(".sfps-historical-chart-header");
-      const available = slot.clientHeight - (header ? header.offsetHeight : 0) - 4;
-      if (available >= SERIES_PLOT_MIN_HEIGHT) return Math.round(available);
-    }
-    const h = el.clientHeight;
-    return h >= SERIES_PLOT_MIN_HEIGHT ? Math.round(h) : SERIES_PLOT_MIN_HEIGHT;
+  const syncCanvasHug = () => {
+    if (!historicalMapRow) return;
+    const layout = historicalCanvasHost?.getAttribute("data-layout") || "browse";
+    const secondary = historicalCanvasHost?.dataset.secondary;
+    const hug = layout === "stats" || (layout === "series" && secondary !== "series");
+    historicalMapRow.dataset.canvasHug = hug ? "1" : "0";
   };
 
   const resizeAgentSeriesPlot = () => {
     if (!historicalSummaryChartEl || typeof Plotly === "undefined") return;
     if (!historicalSummaryChartEl.data) return;
     if (historicalCanvasHost?.dataset.secondary !== "series") return;
-    Plotly.relayout(historicalSummaryChartEl, {
-      height: measureChartPlotHeight(),
-      autosize: false
-    });
+    Plotly.Plots.resize(historicalSummaryChartEl);
   };
 
   const refitAgentMapExtent = () => {
@@ -2353,16 +2344,14 @@
     });
     if (historicalCanvasHost) canvasRelayoutObserver.observe(historicalCanvasHost);
     if (historicalMapEl) canvasRelayoutObserver.observe(historicalMapEl);
+    if (historicalSummaryChartEl) canvasRelayoutObserver.observe(historicalSummaryChartEl);
     window.addEventListener("resize", () => scheduleCanvasRelayout("window-resize"));
   };
 
   const setCanvasLayout = (layout) => {
     const next = layout || "browse";
     if (historicalCanvasHost) historicalCanvasHost.setAttribute("data-layout", next);
-    if (historicalMapRow) {
-      const hug = next === "stats" || next === "series";
-      historicalMapRow.dataset.canvasHug = hug ? "1" : "0";
-    }
+    syncCanvasHug();
     requestAnimationFrame(() => {
       relayoutCanvas(`layout:${next}`);
       setTimeout(() => relayoutCanvas(`layout:${next}:settle`), 180);
@@ -2393,6 +2382,7 @@
         secondary
       );
     }
+    syncCanvasHug();
   };
 
   const hideComparisonTable = () => {
@@ -2427,7 +2417,6 @@
     const hover = buckets.map((item) => item.label || item.start);
     const allZero = y.length > 0 && y.every((value) => value === 0);
     const yMax = Math.max(1, Math.ceil(Math.max(0, ...y, 0) * 1.1) || 1);
-    const plotHeight = measureChartPlotHeight();
     const layout = {
       font: {
         family: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif",
@@ -2438,8 +2427,7 @@
       plot_bgcolor: "transparent",
       showlegend: false,
       margin: { t: 16, r: 16, b: 40, l: 48 },
-      autosize: false,
-      height: plotHeight,
+      autosize: true,
       xaxis: {
         type: "date",
         gridcolor: "#e2e8f0",
