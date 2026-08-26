@@ -4196,7 +4196,15 @@
   const initTabs = () => {
     const tabButtons = Array.from(root.querySelectorAll(".sfps-tab-button"));
     const tabPanels = Array.from(root.querySelectorAll(".sfps-tab-panel"));
-    if (!tabButtons.length || !tabPanels.length) return;
+    if (!tabButtons.length) {
+      tabPanels.forEach((panel) => {
+        panel.classList.add("is-active");
+        panel.removeAttribute("hidden");
+      });
+      ensureHistoricalMapAndChart();
+      return;
+    }
+    if (!tabPanels.length) return;
 
     const setActiveTab = (targetId) => {
       tabButtons.forEach((button) => {
@@ -5058,6 +5066,9 @@
   const init = async () => {
     initTabs();
     initHistorical();
+    if (!imageParams && !imageStatus) {
+      return;
+    }
     try {
       const manifest = await fetchManifest();
       gridPlotsMode = Boolean(manifest.gridPlots);
@@ -5082,7 +5093,7 @@
     }
   };
 
-  resetPart2Button.addEventListener("click", async () => {
+  if (resetPart2Button) resetPart2Button.addEventListener("click", async () => {
     imageSelection = { suffix: gridPlotsMode ? "none" : "" };
     userSelected.clear();
     applyFixedImageParams();
