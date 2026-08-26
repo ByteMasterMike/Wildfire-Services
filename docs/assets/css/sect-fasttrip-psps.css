@@ -201,6 +201,34 @@ article.page:has(#sect-fasttrip-psps) .page__content {
 .sfps-tab-panel.is-active { display: block; }
 .sfps-tab-panel[hidden] { display: none; }
 
+.sfps-data-sources {
+  font-family: var(--sfps-font);
+  margin: 1.25rem 0 1.75rem;
+  padding: 0.7rem 0.9rem;
+  max-width: 44rem;
+  border: 1px solid var(--sfps-border);
+  border-radius: 8px;
+  background: var(--sfps-surface);
+  color: var(--sfps-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.sfps-data-sources summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--sfps-text);
+}
+
+.sfps-data-sources ul {
+  margin: 0.55rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.sfps-data-sources li {
+  margin: 0.15rem 0;
+}
+
 .sfps-section { margin: 1.5rem 0; }
 
 /* â”€â”€ Split layout (controls + content) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
