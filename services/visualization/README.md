@@ -27,10 +27,13 @@ Docs: http://127.0.0.1:8002/docs
 
 CORS is enabled (`*`) so a local frontend on another port can call this API.
 
-### `/map-layer` extras
+### `/map-layer`
 
+- **EPSS** returns **circuit lines** (aggregated event counts), not outage points.
 - **EPSS** `include_outages=true` — embed filtered outage rows on each circuit feature (day scrubber / popups).
-- Default `limit=5000` (max 20000). Frontend uses 20000.
+- Missing circuit geometries → features with `geometry: null` (not dropped).
+- Default `limit=5000` (max 20000). The UIs request 20000.
+- `us_ignitions` style color is **`#dc2626`**. GitHub Pages `docs/` hardcodes that red; local `frontend/` still hardcodes teal `#0f766e` on the layer swatch until that copy is synced.
 
 ### `/event-detail` extras
 
@@ -38,13 +41,6 @@ CORS is enabled (`*`) so a local frontend on another port can call this API.
 |---------|-----|--------|
 | circuits | 9-digit `circuit_id` | `outages` (optional `year` / date filters) |
 | psps | `event_name` | `affected_circuits` |
-
-### `/map-layer`
-
-- **EPSS** returns **circuit lines** (aggregated event counts), not outage points — matches the website.
-- Missing circuit geometries → features with `geometry: null` (not dropped).
-- Colors/opacity match `sect-fasttrip-psps.js`.
-- Default `limit=5000` (max 20000).
 
 ### `/time-series`
 
@@ -78,7 +74,7 @@ The 4-row gap is ignitions that fall inside PGE’s territory polygon but are **
 | Dataset | Color |
 |---------|-------|
 | Ignitions | `#c0440e` |
-| US Ignitions (IRWIN / all-cause) | `#0f766e` |
+| US Ignitions (IRWIN / all-cause) | `#dc2626` |
 | EPSS | `#7c3aed` |
 | CAL FIRE | `#b91c1c` (acres via bubble size, not a second hue) |
 | PSPS | `#1d6fa5` (fillOpacity 0.25) |

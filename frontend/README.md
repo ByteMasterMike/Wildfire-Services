@@ -53,6 +53,8 @@ After **each** Wildfire & Outage Map canvas change, before treating the slice as
 
 Canvas CSS/JS must stay scoped to `#sfps-tab-historical` / `#historical-canvas-host`. Do not reuse Planning Tool containers (`.sfps-split`, `#planning-controls`, `#method-compare`).
 
+Asked series and browse **Events over time** share one Plotly node. The GitHub Pages copy (`docs/`) isolates them: asked series fills the card (`autosize: true`); browse stays a 380px host with `autosize: false` and a year-pinned x-axis, and does not `Plotly.Plots.resize` Bar/Donut. This local `frontend/` copy still measures asked-series height with `autosize: false` and can `Plots.resize` the browse chart. Do not copy the docs resize path onto Bar/Donut here without the same isolation.
+
 Working reference for the agent-driven left surface (six components, planner, grounding, layout, nulls, known bugs): [`CANVAS.md`](CANVAS.md). The aside-widget design in [`CANVAS_PANEL_PROPOSAL.md`](CANVAS_PANEL_PROPOSAL.md) is superseded.
 
 ## Config (one-line deploy change)
@@ -68,9 +70,9 @@ window.WILDFIRE_CALFIRE_INCIDENT_TYPE = "all"; // verification; then "" for Wild
 
 ## US Ignitions layer
 
-Historical Map toggle **US Ignitions (IRWIN / all-cause)** (teal, off by default) loads `dataset=us_ignitions` from the visualization API. Info strip explains all-cause / sample / not-comparable-to-CPUC / CA concentration (~59% of 2024). Auto-zooms to CONUS only from the default California view with no utility/county filter; otherwise the view is left alone. **Zoom to national extent** is on the strip for on-demand use.
+Historical Map toggle **US Ignitions (IRWIN / all-cause)** (red `#dc2626` from the visualization API, off by default) loads `dataset=us_ignitions`. Info strip explains all-cause / sample / not-comparable-to-CPUC / CA concentration (~59% of 2024). Auto-zooms to CONUS only from the default California view with no utility/county filter; otherwise the view is left alone. **Zoom to national extent** is on the strip for on-demand use. GitHub Pages `docs/` hardcodes `#dc2626` for markers/clusters/chart; this local `frontend/` copy still hardcodes `#0f766e` on the layer swatch until that JS is synced.
 
-Map datasets use one hue each (CPUC burnt orange, CAL FIRE red, US teal, EPSS purple, PSPS blue, HFTD amber with opacity for tier). CAL FIRE magnitude is bubble size, not a second color.
+Map datasets use one hue each (CPUC burnt orange, CAL FIRE red, US ignitions `#dc2626`, EPSS purple, PSPS blue, HFTD amber with opacity for tier). CAL FIRE magnitude is bubble size, not a second color.
 
 The Ask-data panel can download CSV when an answer produced tabular tool data (records, comparison rows, time-series buckets, spatial counts). Count-only answers do not. Agent visuals on the left canvas: [`CANVAS.md`](CANVAS.md). Ask stays enabled whenever the agent `/health` endpoint is reachable, even if the GPU/model is down; the banner then says counts, maps, and rankings still work. Start/stop for the demo GPU is a strip above the form (`WILDFIRE_GPU_CONTROL_BASE`, port 8005). The token is prompted per action and is not stored.
 

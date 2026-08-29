@@ -40,6 +40,8 @@ Common query params: `utility`, `year`, `start_date`, `end_date`, `bbox`, `forma
 
 Special tokens: `utility=untagged`, `incident_type=untyped`, `include_untagged=true`.
 
+Year-to-year CAL FIRE **count** comparisons are the incident-map feed, not the Redbook census (2023→2024 listed 133→611 is a posting-threshold drop, not occurrence; median acres 70→43). Warehouse acres still track Redbook ~95–97%. See [`analysis/calfire-2024-jump.md`](../../analysis/calfire-2024-jump.md).
+
 ## Ignition counts: attribute vs spatial
 
 | Question style | Endpoint / filter | Definition |

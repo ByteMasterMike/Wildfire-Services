@@ -27,7 +27,7 @@ Docs: http://127.0.0.1:8003/docs
 
 ### Normalization
 
-`normalize=none|per_circuit|per_km2` — response always labels which form was returned (`value`, `raw_value`, `denominator`). Unavailable denominators → `value: null` + `reason` (never a silent zero).
+`normalize=none|per_circuit|per_km2` — response always labels which form was returned (`value`, `raw_value`, `denominator`). Unavailable denominators → `value: null` + `reason` (never a silent zero). The map UI must draw a **hatched placeholder** for those bars, not an empty axis plus a floating “no data” (see [`frontend/CANVAS.md`](../../frontend/CANVAS.md)).
 
 ### Definitions
 

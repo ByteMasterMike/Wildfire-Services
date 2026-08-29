@@ -27,8 +27,13 @@ uvicorn services.gpu_control.app:app --port 8005 --app-dir .
 Missing `GPU_CONTROL_TOKEN` → POST returns **503** (start is never open).
 Wrong or missing header → **401**.
 
-`GET /gpu/status` is pollable. `POST /gpu/start` returns immediately after
-`StartInstances` (`state: starting`) and a background task then:
+`GET /gpu/status` is pollable. Concurrent `POST /gpu/start` is serialized with
+an in-process lock. If a start is already running, or state is not `stopped` /
+`error`, the handler returns the current status payload and does **not** call
+`StartInstances` again. The lock resets when this process restarts.
+
+`POST /gpu/start` returns immediately after `StartInstances` (`state: starting`)
+and a background task then:
 
 1. Polls until Ollama answers (same `/api/ps` probe as status).
 2. If the model is not in VRAM, loads it with the agent's

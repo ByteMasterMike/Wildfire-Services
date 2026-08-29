@@ -47,6 +47,8 @@ companion calls:
 - Every utility-scoped CPUC ignition count is paired with the same-period
   spatial containment count, for any utility (not only PG&E).
 - CAL FIRE answers report missing incident-type and utility-tag counts.
+  Year-to-year CAL FIRE **count** comparisons that cross 2023–2024 attach the
+  incident-map-feed caveat (listed 133→611 is posting, not occurrence).
 - US ignition answers state that the CA-heavy FireCastRL data is a sample, not
   a census, and is not comparable to CPUC.
 - EPSS answers state that warehouse coverage is PG&E-only.
@@ -71,16 +73,17 @@ uvicorn services.agent.app:app --port 8004 --app-dir .
 ```
 
 - `GET /health`
-- `POST /ask` with `{"question":"How many PG&E ignitions were there in 2024?"}`
+- `POST /ask` with `{"question":"How many PG&E ignitions were there in 2024?"}` — leave this path unchanged for eval
+- `POST /ask/stream` — SSE harness progress for the website Ask panel (not a second answer path)
 - `GET /artifacts/{ref}` for a non-expired full backend payload
 
 The service is single-exchange: it stores no conversation history.
 
 ## Evaluation
 
-The 27 cases cover single-service, multi-service, required caveats,
-clarifications/refusals, recovery, and partial-HTTP-200 detection. Any subset of
-the eight matrix cells can be selected:
+Cases in `eval/cases.json` cover single-service, multi-service, ranking, required
+caveats, clarifications/refusals, recovery, and partial-HTTP-200 detection. Any
+subset of the eight matrix cells can be selected:
 
 ```powershell
 python -m services.agent.eval.runner `

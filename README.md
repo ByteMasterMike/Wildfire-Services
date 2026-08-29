@@ -8,7 +8,8 @@ Modular service layer for wildfire risk research. The first service wraps an exi
 shared/                         # cross-service utilities (paths, db)
 db/                             # PostGIS schema + loaders (map layers + risk grid)
 tests/                          # live API verification suite
-frontend/                       # slim UI (API-backed Historical Map; see frontend/README.md)
+frontend/                       # local UI (map + Planning Tool; python frontend/serve.py)
+docs/                           # GitHub Pages copy (map-only; needs .nojekyll)
 services/data_query/            # read API over warehouse tables
 services/visualization/         # styled GeoJSON / time series / detail
 services/comparison/            # cross-utility / region / period metrics
@@ -57,8 +58,10 @@ uvicorn services.data_query.app:app --reload --app-dir .
 ```
 
 - Docs: http://localhost:8000/docs  
-- Examples: `/ignitions`, `/epss/outages`, `/psps/events`, `/calfire/incidents`, `/circuits`, `/hftd`, `/iou-territories`, `/spatial/point`, `/spatial/summary`  
-- Common params: `utility`, `year`, `county`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`. CPUC `county` is inferred at load from lat/lon against Census TIGER California polygons (`wildfire.counties`). `/spatial/point` returns that county.  
+- Examples: `/ignitions`, `/us-ignitions`, `/epss/outages`, `/psps/events`, `/calfire/incidents`, `/circuits`, `/hftd`, `/iou-territories`, `/spatial/point`, `/spatial/summary`, `/rank`  
+- Common params: `utility`, `year`, `county`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`. CPUC `county` is inferred at load from lat/lon against Census TIGER California polygons (`wildfire.counties`). `/spatial/point` returns that county. Circuit IDs are TEXT 9-digit zero-padded — never numeric.  
+- CAL FIRE defaults to `incident_type in (Wildfire, Fire)` (use `untyped` / `all`). Year-to-year CAL FIRE **count** comparisons are a map-feed artifact (2023→2024 listed 133→611; posting threshold dropped, median acres 70→43). That is not a 4.6× fire year — Redbook counts rose ~10%; warehouse acres still track Redbook ~95–97%. See [`analysis/calfire-2024-jump.md`](analysis/calfire-2024-jump.md).  
+- `GET /rank` is single-dataset top-N (`group_by` county|utility|circuit); it rejects `us_ignitions` and EPSS-by-utility. Say “top N of M” and keep ties.  
 - Verification: `python tests/report_results.py` (data_query :8000, risk :8001)
 
 **Ignition counts — two definitions:** `utility=` filters use the CSV **attribute** tag; `/spatial/summary` uses **polygon containment**. For PGE 2024 these differ by 4 rows (inside territory but not tagged PGE). See `services/visualization/README.md`.
@@ -72,7 +75,7 @@ uvicorn services.visualization.app:app --port 8002 --app-dir .
 ```
 
 - Docs: http://localhost:8002/docs  
-- `/map-layer` (EPSS = circuit **lines**), `/time-series`, `/utility-territory`, `/event-detail`
+- `/map-layer` (EPSS = circuit **lines**; `us_ignitions` is red `#dc2626`, off-by-default in the UI), `/time-series`, `/utility-territory`, `/event-detail`
 
 ### Comparison API
 
@@ -91,10 +94,11 @@ Read-only single-exchange router over all four services:
 uvicorn services.agent.app:app --port 8004 --app-dir .
 ```
 
-The deterministic tier handles fully specified reads, maps, comparisons, and
-risk lookups before invoking local Qwen3 through Ollama. Six grouped HTTP tools,
-strict validation, response-contract checks, bounded retries, payload
-summarization, and deterministic caveat injection prevent ungrounded answers.
+The deterministic tier handles fully specified reads, maps, comparisons,
+rankings, and risk lookups before invoking local Qwen3 through Ollama. Seven
+grouped HTTP tools, strict validation, response-contract checks, bounded
+retries, payload summarization, and deterministic caveat injection prevent
+ungrounded answers.
 
 Run the staged 4B baseline with:
 
@@ -108,7 +112,10 @@ See [`services/agent/README.md`](services/agent/README.md) and the explicit
 The agent binds `:8004` even when Ollama is down. Deterministic routes
 (counts, maps, rankings) keep working; model-tier questions return a clear
 offline sentence (HTTP 200), not a 500. `/health` stays a cheap `/v1/models`
-probe and does not warm the model.
+probe and does not warm the model. The website Ask panel uses SSE
+`POST /ask/stream`; leave `POST /ask` unchanged for eval. Relative dates and
+ranges like `2021 to 2025` / `August 2023 to September 2024` are resolved in
+the harness, not by the model.
 
 ### GPU control
 
@@ -120,22 +127,24 @@ uvicorn services.gpu_control.app:app --port 8005 --app-dir .
 
 `POST /gpu/start` and `POST /gpu/stop` require `X-GPU-Control-Token`. Missing
 `GPU_CONTROL_TOKEN` returns 503 so start is never open. Status is unauthenticated
-and pollable. Stopping EC2 does not stop EBS (~$20/month). See
+and pollable. Concurrent `/gpu/start` is locked: in-progress starts (and any
+state other than `stopped`/`error`) return current status and do not call
+`StartInstances` again. Stopping EC2 does not stop EBS (~$20/month). See
 [`services/gpu_control/README.md`](services/gpu_control/README.md).
 
-### Frontend (Historical Map)
+### Frontend (Historical Map) and GitHub Pages
 
-Slim copy of the research website UI, wired to the visualization API. **Does not** include Planning Tool PNGs (~2 GB); those load from a sibling `dataset_demo` checkout.
+Local UI: [`frontend/`](frontend/README.md) (map **and** Planning Tool). GitHub Pages: [`docs/`](docs/README.md) (map-only; Planning Tool removed).
 
 ```bash
-# Terminal A: visualization :8002
-# Terminal B: serve parent folder so sibling plots resolve
-cd "C:\AI Coding Projects"
-python -m http.server 5500
-# Open http://127.0.0.1:5500/Wildfire%20Services/frontend/
+# visualization :8002 (and other APIs as needed)
+python frontend/serve.py
+# Open http://127.0.0.1:8765/index.html
 ```
 
-Details: [`frontend/README.md`](frontend/README.md), verification: [`frontend/VERIFICATION.md`](frontend/VERIFICATION.md). API base URL is one line in `frontend/assets/js/api-config.js`.
+`serve.py` mounts sibling `dataset_demo` at `/dataset_demo/` so Planning Tool PNGs resolve. Do **not** run `python -m http.server` from `frontend/` — those plots 404. Pages API bases are CloudFront; local `frontend/assets/js/api-config.js` stays on 127.0.0.1. Verification notes: [`frontend/VERIFICATION.md`](frontend/VERIFICATION.md).
+
+US Ignitions (`wildfire.us_ignitions`) are an IRWIN/FireCastRL all-cause sample (33,457 positives; not a census; not for cNHPP). Map color is **`#dc2626`**. Not comparable to CPUC or CAL FIRE. See [`docs/dataset-comparison-cpuc-calfire-us.md`](docs/dataset-comparison-cpuc-calfire-us.md).
 
 Place (or keep) local data under `services/risk_forecasting/data/`:
 
