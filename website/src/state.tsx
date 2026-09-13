@@ -1,0 +1,25 @@
+import { createContext, useContext } from 'react';
+import { DEFAULT_FILTERS, type DatasetId, type EventRecord, type Filters, type GroupBy, type Interval } from './data.ts';
+import type { PanelId, PanelInstance } from './PanelPicker';
+
+export interface PanelSettings {
+  dataset: DatasetId; filters: Filters; interval: Interval; groupBy: GroupBy;
+  measure: 'count' | 'share'; metric: 'events' | 'acres' | 'counties' | 'customers';
+  datasets: DatasetId[]; overlays: string[];
+  answerStat?: { value: number; label: string; scope: string; period: string; unit: string };
+}
+export function newPanel(id: number, type: PanelId): PanelInstance {
+  return { id, type, settings: {
+    dataset: type === 'comparison' ? 'epss' : 'cpuc', filters: { ...DEFAULT_FILTERS },
+    interval: 'monthly', groupBy: 'cause', measure: 'count', metric: 'events',
+    datasets: ['cpuc', 'epss', 'calfire'], overlays: [],
+  } };
+}
+export interface Selection { record: EventRecord; location?: [number, number] }
+export const SelectionContext = createContext<{ selected: Selection | null; select: (selection: Selection) => void; inspect: (record: EventRecord) => void }>({ selected: null, select: () => {}, inspect: () => {} });
+export const PanelContext = createContext<{ settings: PanelSettings; update: (patch: Partial<PanelSettings>) => void } | null>(null);
+export function usePanel() {
+  const panel = useContext(PanelContext);
+  if (!panel) throw new Error('Panel context missing');
+  return panel;
+}

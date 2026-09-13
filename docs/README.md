@@ -1,51 +1,49 @@
-# GitHub Pages UI (`docs/`)
+# Website / GitHub Pages
 
-Public map + Ask surface for [Wildfire Services](https://github.com/ByteMasterMike/Wildfire-Services). This folder is what GitHub Pages serves. **Planning Tool is not in this copy** — the map is the only view. Local development that still needs the Planning Tool uses [`frontend/`](../frontend/README.md) and `python frontend/serve.py`.
+`docs/index.html` and `docs/assets/workspace/` are the built website, generated
+from [`website/`](../website/README.md). The interface follows the independent
+`demo/` design: a conversation area and six kinds of repeatable analysis panels.
+The website uses real remote records; `demo/` remains a separate design prototype.
 
-`.nojekyll` must stay in this folder so Pages does not strip asset paths.
+## Preview and build
 
-## Serve a local preview of this copy
+From the repository root:
 
-Do not use `python frontend/serve.py` to check Pages-only UI — that serves `frontend/`. From `docs/`:
-
-```powershell
-cd "C:\AI Coding Projects\Wildfire Services\docs"
-python -m http.server 8770
+```sh
+python -B -m http.server 8770 --bind 127.0.0.1 --directory docs
 ```
 
-Open http://127.0.0.1:8770/
+Open `http://127.0.0.1:8770/`. To change the website, edit `website/src/`, then:
 
-After JS/CSS edits, bump the `?v=` query strings on `sect-fasttrip-psps.js` / `.css` in `index.html` so Pages does not keep a stale bundle.
-
-## APIs
-
-[`assets/js/api-config.js`](assets/js/api-config.js) points visualization, agent, and GPU control at CloudFront `/api/...` prefixes. `WILDFIRE_DATA_QUERY_BASE` is still `http://127.0.0.1:8000` (record-table refetch from Pages cannot reach a private warehouse).
-
-```js
-window.WILDFIRE_API_BASE = "https://d3t70p3if3twy3.cloudfront.net/api/visualization";
-window.WILDFIRE_AGENT_BASE = "https://d3t70p3if3twy3.cloudfront.net/api/agent";
-window.WILDFIRE_GPU_CONTROL_BASE = "https://d3t70p3if3twy3.cloudfront.net/api/gpu-control";
-window.WILDFIRE_CALFIRE_INCIDENT_TYPE = ""; // omit → API default Wildfire+Fire
+```sh
+cd website
+npm ci
+npm test
+npm run build
 ```
 
-HDWI animation stays local (`assets/data/weather_anim/`). If `/health` or layer fetches fail, a banner appears above the map — the map will not silently stay blank.
+Commit the source and the generated `docs/index.html` / `docs/assets/workspace/`
+files together. Relative bundle URLs support a GitHub Pages repository subpath.
+Keep `.nojekyll`. Builds replace only the generated workspace bundle directory;
+the other assets, including the existing HDW files, are retained.
 
-## Map-only canvas
+## Data and behavior
 
-Canvas CSS/JS stays scoped to `#sfps-tab-historical` / `#historical-canvas-host`. Collapsible **Data sources** is in the page footer.
+- `website/src/api.ts` configures the remote visualization and agent URLs.
+- Map layers, event detail, and daily time-series buckets come from the deployed
+  visualization service. The browser collects every filtered page before
+  calculating record-based statistics or comparisons. EPSS circuit features are
+  expanded into their outage records for event counts.
+- Each panel has independent filters. Names, order and settings persist in the
+  browser; conversation text and selected-event context do not.
+- Ask uses `POST /ask/stream`, without waiting for agent health or starting a GPU.
+  Supported grounded map, series, record and metric views append panels. Other
+  view contracts remain in the answer rather than becoming approximate charts.
+- Source metadata reports the first/last recorded event dates, not scrape times.
+  Source limitations and unavailable fields remain visible.
+- This slice does not introduce risk surfaces, weather/vegetation querying,
+  national census counts, or full network topology.
 
-Working contract for the agent-driven left surface: [`CANVAS.md`](CANVAS.md). The Planning Tool verification step in that file applies to [`frontend/`](../frontend/README.md) only — this Pages copy has no Planning Tool tab. Preview here with `python -m http.server` from `docs/`.
-
-**Asked series** (Ask canvas) and browse **Events over time** (Time / Bar / Donut) share one Plotly node but not one resize path. Asked series fills its container (`autosize: true`). Browse uses a fixed 380px host, `autosize: false`, and a date axis pinned to the selected calendar year. Running `Plotly.Plots.resize` on the Plotly node itself after the asked-series fill work blanks Bar/Donut and can stretch Time’s axis — that isolation is intentional.
-
-## US Ignitions
-
-Toggle **US Ignitions (IRWIN / all-cause)** is off by default. Markers, clusters, the layer swatch, the info-strip, and the Events-over-time series use red **`#dc2626`**, matching visualization `style.color`. FireCastRL is an all-cause event-window sample, not a census, not comparable to CPUC or CAL FIRE, and California-heavy (~40% overall / ~59% of 2024). Auto-zoom to CONUS only from the default California view with no utility/county filter; **Zoom to national extent** is on the strip.
-
-One hue per dataset: CPUC burnt orange, CAL FIRE red, US ignitions `#dc2626`, EPSS purple, PSPS blue, HFTD amber (opacity for tier). CAL FIRE magnitude is bubble size, not a second color.
-
-## Ask + GPU
-
-Ask stays enabled whenever the agent `/health` endpoint is reachable, even if the GPU/model is down; the banner then says counts, maps, and rankings still work. Start/stop for the demo GPU is the strip above the form. The token is prompted per action and is not stored. Stopping EC2 does not stop EBS (~$20/month).
-
-The Ask panel can download CSV when an answer produced tabular tool data (records, comparison rows, time-series buckets, spatial counts). Count-only answers do not.
+The former static page scripts and canvas documentation are historical context;
+the new entrypoint does not load them. The local Planning Tool remains under
+`frontend/`, served with `python frontend/serve.py`, and is unchanged here.
