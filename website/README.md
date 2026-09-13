@@ -37,8 +37,9 @@ Preview the actual generated page using the command in `docs/README.md`.
 - **Comparison:** count/share by cause, utility or county. CPUC/CAL FIRE have
   no cause field. EPSS is PG&E-only, with explicit null bars for other utilities.
   Unknown and missing causes are separate categories.
-- **Record table:** complete filtered records, local search, 25-row display pages
-  and remote detail. Circuit IDs retain leading zeros.
+- **Record table:** complete filtered records, local search, overview pages sized
+  to the available height, 25-row pages in expanded view, and remote detail.
+  Circuit IDs retain leading zeros.
 - **Stat card:** record counts and known counties; CAL FIRE acreage; PSPS
   customer-event totals. Missing values are reported, not converted into zeros.
 - **Spatial context:** selected event/position, point-in-polygon against remote
@@ -64,6 +65,21 @@ ported; their answer text remains available.
 Panel settings use `wildfire-workspace-v1` in browser local storage. Storage
 failure is visible; no chat text, credentials, or fetched datasets are saved.
 
+## Scrolling and expanded views
+
+Overview panels remain 520px high and pass vertical scrolling to the page.
+Filters open in a separate dialog, preserving the chart area. Comparison shows
+as many ranked rows as fit, with an explicit View all button for the remainder;
+table page sizes adapt to the rendered row/header heights and available space.
+
+Each panel can expand into a modal workspace. Restore or Escape returns to the
+overview with the same component, selected filters and table position. The page
+behind an expanded panel is inert and scroll-locked. Nested filters/details
+close independently. Expanded charts and tables can scroll internally; expanded
+maps support wheel zoom. Maps keep their instance, center and zoom when resized.
+On coarse-pointer devices, overview touch gestures are reserved for page
+scrolling; expand the map to pan and pinch-zoom.
+
 ## Verification, 2026-09-13
 
 - Six focused Node tests cover complete pagination and changed pages, EPSS
@@ -79,6 +95,13 @@ failure is visible; no chat text, credentials, or fetched datasets are saved.
 - A real browser Ask for PG&E 2024 returned 532, included the 536 spatial-count
   qualification, and appended grounded map and metric panels. This was a live
   SSE request, not a direct render call or mocked reply.
+
+Scroll/focus follow-up: rendered at 1280px and 390px widths. All six overview
+bodies fit their frames. Wheel gestures over map, chart and record-table areas
+moved the page; expanded table scrolling left the page fixed. Escape restored
+focus/page position and closed nested filters/details one layer at a time. The
+map retained zoom level 7 after returning from expanded view. Phone-width
+layout was inspected; physical touchscreen gestures still need device testing.
 
 Backend models and services, `demo/`, and `frontend/` are outside this change.
 This verifies a website migration with the existing public data API, not the

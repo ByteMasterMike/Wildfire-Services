@@ -21,8 +21,8 @@ function PanelIcon({ path }: { path: string }) {
   return <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d={path} /></svg>;
 }
 
-export function PanelStrip({ panels, activeId, onRemove, onOpen, onLocate }: {
-  panels: PanelInstance[]; activeId: number | null; onRemove: (id: number) => void;
+export function PanelStrip({ panels, onRemove, onOpen, onLocate }: {
+  panels: PanelInstance[]; onRemove: (id: number) => void;
   onOpen: () => void; onLocate: (id: number) => void;
 }) {
   return <nav aria-label="Open panels" className="panel-strip">
@@ -30,7 +30,7 @@ export function PanelStrip({ panels, activeId, onRemove, onOpen, onLocate }: {
       const panel = PANELS.find(panel => panel.id === instance.type)!;
       const title = panelTitle(instance);
       return <div key={instance.id} className="panel-shortcut">
-        <button type="button" onClick={() => onLocate(instance.id)} aria-label={`Go to ${title}`} aria-controls={`panel-${instance.id}`} aria-current={activeId === instance.id ? "true" : undefined} className="panel-shortcut-icon">
+        <button type="button" onClick={() => onLocate(instance.id)} aria-label={`Go to ${title}`} aria-controls={`panel-${instance.id}`} className="panel-shortcut-icon">
           <PanelIcon path={panel.icon} />
         </button>
         <span className="panel-shortcut-label" title={title}>{title}</span>

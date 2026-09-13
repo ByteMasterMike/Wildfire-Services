@@ -10,7 +10,7 @@ import { useRemote } from './useRemote';
 import { SelectionContext, usePanel } from './state';
 
 export function EventMap() {
-  const { settings, update } = usePanel();
+  const { settings, update, expanded } = usePanel();
   const { dataset, filters, overlays } = settings;
   const selection = useContext(SelectionContext);
   const selectionRef = useRef(selection); selectionRef.current = selection;
@@ -25,9 +25,20 @@ export function EventMap() {
     const instance = L.map(host.current!, { preferCanvas: true, scrollWheelZoom: false }).setView([37.6, -120.8], 5);
     map.current = instance;
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { className: 'base-map-tiles', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 }).on('tileerror', () => setTileError(true)).addTo(instance);
-    const observer = new ResizeObserver(() => instance.invalidateSize({ pan: false })); observer.observe(host.current!);
+    const observer = new ResizeObserver(() => instance.invalidateSize({ pan: true, animate: false })); observer.observe(host.current!);
     return () => { observer.disconnect(); instance.remove(); map.current = null; };
   }, []);
+  useEffect(() => {
+    const instance = map.current!;
+    const coarsePointer = matchMedia('(pointer: coarse)');
+    const updateGestures = () => {
+      if (expanded) instance.scrollWheelZoom.enable(); else instance.scrollWheelZoom.disable();
+      if (expanded || !coarsePointer.matches) instance.dragging.enable(); else instance.dragging.disable();
+      if (expanded) instance.touchZoom.enable(); else instance.touchZoom.disable();
+    };
+    updateGestures(); coarsePointer.addEventListener('change', updateGestures);
+    return () => coarsePointer.removeEventListener('change', updateGestures);
+  }, [expanded]);
   useEffect(() => {
     const instance = map.current;
     if (!instance || !boundaries.data || !overlays.length) return;

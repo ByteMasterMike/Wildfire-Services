@@ -5,6 +5,7 @@ import { getDailySeries, getRecords } from './api.ts';
 import { ChartFilters, LoadState, SourceNote } from './Controls';
 import { usePanel } from './state';
 import { useRemote } from './useRemote';
+import { useRowCapacity } from './useRowCapacity';
 
 export function TimeSeries() {
   const { settings, update } = usePanel();
@@ -14,8 +15,9 @@ export function TimeSeries() {
   const [hovered, setHovered] = useState<number | null>(null);
   const plot = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(540);
+  const [height, setHeight] = useState(246);
   useEffect(() => {
-    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(240, entry.contentRect.width)));
+    const observer = new ResizeObserver(([entry]) => { setWidth(Math.max(240, entry.contentRect.width)); setHeight(Math.max(120, entry.contentRect.height)); });
     observer.observe(plot.current!);
     return () => observer.disconnect();
   }, []);
@@ -33,14 +35,14 @@ export function TimeSeries() {
   const visible = series.filter(dataset => !dataset.reason);
   const max = Math.max(4, ...visible.flatMap(dataset => dataset.values));
   const ceiling = Math.ceil(max / 4) * 4;
-  const left = 36, right = width - 16, top = 28, bottom = 210;
+  const left = 36, right = width - 16, top = 28, bottom = height - 36;
   const x = (index: number) => buckets.length <= 1 ? (left + right) / 2 : left + index / (buckets.length - 1) * (right - left);
   const y = (value: number) => bottom - value / ceiling * (bottom - top);
   const tickIndices = [...new Set(Array.from({ length: Math.min(5, buckets.length) }, (_, i) => Math.round(i * (buckets.length - 1) / Math.max(1, Math.min(5, buckets.length) - 1))))];
   const activeIndex = hovered === null || !buckets.length ? null : Math.min(hovered, buckets.length - 1);
   const empty = error || remote.error || (remote.loading ? "Loading records…" : null) || (!selected.length ? "Select at least one dataset to show a line." : !visible.length ? "No data is available for the selected datasets and utility." : null);
 
-  return <div className="analysis-chart">
+  return <div className="analysis-chart series-panel">
     <div className="analysis-heading series-toolbar">
     <div className="dataset-switches" role="group" aria-label="Visible datasets">
       {DATASETS.map(dataset => <button key={dataset.id} type="button" role="checkbox" aria-checked={selected.includes(dataset.id)} aria-label={dataset.name}
@@ -53,7 +55,7 @@ export function TimeSeries() {
     </div>
     <ChartFilters filters={filters} onChange={next => { setFilters(next); setHovered(null); }} />
     <div ref={plot} className="series-plot">
-      {empty ? <LoadState loading={remote.loading} error={remote.loading ? null : empty} retry={remote.error ? remote.retry : undefined} /> : <svg viewBox={`0 0 ${width} 246`} role="img" tabIndex={0}
+      {empty ? <LoadState loading={remote.loading} error={remote.loading ? null : empty} retry={remote.error ? remote.retry : undefined} /> : <svg viewBox={`0 0 ${width} ${height}`} role="img" tabIndex={0}
         aria-label={`${interval} event counts. Use left and right arrows to inspect periods.`}
         onMouseLeave={() => setHovered(null)} onMouseMove={event => {
           const bounds = event.currentTarget.getBoundingClientRect();
@@ -67,7 +69,7 @@ export function TimeSeries() {
         }}>
         <text x={left} y="13">Events</text>
         {[0, 1, 2, 3, 4].map(i => <g key={i}><path d={`M${left} ${y(ceiling * i / 4)}H${right}`} stroke="#ffffff12" /><text x={left - 9} y={y(ceiling * i / 4) + 4} textAnchor="end">{ceiling * i / 4}</text></g>)}
-        {tickIndices.map(index => <text key={index} x={x(index)} y="235" textAnchor={index === 0 ? "start" : index === buckets.length - 1 ? "end" : "middle"}>{filters.start.slice(0, 4) === filters.end.slice(0, 4) ? buckets[index].start.slice(5) : buckets[index].start.slice(0, 7)}</text>)}
+        {tickIndices.map(index => <text key={index} x={x(index)} y={height - 11} textAnchor={index === 0 ? "start" : index === buckets.length - 1 ? "end" : "middle"}>{filters.start.slice(0, 4) === filters.end.slice(0, 4) ? buckets[index].start.slice(5) : buckets[index].start.slice(0, 7)}</text>)}
         {visible.map(dataset => <g key={dataset.id}>
           <polyline points={dataset.values.map((value, index) => `${x(index)},${y(value)}`).join(" ")} fill="none" stroke={dataset.color} strokeWidth="2" strokeLinejoin="round" />
           {dataset.values.length <= 24 && dataset.values.map((value, index) => <circle key={index} cx={x(index)} cy={y(value)} r="3" fill={dataset.color}><title>{dataset.name}: {buckets[index].start} – {buckets[index].end}: {value} events</title></circle>)}
@@ -82,7 +84,7 @@ export function TimeSeries() {
 }
 
 export function Comparison() {
-  const { settings, update } = usePanel();
+  const { settings, update, expanded, expand } = usePanel();
   const { dataset, groupBy, measure, filters } = settings;
   const setFilters = (filters: typeof settings.filters) => update({ filters });
   const setDataset = (dataset: DatasetId) => update({ dataset });
@@ -95,8 +97,11 @@ export function Comparison() {
   const events = remote.data ?? [];
   const error = validation || remote.error;
   const rows = error ? [] : groupedCounts(events, dataset, groupBy, filters);
+  const viewport = useRef<HTMLDivElement>(null);
+  const capacity = useRowCapacity(viewport, '.analysis-bar-row', rows.length > 0);
+  const visibleRows = expanded ? rows : rows.slice(0, capacity);
   const max = Math.max(1, ...rows.map(row => row.value ?? 0));
-  return <div className="analysis-chart">
+  return <div className="analysis-chart comparison-panel">
     <div className="comparison-toolbar">
     <div className="comparison-selectors">
       <label>Dataset<select aria-label="Comparison dataset" value={dataset} onChange={event => setDataset(event.target.value as DatasetId)}>{DATASETS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -107,8 +112,8 @@ export function Comparison() {
     <ChartFilters filters={filters} onChange={setFilters} dataset={dataset} />
     {error || remote.loading || !events.length ? <LoadState loading={remote.loading} error={error} retry={remote.error ? remote.retry : undefined} /> : <>
       <div className="bar-summary"><span>{config.name} · {events.length} events</span><span>{measure === "count" ? "Event count" : "% of selected records"}</span></div>
-      <div className="analysis-bars" role="list" aria-label="Grouped event counts">
-        {rows.map(row => {
+      <div ref={viewport} className="analysis-bars" role="list" aria-label="Grouped event counts">
+        {visibleRows.map(row => {
           const share = (row.value ?? 0) / events.length * 100;
           return <div key={row.key} className="analysis-bar-row" role="listitem">
             <span className="bar-label" title={row.key}>{row.key}</span>
@@ -117,9 +122,8 @@ export function Comparison() {
           </div>;
         })}
       </div>
-      <SourceNote dataset={dataset} />
-      {groupBy === "cause" && <p className="panel-note">Unknown is a recorded cause category; Not recorded is a missing value. Both count toward the percentage total.</p>}
-      {dataset === "epss" && groupBy === "utility" && <p className="chart-notice">EPSS is PG&E-only. Other utilities are unavailable, not zero.</p>}
+      {!expanded && <div className="overview-more">{rows.length > visibleRows.length && <button className="text-button" onClick={expand}>Showing {visibleRows.length} of {rows.length} categories · View all →</button>}</div>}
+      {groupBy === "cause" ? <p className="panel-note">Unknown is a recorded cause; Not recorded is missing. Both count toward the total.</p> : <SourceNote dataset={dataset} />}
     </>}
   </div>;
 }

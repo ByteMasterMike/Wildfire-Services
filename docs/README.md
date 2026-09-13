@@ -36,6 +36,9 @@ the other assets, including the existing HDW files, are retained.
   expanded into their outage records for event counts.
 - Each panel has independent filters. Names, order and settings persist in the
   browser; conversation text and selected-event context do not.
+- Overview panels scroll with the page. The expand button opens a focused modal
+  view; Escape restores the same panel. Filters use a dialog, and record-table
+  pagination fits the overview height so its controls remain visible.
 - Ask uses `POST /ask/stream`, without waiting for agent health or starting a GPU.
   Supported grounded map, series, record and metric views append panels. Other
   view contracts remain in the answer rather than becoming approximate charts.

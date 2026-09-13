@@ -6,24 +6,28 @@ import { asText, configFor, filterError, sumMetric, unavailableReason, utilityLa
 import { ChartFilters, DatasetSelect, LoadState, SourceNote } from './Controls';
 import { SelectionContext, usePanel } from './state';
 import { useRemote } from './useRemote';
+import { useRowCapacity } from './useRowCapacity';
 
 export function RecordTable() {
-  const { settings, update } = usePanel(); const { dataset, filters } = settings;
+  const { settings, update, expanded } = usePanel(); const { dataset, filters } = settings;
   const { inspect } = useContext(SelectionContext);
-  const [query, setQuery] = useState(''); const [page, setPage] = useState(0);
+  const [query, setQuery] = useState(''); const [offset, setOffset] = useState(0);
+  const viewport = useRef<HTMLDivElement>(null);
   const validation = filterError(filters) || unavailableReason(dataset, filters);
   const remote = useRemote(validation ? null : JSON.stringify(['records', dataset, filters]), () => getRecords(dataset, filters));
   const events = remote.data ?? [];
   const rows = events.filter(e => [e.name,e.county,e.utility,e.cause,e.id].join(' ').toLowerCase().includes(query.toLowerCase()));
-  const current = Math.min(page, Math.max(0, Math.ceil(rows.length / 25) - 1));
-  useEffect(() => setPage(0), [dataset, filters, query]);
+  const capacity = useRowCapacity(viewport, 'tbody tr', rows.length > 0, 'thead');
+  const pageSize = expanded ? 25 : capacity;
+  const current = Math.min(offset, Math.max(0, rows.length - 1));
+  useEffect(() => setOffset(0), [dataset, filters, query]);
   return <div className="analysis-chart records-panel"><div className="analysis-heading"><DatasetSelect value={dataset} onChange={dataset => update({ dataset })} /></div>
     <ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} />
     <input className="record-search" aria-label="Filter records" placeholder="Filter by event, county, utility, or cause…" value={query} onChange={e => setQuery(e.target.value)} />
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
-      <div className="record-scroll"><table><thead><tr><th>Event</th><th>County</th><th>Date</th><th>{dataset === 'calfire' ? 'Acres' : 'Utility'}</th></tr></thead><tbody>{rows.slice(current * 25, current * 25 + 25).map(e => <tr key={e.id}><td><button className="record-link" onClick={() => inspect(e)}>{e.name}</button></td><td>{e.county ?? '—'}</td><td>{e.date || '—'}</td><td>{dataset === 'calfire' ? e.acres?.toLocaleString() ?? '—' : e.utility ?? '—'}</td></tr>)}</tbody></table></div>
+      <div ref={viewport} className="record-scroll"><table><thead><tr><th>Event</th><th>County</th><th>Date</th><th>{dataset === 'calfire' ? 'Acres' : 'Utility'}</th></tr></thead><tbody>{rows.slice(current, current + pageSize).map(e => <tr key={e.id}><td><button className="record-link" onClick={() => inspect(e)}>{e.name}</button></td><td>{e.county ?? '—'}</td><td>{e.date || '—'}</td><td>{dataset === 'calfire' ? e.acres?.toLocaleString() ?? '—' : e.utility ?? '—'}</td></tr>)}</tbody></table></div>
       {!rows.length && <p className="panel-note">No matching records.</p>}
-      <div className="record-pagination"><span>{rows.length ? `${current * 25 + 1}–${Math.min((current + 1) * 25, rows.length)}` : '0'} of {rows.length.toLocaleString()} records{query && ` (${events.length.toLocaleString()} before search)`}</span><div><button aria-label="Previous page" disabled={current === 0} onClick={() => setPage(current - 1)}>←</button><button aria-label="Next page" disabled={(current + 1) * 25 >= rows.length} onClick={() => setPage(current + 1)}>→</button></div></div>
+      <div className="record-pagination"><span>{rows.length ? `${current + 1}–${Math.min(current + pageSize, rows.length)}` : '0'} of {rows.length.toLocaleString()} records{query && ` (${events.length.toLocaleString()} before search)`}</span><div><button aria-label="Previous page" disabled={current === 0} onClick={() => setOffset(Math.max(0, current - pageSize))}>←</button><button aria-label="Next page" disabled={current + pageSize >= rows.length} onClick={() => setOffset(current + pageSize)}>→</button></div></div>
       <SourceNote dataset={dataset} />
     </>}
   </div>;

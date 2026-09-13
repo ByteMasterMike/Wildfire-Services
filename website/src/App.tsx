@@ -27,7 +27,6 @@ function Markdown({ text }: { text: string }) {
 }
 export default function App() {
   const [panels, setPanels] = useState<PanelInstance[]>(initialPanels);
-  const [activeId, setActiveId] = useState<number | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
@@ -52,10 +51,10 @@ export default function App() {
     const observer = new IntersectionObserver(([entry]) => setShowBack(entry.isIntersecting), { rootMargin: '0px 0px -80px 0px' });
     observer.observe(workspaceRef.current!); return () => observer.disconnect();
   }, []);
-  function removePanel(id: number) { setPanels(current => current.filter(p => p.id !== id)); if (activeId === id) setActiveId(null); }
+  function removePanel(id: number) { setPanels(current => current.filter(p => p.id !== id)); }
   function addPanels(types: PanelId[]) { setPanels(current => [...current, ...types.map(type => newPanel(nextId.current++, type))]); }
   function locatePanel(id: number) {
-    setActiveId(id); const element = document.getElementById(`panel-${id}`);
+    const element = document.getElementById(`panel-${id}`);
     element?.focus({ preventScroll: true }); element?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
   }
   function applyAnswer(answer: AgentAnswer) {
@@ -112,11 +111,11 @@ export default function App() {
           <form onSubmit={submit} className="search-form"><input aria-label="Ask a question" value={query} onChange={e => setQuery(e.target.value)} placeholder="What do you want to know today~" />
             {busy ? <button type="button" aria-label="Cancel request" onClick={() => controller.current?.abort(new Error('Request cancelled.'))}>■</button> : query.trim() && <button type="submit" aria-label="Send message">↑</button>}
           </form>
-          <div className="shortcut-section"><PanelStrip panels={panels} activeId={activeId} onRemove={removePanel} onLocate={locatePanel} onOpen={() => setShowPicker(true)} /></div>
+          <div className="shortcut-section"><PanelStrip panels={panels} onRemove={removePanel} onLocate={locatePanel} onOpen={() => setShowPicker(true)} /></div>
           {storageError && <p className="panel-note">Browser storage is unavailable. This workspace will reset when you refresh.</p>}
         </div>
       </section>
-      <div ref={workspaceRef}><PanelWorkspace panels={panels} activeId={activeId} onRemove={removePanel} onRename={(id, name) => setPanels(current => current.map(p => p.id === id ? { ...p, name } : p))}
+      <div ref={workspaceRef}><PanelWorkspace panels={panels} onRemove={removePanel} onRename={(id, name) => setPanels(current => current.map(p => p.id === id ? { ...p, name } : p))}
         onUpdate={(id, patch) => setPanels(current => current.map(p => p.id === id ? { ...p, settings: { ...p.settings, ...patch } } : p))} /></div>
       <DataSources />
       {panels.length > 0 && showBack && <a href="#workspace-top" className="back-to-panels" aria-label="Back to top">↑</a>}
