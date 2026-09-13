@@ -123,7 +123,7 @@ export default function App() {
       <div ref={stageRef} className="conversation-stage">
       {chat && <div ref={chatRef} className="chat-messages" aria-label="Conversation" aria-live="polite">
         {messages.map(message => <div key={message.id} className={`chat-message ${message.role}`}>
-          {message.role === "user" ? message.content : <><span className="demo-label">Demo reply</span>{renderMarkdown(message.content)}</>}
+          {message.role === "user" ? message.content : renderMarkdown(message.content)}
         </div>)}
         {isTyping && <p className="text-sm text-white/50">Thinking…</p>}
       </div>}
