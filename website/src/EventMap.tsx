@@ -103,7 +103,6 @@ export function EventMap() {
       return records.map(record=>({dataset:configFor(dataset).name,...record.properties}));
     }} />
     <div className="analysis-chart map-toolbar"><div className="map-filter-line"><DatasetSelect value={dataset} onChange={dataset => update({ dataset })} />
-      <details className="layer-picker"><summary>Layers</summary><div>{[['hftd','HFTD Tier 2 / 3'],['territories','IOU territories'],['hdw','HDW playback']].map(([id,label]) => <label key={id}><input type="checkbox" checked={overlays.includes(id)} onChange={() => update({ overlays: overlays.includes(id) ? overlays.filter(o => o !== id) : [...overlays,id] })} />{label}</label>)}</div></details>
       <span className="map-count">{result.data && !error ? `${shown.length.toLocaleString()} ${dataset === 'epss' ? 'circuits' : weather ? 'starts' : 'events'}` : ''}</span></div>
       <ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} />
     </div>
@@ -113,6 +112,7 @@ export function EventMap() {
       {(boundaries.error || boundaries.loading || tileError || missing > 0) && <div className="map-warning" role="status">{boundaries.error ? <>Boundary layer unavailable. <button onClick={boundaries.retry}>Retry</button></> : boundaries.loading ? 'Loading boundaries…' : tileError ? 'Basemap unavailable; event geometry is still shown.' : `${missing} records have no geometry.`}</div>}
     </div>
     <MapLegend dataset={dataset} hftd={overlays.includes('hftd')} territories={overlays.includes('territories')} weather={weather} />
-    <div className="map-detail"><span>{current ? current.name : weather ? `Event starts: ${weatherDate ?? 'loading'} · HDW daily approximation` : dataset === 'us_ignitions' ? 'IRWIN / FireCastRL sample · not a census' : dataset === 'calfire' ? 'Sizes use reported acreage; missing acres use the smallest circle.' : 'Select an event to inspect its location'}</span>{current && <button className="text-button" onClick={() => selection.inspect(current)}>View details →</button>}</div>
+    <div className="map-layers" role="group" aria-label="Map layers">{[['hftd','HFTD','HFTD Tier 2 / 3'],['territories','IOU','IOU territories'],['hdw','HDW','HDW playback']].map(([id,label,name]) => <label key={id} title={name}><input type="checkbox" aria-label={name} checked={overlays.includes(id)} onChange={() => update({ overlays: overlays.includes(id) ? overlays.filter(o => o !== id) : [...overlays,id] })} />{label}</label>)}</div>
+    {current && <div className="map-detail"><span>{current.name}</span><button className="text-button" onClick={() => selection.inspect(current)}>View details →</button></div>}
   </div>;
 }

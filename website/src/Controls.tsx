@@ -1,10 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { COUNTIES, DATASETS, UTILITIES, configFor, datasetNote, type DatasetId, type Filters } from './data.ts';
+import { COUNTIES, DATASETS, UTILITIES, configFor, type DatasetId, type Filters } from './data.ts';
 import { getCoverage } from './api.ts';
 import { useRemote } from './useRemote';
 
-export function DatasetSelect({ value, onChange, label = 'Dataset', all = true }: { value: DatasetId; onChange: (value: DatasetId) => void; label?: string; all?: boolean }) {
-  return <label>{label}<select aria-label={label} value={value} onChange={e => onChange(e.target.value as DatasetId)}>{(all ? DATASETS : DATASETS.slice(0, 3)).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>;
+export function DatasetSelect({ value, onChange, label = 'Dataset', hideLabel = false, all = true }: { value: DatasetId; onChange: (value: DatasetId) => void; label?: string; hideLabel?: boolean; all?: boolean }) {
+  return <label>{!hideLabel && label}<select aria-label={label} value={value} onChange={e => onChange(e.target.value as DatasetId)}>{(all ? DATASETS : DATASETS.slice(0, 3)).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>;
 }
 export function ChartFilters({ filters, onChange, dataset, years }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; years?: number[] }) {
   const [open, setOpen] = useState(false);
@@ -42,7 +42,6 @@ function Coverage({ dataset }: { dataset: DatasetId }) {
 export function LoadState({ loading, error, retry }: { loading?: boolean; error?: string | null; retry?: () => void }) {
   return <div className={`chart-empty ${error ? 'load-error' : ''}`} role="status">{error ? <div><p>{error}</p>{retry && <button className="quiet-button" onClick={retry}>Retry</button>}</div> : loading ? <span className="loading-text">Loading records…</span> : 'No matching records. Try another date range or filter.'}</div>;
 }
-export function SourceNote({ dataset }: { dataset: DatasetId }) { return <p className="panel-note">{datasetNote(dataset)}</p>; }
 function SourceRow({ dataset }: { dataset: DatasetId }) {
   const result = useRemote(`coverage:${dataset}`, () => getCoverage(dataset));
   return <div className="source-row"><strong>{configFor(dataset).name}</strong><span>{result.data ? `${result.data.total.toLocaleString()} dated records · ${result.data.start} – ${result.data.end}` : result.error ?? 'Checking coverage…'}</span></div>;

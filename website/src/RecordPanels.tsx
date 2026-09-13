@@ -3,7 +3,7 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import gridCSV from '../../services/risk_forecasting/data/grid_cells.csv?raw';
 import { getBoundaries, getDetail, getRecords } from './api.ts';
 import { asText, configFor, filterError, sumMetric, unavailableReason, utilityLabel, type EventRecord } from './data.ts';
-import { ChartFilters, DatasetSelect, LoadState, SourceNote } from './Controls';
+import { ChartFilters, DatasetSelect, LoadState } from './Controls';
 import { SelectionContext, usePanel } from './state';
 import { useRemote } from './useRemote';
 import { useRowCapacity } from './useRowCapacity';
@@ -22,15 +22,13 @@ export function RecordTable() {
   const pageSize = expanded ? 25 : capacity;
   const current = Math.min(offset, Math.max(0, rows.length - 1));
   useEffect(() => setOffset(0), [dataset, filters, query]);
-  return <div className="analysis-chart records-panel"><div className="analysis-heading"><DatasetSelect value={dataset} onChange={dataset => update({ dataset })} /></div>
+  return <div className="analysis-chart records-panel"><div className="record-toolbar"><DatasetSelect hideLabel value={dataset} onChange={dataset => update({ dataset })} /><ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} /></div>
     <ExportActions disabled={Boolean(validation||remote.error||remote.loading||!rows.length)} rows={()=>rows.map(record=>({dataset:configFor(dataset).name,...record.properties}))} />
-    <ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} />
     <input className="record-search" aria-label="Filter records" placeholder="Filter by event, county, utility, or cause…" value={query} onChange={e => setQuery(e.target.value)} />
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
       <div ref={viewport} className="record-scroll"><table><thead><tr><th>Event</th><th>County</th><th>Date</th><th>{dataset === 'calfire' ? 'Acres' : 'Utility'}</th></tr></thead><tbody>{rows.slice(current, current + pageSize).map(e => <tr key={e.id}><td><button className="record-link" onClick={() => inspect(e)}>{e.name}</button></td><td>{e.county ?? '—'}</td><td>{e.date || '—'}</td><td>{dataset === 'calfire' ? e.acres?.toLocaleString() ?? '—' : e.utility ?? '—'}</td></tr>)}</tbody></table></div>
       {!rows.length && <p className="panel-note">No matching records.</p>}
       <div className="record-pagination"><span>{rows.length ? `${current + 1}–${Math.min(current + pageSize, rows.length)}` : '0'} of {rows.length.toLocaleString()} records{query && ` (${events.length.toLocaleString()} before search)`}</span><div><button aria-label="Previous page" disabled={current === 0} onClick={() => setOffset(Math.max(0, current - pageSize))}>←</button><button aria-label="Next page" disabled={current + pageSize >= rows.length} onClick={() => setOffset(current + pageSize)}>→</button></div></div>
-      <SourceNote dataset={dataset} />
     </>}
   </div>;
 }
@@ -50,7 +48,6 @@ export function StatCard() {
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
       <div className="stat-value">{total.value === null ? '—' : total.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}<span>{metric === 'customers' ? 'customer-event total' : metric} · {configFor(dataset).name}</span></div>
       {total.missing > 0 && <p className="panel-note">{total.missing} records have no {metric === 'counties' ? 'county' : 'value'}; excluded from this metric.</p>}
-      <SourceNote dataset={dataset} />
     </>}
   </div>;
 }
@@ -69,7 +66,6 @@ export function SpatialContext() {
     ['IOU territory', territories], ['HFTD', tiers], ['County', selected.record.county ?? 'Not recorded'], ['Grid cell', cell ? String(cell.id) : coords ? 'Outside grid' : 'Unresolved'],
   ].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
     {remote.error && <p className="chart-notice">Spatial boundaries could not be loaded. <button className="text-button" onClick={remote.retry}>Retry</button></p>}
-    <p className="panel-note">IOU and HFTD use the selected position and remote polygons. County comes from the event record. Grid cells use the saved 824-cell grid.</p>
   </div>;
 }
 export function EventDetail({ record, onClose }: { record: EventRecord; onClose: () => void }) {

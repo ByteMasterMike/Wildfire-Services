@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CHART_DATASETS as DATASETS, filterError, groupedCounts, aggregateDaily, unavailableReason, datasetNote,
   type DatasetId, type GroupBy, type Interval } from './data.ts';
 import { getDailySeries, getRecords } from './api.ts';
-import { ChartFilters, LoadState, SourceNote } from './Controls';
+import { ChartFilters, LoadState } from './Controls';
 import { usePanel } from './state';
 import { useRemote } from './useRemote';
 import { useRowCapacity } from './useRowCapacity';
@@ -88,7 +88,6 @@ function TimelineSeries() {
       </svg>}
     </div>
     {!empty && <div className="series-readout" aria-live="polite"><span>{activeIndex === null ? "Selected period" : `${buckets[activeIndex].start} – ${buckets[activeIndex].end}`}</span><div>{visible.map(dataset => <span key={dataset.id} style={{ color: dataset.color }}>{dataset.name} <strong>{activeIndex === null ? dataset.total : dataset.values[activeIndex]}</strong></span>)}</div></div>}
-    <p className="panel-note">Separate event series; not a combined fire total. CAL FIRE posting coverage varies across years.</p>
     {series.filter(dataset => dataset.reason).map(dataset => <p key={dataset.id} className="chart-notice" role="status">{dataset.reason}</p>)}
   </div>;
 }
@@ -135,7 +134,6 @@ export function Comparison() {
         })}
       </div>
       {!expanded && <div className="overview-more">{rows.length > visibleRows.length && <button className="text-button" onClick={expand}>Showing {visibleRows.length} of {rows.length} categories · View all →</button>}</div>}
-      {groupBy === "cause" ? <p className="panel-note">Unknown is a recorded cause; Not recorded is missing. Both count toward the total.</p> : <SourceNote dataset={dataset} />}
     </>}
   </div>;
 }

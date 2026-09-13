@@ -186,10 +186,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .map-warning button { color: #b7d4ff; }
 .map-detail { min-height: 36px; padding: 8px 14px; background: #222; border-top: 1px solid #ffffff0b; }
 .map-detail > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.layer-picker { position: relative; color: #bbb; font-size: 11px; }
-.layer-picker > summary { cursor: pointer; padding: 8px 0; }
-.layer-picker > div { position: absolute; top: 32px; left: -14px; min-width: 180px; background: #292929; border: 1px solid #ffffff25; padding: 14px; border-radius: 8px; z-index: 1001; box-shadow: 0 8px 24px #0008; }
-.layer-picker label { display: flex; flex-direction: row; align-items: center; gap: 10px; padding-block: 6px; color: #ddd; white-space: nowrap; }
+.map-layers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex-shrink: 0; gap: 12px; padding: 5px 14px; border-top: 1px solid #ffffff0b; }
+.map-layers label { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 30px; color: #bbb; font-size: 11px; cursor: pointer; }
+.map-layers label:has(input:checked) { color: #eee; }
+.map-layers input { accent-color: #9cc4ff; }
 .event-marker span { display: block; width: 10px; height: 10px; border: 1px solid #ffd6b1; border-radius: 50%; box-shadow: 0 1px 4px #0008; }
 .event-cluster span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 2px solid; background: #222e; color: #eee; font: 11px Arial, sans-serif; box-shadow: 0 0 0 4px #ffffff08; }
 .leaflet-container .leaflet-control-attribution { background: #252525dd; color: #aaa; font-size: 9px; }
@@ -199,6 +199,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .leaflet-touch .leaflet-bar { border-color: #ffffff18; }
 .leaflet-tooltip { background: #252525; color: #eee; border-color: #555; }
 .record-link { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; text-align: left; color: #b7d4ff; }
+.record-toolbar { display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+.record-toolbar > label { flex-shrink: 0; }
+.record-toolbar .chart-filter-drawer { flex: 1; min-width: 0; margin-bottom: 0; }
+.record-toolbar .filter-trigger { height: 100%; }
 .record-link:hover { text-decoration: underline; }
 .record-scroll tr:hover td { background: #ffffff03; }
 .record-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; color: #999; font-size: 11px; }

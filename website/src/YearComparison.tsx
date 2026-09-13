@@ -373,7 +373,7 @@ export function YearComparison() {
           </div>
         </div>
       )}
-      <p className="panel-note">
+      {lines.some((line) => line.range.partial) && <p className="panel-note">
         {lines
           .filter((l) => l.range.partial)
           .map(
@@ -381,10 +381,7 @@ export function YearComparison() {
               `*${l.year}: ${l.range.start.slice(5)}–${l.range.end.slice(5)}. `,
           )
           .join("")}
-        {dataset === "calfire"
-          ? "CAL FIRE posting coverage varies across years; these are not census totals."
-          : "Years align by calendar period; unavailable dates are not filled with zero."}
-      </p>
+      </p>}
       {picker && (
         <YearPicker
           available={available}

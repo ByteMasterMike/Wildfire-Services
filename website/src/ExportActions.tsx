@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePanel } from "./state"
 import {
@@ -22,6 +22,19 @@ export function ExportActions({
   const menu = useRef<HTMLDetailsElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
+  useEffect(() => {
+    const dismissOutside = (event: Event) => {
+      if (menu.current?.open && event.target instanceof Node && !menu.current.contains(event.target)) {
+        menu.current.open = false
+      }
+    }
+    document.addEventListener("pointerdown", dismissOutside, true)
+    document.addEventListener("focusin", dismissOutside, true)
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside, true)
+      document.removeEventListener("focusin", dismissOutside, true)
+    }
+  }, [])
   async function run(type: "csv" | "png") {
     if (menu.current) {
       menu.current.open = false
@@ -53,7 +66,10 @@ export function ExportActions({
           if (e.key === "Escape") {
             e.preventDefault()
             e.stopPropagation()
-            if (menu.current) menu.current.open = false
+            if (menu.current) {
+              menu.current.open = false
+              menu.current.querySelector('summary')?.focus({ preventScroll: true })
+            }
           }
         }}
       >
