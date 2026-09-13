@@ -7,6 +7,7 @@ import { ChartFilters, DatasetSelect, LoadState, SourceNote } from './Controls';
 import { SelectionContext, usePanel } from './state';
 import { useRemote } from './useRemote';
 import { useRowCapacity } from './useRowCapacity';
+import { ExportActions } from './ExportActions';
 
 export function RecordTable() {
   const { settings, update, expanded } = usePanel(); const { dataset, filters } = settings;
@@ -22,6 +23,7 @@ export function RecordTable() {
   const current = Math.min(offset, Math.max(0, rows.length - 1));
   useEffect(() => setOffset(0), [dataset, filters, query]);
   return <div className="analysis-chart records-panel"><div className="analysis-heading"><DatasetSelect value={dataset} onChange={dataset => update({ dataset })} /></div>
+    <ExportActions disabled={Boolean(validation||remote.error||remote.loading||!rows.length)} rows={()=>rows.map(record=>({dataset:configFor(dataset).name,...record.properties}))} />
     <ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} />
     <input className="record-search" aria-label="Filter records" placeholder="Filter by event, county, utility, or cause…" value={query} onChange={e => setQuery(e.target.value)} />
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
@@ -43,6 +45,7 @@ export function StatCard() {
   const total = metric === 'acres' || metric === 'customers' ? sumMetric(events, metric) : { value: metric === 'counties' ? counties.size || (events.length ? null : 0) : events.length, missing: metric === 'counties' ? events.filter(e => !e.county).length : 0 };
   if (answerStat) return <div className="stat-content"><p className="panel-note">{answerStat.scope} · {answerStat.period}</p><div className="stat-value">{(answerStat.unit === 'risk' ? answerStat.value * 100 : answerStat.value).toLocaleString(undefined, { maximumFractionDigits: 2 })}{answerStat.unit === 'risk' ? '%' : ''}<span>{answerStat.label}{answerStat.unit === 'percentile' ? ' · percentile' : ''}</span></div><p className="panel-note">From the agent's cited result.</p></div>;
   return <div className="analysis-chart"><div className="comparison-selectors"><DatasetSelect value={dataset} onChange={dataset => update({ dataset, metric: 'events' })} /><label>Metric<select aria-label="Metric" value={metric} onChange={e => update({ metric: e.target.value as typeof metric })}><option value="events">Events</option><option value="acres">Acres</option><option value="counties">Counties</option><option value="customers">Customers affected</option></select></label></div>
+    <ExportActions disabled={Boolean(validation||remote.error||remote.loading)} rows={()=>[{dataset:configFor(dataset).name,metric,value:total.value,missing_records:total.missing,unit:metric==='customers'?'customer-event total':metric,...filters}]} />
     <ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} />
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
       <div className="stat-value">{total.value === null ? '—' : total.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}<span>{metric === 'customers' ? 'customer-event total' : metric} · {configFor(dataset).name}</span></div>

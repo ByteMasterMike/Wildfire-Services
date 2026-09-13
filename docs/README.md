@@ -44,8 +44,12 @@ the other assets, including the existing HDW files, are retained.
   view contracts remain in the answer rather than becoming approximate charts.
 - Source metadata reports the first/last recorded event dates, not scrape times.
   Source limitations and unavailable fields remain visible.
-- This slice does not introduce risk surfaces, weather/vegetation querying,
-  national census counts, or full network topology.
+- HDW playback uses the supplied static cubes; event overlays follow the shown
+  day by start date. The legend explains event symbols, acreage, HFTD and HDW.
+- Time series can compare years with marked partial endpoints. Header actions
+  export filtered CSV / chart PNG and duplicate panel settings independently.
+- This slice does not introduce model risk surfaces, raw weather/vegetation
+  querying, national census counts, or full network topology.
 
 The former static page scripts and canvas documentation are historical context;
 the new entrypoint does not load them. The local Planning Tool remains under

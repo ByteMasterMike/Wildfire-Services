@@ -29,11 +29,17 @@ Preview the actual generated page using the command in `docs/README.md`.
 
 - **Map:** CPUC clusters, CAL FIRE acreage bubbles, PG&E EPSS circuit lines,
   PSPS polygons, and national ignition sample points; optional HFTD and IOU
-  boundaries. Click an event, then View details. Event data and the basemap
+  boundaries, with an always-visible legend for the active symbols and scales.
+  Click an event, then View details. Event data and the basemap
   are fetched separately; a basemap failure does not hide event geometry.
 - **Time series:** separate CPUC, EPSS and CAL FIRE counts. All intervals are
   calculated from full daily API buckets. Weeks start January 1 and are clipped
   at year/range boundaries, matching the existing site's week convention.
+- **By year:** choose one dataset and up to five years. Daily curves align by
+  month/day (including Feb 29 only when it exists); monthly/quarterly/week bins
+  align by period. Source endpoint years are clipped to the recorded date range,
+  marked with `*`, and never extended with future zeros. These endpoints are
+  recorded event dates, not a guarantee of complete collection coverage.
 - **Comparison:** count/share by cause, utility or county. CPUC/CAL FIRE have
   no cause field. EPSS is PG&E-only, with explicit null bars for other utilities.
   Unknown and missing causes are separate categories.
@@ -61,6 +67,30 @@ instructions from model prose. A 45-second timeout or Cancel leaves the data
 panels usable. Generated scalar answers are not saved across page refreshes.
 Multiple-dataset map specs and advanced comparison/spatial specs are not yet
 ported; their answer text remains available.
+
+## HDW playback and exports
+
+Enable **HDW playback** under a map's Layers menu. The player uses the supplied
+2020–2025 JSON cubes, loaded one year at a time. Available playback years/days
+are intersected with the map's date filters. Play/Pause, speed and a day slider
+control the surface; playback stops at the last available day and pauses when
+the document becomes hidden. Map zoom and pan remain stable between frames.
+Event overlays show **starts on the displayed day**, including outage starts
+aggregated onto EPSS circuit lines. They do not represent all active incidents.
+
+HDW is decoded using the supplied metadata (`value × 2`, hPa·m/s), on the
+824-cell grid. It is a surface daily approximation, not an operational
+lowest-500-m HDWI product or an ignition-risk forecast. Missing cells remain
+transparent. December 2–31, 2020 is excluded pending independent verification
+after the documented source-weather corruption. Source JSON files are unchanged.
+
+The header download menu exports full filtered records or all chart categories,
+including rows not currently visible in overview. CSV preserves nulls, identifiers
+and UTF-8 text and neutralizes formula-leading strings; import circuit ID columns
+as text in spreadsheet applications to retain leading zeros. Line/bar charts can
+download PNG with titles, scope and legends. Maps export event CSV, not basemap
+images or raw HDW cubes. Duplicate copies a panel's filters, layer settings and
+year choices into independent state.
 
 Panel settings use `wildfire-workspace-v1` in browser local storage. Storage
 failure is visible; no chat text, credentials, or fetched datasets are saved.
@@ -102,6 +132,16 @@ moved the page; expanded table scrolling left the page fixed. Escape restored
 focus/page position and closed nested filters/details one layer at a time. The
 map retained zoom level 7 after returning from expanded view. Phone-width
 layout was inspected; physical touchscreen gestures still need device testing.
+
+Map/year/export follow-up: 11 tests pass, including all supplied weather dates
+and grid dimensions, threshold decoding, excluded dates, daily outage filtering,
+leap-year alignment, clipped year endpoints, CSV escaping and missing-value SVG
+rendering. The UI showed CPUC 2023/2024 totals of 480/741, and CAL FIRE 2026 ended
+at August 16 with a partial-year marker. HDW playback advanced dates and was
+paused successfully. Actual CSV download contained 741 unique records; exported
+comparison and yearly PNG files were opened and visually inspected. Repeated
+panels retained independent dataset selections. Desktop and 390px layouts were
+inspected without page overflow. No new agent behavior was added in this slice.
 
 Backend models and services, `demo/`, and `frontend/` are outside this change.
 This verifies a website migration with the existing public data API, not the

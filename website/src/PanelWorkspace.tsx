@@ -20,27 +20,30 @@ function PanelTitle({ panel, onRename }: { panel: PanelInstance; onRename: (id: 
     }} /> : <button ref={titleButton} type="button" className="panel-title-button" title="Click to rename" aria-label={`Rename ${title}`} onClick={() => { setDraft(title); cancelled.current = false; setEditing(true); }}>{title}</button>}
   </h2>;
 }
-export function PanelWorkspace({ panels, onRemove, onRename, onUpdate }: {
+export function PanelWorkspace({ panels, onRemove, onRename, onUpdate, onDuplicate }: {
   panels: PanelInstance[]; onRemove: (id: number) => void;
   onRename: (id: number, name: string) => void; onUpdate: (id: number, patch: Partial<PanelSettings>) => void;
+  onDuplicate: (id: number) => void;
 }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   if (!panels.length) return null;
   return <section className="panel-workspace" aria-label="Panel workspace"><header className="workspace-heading"><h1>Your workspace <span>{panels.length} panels</span></h1><span className="warehouse-label">Remote warehouse</span></header>
     <div className="panel-grid">{panels.map(panel => <PanelFrame key={panel.id} panel={panel} expanded={expandedId === panel.id}
-      onExpand={() => setExpandedId(panel.id)} onRestore={() => setExpandedId(null)} onRename={onRename}
+      onExpand={() => setExpandedId(panel.id)} onRestore={() => setExpandedId(null)} onRename={onRename} onDuplicate={()=>onDuplicate(panel.id)}
       onRemove={() => { if (expandedId === panel.id) setExpandedId(null); onRemove(panel.id); }} onUpdate={patch => onUpdate(panel.id, patch)} />)}</div>
   </section>;
 }
 
-function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, onUpdate }: {
+function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, onUpdate, onDuplicate }: {
   panel: PanelInstance; expanded: boolean; onExpand: () => void; onRestore: () => void;
   onRemove: () => void; onRename: (id: number, name: string) => void; onUpdate: (patch: Partial<PanelSettings>) => void;
+  onDuplicate: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const wasExpanded = useRef(false);
   const Content = CONTENT[panel.type];
+  const [actionsHost,setActionsHost]=useState<HTMLDivElement|null>(null);
   useLayoutEffect(() => {
     const element = dialog.current!;
     const root = document.documentElement;
@@ -62,12 +65,13 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
     aria-labelledby={`panel-title-${panel.id}`} data-panel-type={panel.type} className={`workspace-panel ${expanded ? 'is-expanded' : ''}`}
     onCancel={event => { if (event.target !== event.currentTarget) return; event.preventDefault(); onRestore(); }}>
     <header className="panel-header"><PanelTitle panel={panel} onRename={onRename} /><div className="panel-actions">
+      <div ref={setActionsHost} className="panel-export-host" /><button className="panel-expand" aria-label={`Duplicate ${panelTitle(panel)}`} title="Duplicate panel with filters" onClick={onDuplicate}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg></button>
       <button ref={expandButton} className="panel-expand" title={expanded ? 'Return to workspace (Esc)' : 'Expand panel'} aria-label={`${expanded ? 'Restore' : 'Expand'} ${panelTitle(panel)}`} onClick={expanded ? onRestore : onExpand}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d={expanded ? 'M4 10h6V4m10 10h-6v6M10 10 3 3m11 11 7 7' : 'M9 3H3v6m12 12h6v-6M3 3l7 7m11 11-7-7'} /></svg>
       </button><button className="panel-close" aria-label={`Close ${panelTitle(panel)}`} onClick={onRemove}>×</button>
     </div></header>
     <div className="panel-body" role="region" aria-label={`${panelTitle(panel)} content`} tabIndex={expanded ? 0 : undefined}>
-      <PanelContext.Provider value={{ settings: panel.settings, update: onUpdate, expanded, expand: onExpand }}><Content /></PanelContext.Provider>
+      <PanelContext.Provider value={{ settings: panel.settings, update: onUpdate, expanded, expand: onExpand, actionsHost, title: panelTitle(panel) }}><Content /></PanelContext.Provider>
     </div>
   </dialog></div>;
 }

@@ -238,6 +238,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @media (prefers-reduced-motion: reduce) { .loading-text { animation: none; } }
 
 .panel-actions { display: flex; align-items: center; gap: 4px; }
+.panel-export-host { display: flex; align-items: center; }
+.export-menu { position: relative; }
+.export-menu > summary { display: grid; place-items: center; list-style: none; width: 26px; height: 28px; color: #aaa; border-radius: 5px; cursor: pointer; font-size: 17px; }
+.export-menu > summary:hover { background: #ffffff0c; color: #fff; }
+.export-menu > div { position: absolute; right: 0; top: 30px; z-index: 1002; width: 140px; padding: 6px; background: #303030; border: 1px solid #ffffff25; border-radius: 7px; box-shadow: 0 8px 24px #0007; }
+.export-menu button { width: 100%; padding: 9px; font-size: 12px; text-align: left; border-radius: 4px; }
+.export-menu button:hover { background: #ffffff0c; }
+.export-error { color: #d4c1a8; font-size: 10px; }
 .panel-expand { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: #aaa; }
 .panel-expand:hover { background: #ffffff0c; color: #fff; }
 .workspace-panel.is-expanded { position: fixed; inset: 24px; margin: auto; width: calc(100% - 48px); max-width: 1480px; height: calc(100dvh - 48px); box-shadow: 0 20px 80px #0009; }
@@ -272,4 +280,53 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .workspace-panel.is-expanded { inset: 8px; width: calc(100% - 16px); height: calc(100dvh - 16px); border-radius: 10px; }
   .series-panel > .panel-note { font-size: 10px; }
   .record-pagination { gap: 6px; }
+}
+
+.map-legend { flex-shrink: 0; padding: 7px 12px; border-top: 1px solid #ffffff0b; color: #bbb; font-size: 10px; line-height: 1.4; }
+.legend-keys, .weather-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 13px; }
+.legend-key { display: inline-flex; align-items: center; gap: 6px; }
+.legend-symbol { display: inline-block; width: 14px; height: 10px; border: 1px solid currentColor; }
+.legend-symbol.is-point { width: 7px; height: 7px; border-radius: 50%; }
+.legend-symbol.is-line { height: 0; border: 0; border-top: 2px solid currentColor; }
+.legend-symbol.is-area { opacity: .65; }
+.legend-cluster { display: grid; place-items: center; font-style: normal; width: 16px; height: 16px; border: 1px solid; border-radius: 50%; color: #ddd; }
+.legend-tier { width: 14px; height: 10px; border: 1px solid #d97706a6; }
+.tier-2 { background: #d977061a; }
+.tier-3 { background: #d9770633; }
+.legend-acres { display: flex; align-items: center; gap: 6px; }
+.legend-acres > span { display: inline-flex; align-items: center; gap: 2px; }
+.legend-acres svg { flex-shrink: 0; }
+.weather-legend { margin-top: 7px; font-size: 9px; gap: 6px 10px; }
+.weather-legend > span { display: inline-flex; align-items: center; gap: 4px; }
+.weather-legend i { width: 12px; height: 5px; }
+.hdw-player { position: relative; flex-shrink: 0; padding: 0 14px 8px; }
+.hdw-controls { display: flex; align-items: center; gap: 9px; color: #bbb; font-size: 11px; }
+.hdw-label { color: #ddd; font-weight: 500; }
+.hdw-controls :is(select,button) { background: #303030; border: 1px solid #ffffff18; border-radius: 5px; font-size: 11px; padding: 4px 6px; }
+.hdw-controls output { flex: 1; white-space: nowrap; }
+.hdw-player > input[type=range] { width: 100%; display: block; height: 4px; margin-top: 9px; accent-color: #d9a269; cursor: pointer; }
+.hdw-source summary { cursor: pointer; list-style: none; color: #aaa; }
+.hdw-source p { position: absolute; left: 10px; right: 10px; top: 100%; max-height: 170px; overflow-y: auto; z-index: 1001; padding: 14px; background: #292929; border: 1px solid #ffffff25; border-radius: 8px; color: #ccc; line-height: 1.6; box-shadow: 0 8px 25px #0008; }
+.hdw-error { padding-top: 7px; font-size: 10px; color: #d4c1a8; line-height: 1.5; }
+.hdw-error button { color: #b7d4ff; margin-left: 8px; }
+.series-mode { align-self: flex-start; margin-bottom: 10px; }
+.yearly-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.yearly-toolbar label { flex-direction: row; align-items: center; }
+.yearly-toolbar select { width: auto; }
+.years-button { padding: 8px 10px; font-size: 11px; color: #ccc; border: 1px solid #ffffff18; border-radius: 7px; }
+.year-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding-bottom: 4px; font-size: 11px; }
+.year-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.year-legend i { width: 16px; border-top: 2px solid; }
+.year-options { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; padding-top: 20px; }
+.year-options label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.year-options input { accent-color: #9cc4ff; }
+.yearly-panel .series-plot { min-height: 100px; }
+@media (max-width: 640px) {
+  .hdw-controls { gap: 6px; font-size: 10px; }
+  .hdw-player { padding-inline: 12px; }
+  .hdw-controls select { padding-inline: 3px; }
+  .yearly-toolbar { gap: 7px; }
+  .yearly-toolbar label { font-size: 10px; }
+  .yearly-toolbar select { font-size: 11px; padding: 6px; }
+  .years-button { font-size: 10px; padding: 7px; }
 }
