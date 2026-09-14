@@ -4,11 +4,36 @@ Production website source, initially ported from the `demo/` design. Changes her
 do not modify or import the demo. React / TypeScript / Vite build a static page
 into `docs/` for GitHub Pages.
 
+See the [root README](../README.md) for the service architecture, local backend
+setup, warehouse prerequisites and historical model limitations.
+
+## Frontend architecture
+
+| Module | Responsibility |
+|---|---|
+| `src/App.tsx`, `src/state.tsx` | Workspace composition, independent panel settings and browser persistence |
+| `src/panelViews.ts`, `src/PanelPicker.tsx` | Five categories and 13 implemented analysis presets |
+| `src/PanelWorkspace.tsx`, `src/Controls.tsx` | Panel layout, expansion, filters and common controls |
+| `src/api.ts`, `src/useRemote.ts` | Remote records, pagination, request state and streamed Ask responses |
+| `src/EventMap.tsx`, `src/MapEventPreview.tsx`, `src/spatial.ts` | Leaflet maps, event bubbles and location lookups |
+| `src/HdwPlayer.tsx`, `src/weather.ts` | Yearly static weather cubes and daily playback |
+| `src/AnalysisCharts.tsx`, `src/YearComparison.tsx`, `src/RegionalSeries.tsx`, `src/SeasonalSeries.tsx` | Grouped and temporal visualizations |
+| `src/data.ts`, `src/stats.ts`, `src/annual.ts`, `src/temporal.ts` | Record normalization, counts and time aggregation |
+| `src/RecordPanels.tsx` | Record tables and summary metrics |
+| `src/ExportActions.tsx`, `src/exports.ts` | CSV and chart PNG exports |
+
+Direct data panels use the Visualization API. The browser computes summaries
+and comparisons from complete records or daily buckets; it does not call the
+Comparison API directly. Ask uses the Agent API, whose backend can call the
+Data Query, Visualization, Comparison and Risk services.
+
 ## Development
 
-Use Node 24 (the tests use Node's built-in TypeScript support).
+Use Node 24 (the tests use Node's built-in TypeScript support). From the
+repository root:
 
 ```sh
+cd website
 npm ci
 npm run dev
 ```
@@ -23,15 +48,24 @@ npm run build
 The build runs TypeScript checking, uses a disposable OS-temp build directory,
 then replaces `docs/index.html` and `docs/assets/workspace/`. It cleans its
 temporary directory on success or failure. Other `docs/` assets are preserved.
-Preview the actual generated page using the command in `docs/README.md`.
+Preview the actual generated page using the command in the
+[Pages guide](../docs/README.md).
+
+The deployed API defaults are the `VISUALIZATION_URL` and `AGENT_URL` constants
+in `src/api.ts`. To use local services, change them to
+`http://127.0.0.1:8002` and `http://127.0.0.1:8004`, respectively, then use the
+development server or rebuild. The repository `.env` configures Python services,
+not these browser constants. Ordinary website preview does not require a local
+database or model runtime.
 
 ## Connected panels
 
 Add panel groups ready-to-use views under the five panel categories. Selecting
 a view creates the configured panel immediately. Map offers wildfire events,
 EPSS outage circuits, PSPS areas and HDW playback; Time series offers event trends,
-year comparison, regional trends and seasonal profiles; Comparison offers county, utility and cause views. Records
-and summary metrics each have one entry. Only implemented views appear.
+year comparison, regional trends and seasonal profiles; Comparison offers county,
+utility and cause views. Records and summary metrics each have one entry.
+Only implemented views appear.
 
 Use the header's Change view action to switch within a panel category. It retains
 the panel's position, custom name, date/geographic filters and expansion state.
@@ -62,8 +96,8 @@ in the chart body. Existing saved panels continue to load without a migration.
   highest-total divisions to the frame; View all expands every division. Missing
   division names remain a Not recorded group. CSV and PNG include every division,
   including those outside the overview. These are raw counts, not normalized rates.
-- **Seasonal profile:** select one to five completed calendar years in Filters, inside the
-  source's recorded date range. The mean uses 52 seven-day blocks from January 1,
+- **Seasonal profile:** select one to five completed calendar years in Filters,
+  inside the source's recorded date range. The mean uses 52 seven-day blocks from January 1,
   matching the existing January-1-based weekly convention. Leap days remain in
   their year's day-of-year sequence; trailing one or two days are excluded rather
   than mixed into a shorter final week. A year contributes to a week only when
@@ -73,8 +107,9 @@ in the chart body. Existing saved panels continue to load without a migration.
   years show individual dashed lines and a thicker solid mean. Their shared
   vertical scale includes the individual-year peaks; inspection shows both the
   mean and yearly values, and PNG exports retain these line styles.
-  The collapsed Filters summary shows only the number of years. CSV includes the per-year counts and mean. Default years use the latest
-  five eligible years, based on global source dates rather than filtered events.
+  The collapsed Filters summary shows only the number of years. CSV includes
+  the per-year counts and mean. Default years use the latest five eligible years,
+  based on global source dates rather than filtered events.
   API-filled zero buckets describe recorded events, not audited collection
   completeness. CAL FIRE posting changes still limit across-year interpretation.
 - **Comparison:** count/share by cause, utility or county. CPUC/CAL FIRE have
@@ -158,39 +193,34 @@ maps support wheel zoom. Maps keep their instance, center and zoom when resized.
 On coarse-pointer devices, overview touch gestures are reserved for page
 scrolling; expand the map to pan and pinch-zoom.
 
-## Verification, 2026-09-13
+## Validation
 
-- Six focused Node tests cover complete pagination and changed pages, EPSS
-  event-vs-circuit counting, cause/missing categories, date buckets, numeric
-  missingness, and fragmented/premature SSE streams.
-- Live production-client checks: PG&E CPUC 2024 = 532 in both records and daily
-  series; EPSS = 2,787; CAL FIRE = 611 and 1,025,720 known acres (2 missing-acre
-  records). All four time intervals conserve counts. EPSS Unknown = 1,057 of
-  2,787 (37.9%); no percentage is hardcoded.
-- Rendered desktop and 390px mobile screenshots were inspected for map, series,
-  comparison, picker, details and spatial context. Checked independent repeated
-  panels, Chinese naming, persistence and unavailable-cause/null-bar states.
-- A real browser Ask for PG&E 2024 returned 532, included the 536 spatial-count
-  qualification, and appended grounded map and metric panels. This was a live
-  SSE request, not a direct render call or mocked reply.
+Run `npm test` and `npm run build` from this directory. The Node suite covers
+pagination consistency, event counting, missing values, SSE parsing, spatial
+lookups, weather decoding, annual alignment, regional/seasonal aggregation,
+view switching and exports. These tests use local fixtures or mocked requests;
+they do not require the live APIs. The build also checks TypeScript.
 
-Scroll/focus follow-up: rendered at 1280px and 390px widths. All six overview
-bodies fit their frames. Wheel gestures over map, chart and record-table areas
-moved the page; expanded table scrolling left the page fixed. Escape restored
-focus/page position and closed nested filters/details one layer at a time. The
-map retained zoom level 7 after returning from expanded view. Phone-width
-layout was inspected; physical touchscreen gestures still need device testing.
+The September 13, 2026 implementation verification passed 28 Node tests and the
+build. Separate live-data and rendered-browser checks included:
 
-Map/year/export follow-up: 11 tests pass, including all supplied weather dates
-and grid dimensions, threshold decoding, excluded dates, daily outage filtering,
-leap-year alignment, clipped year endpoints, CSV escaping and missing-value SVG
-rendering. The UI showed CPUC 2023/2024 totals of 480/741, and CAL FIRE 2026 ended
-at August 16 with a partial-year marker. HDW playback advanced dates and was
-paused successfully. Actual CSV download contained 741 unique records; exported
-comparison and yearly PNG files were opened and visually inspected. Repeated
-panels retained independent dataset selections. Desktop and 390px layouts were
-inspected without page overflow. No new agent behavior was added in this slice.
+- PG&E CPUC 2024: 532 attribute-tagged records; statewide CPUC 2024: 741.
+  EPSS: 2,787 outages. CAL FIRE: 611 incidents and 1,025,720 known acres,
+  with two records missing acreage. These are verification snapshots, not
+  constants to hardcode into the UI.
+- Regional EPSS: 18 divisions, 216 exported monthly rows and a total of 2,787
+  outages. Exported PNGs were opened to check all divisions were included.
+- Seasonal CPUC 2020–2024: week 27 counts of 20, 17, 22, 23 and 31 produce
+  a mean of 22.6, checked against source records. Single-year rendering,
+  dashed annual lines, solid means and exported images were inspected.
+- Desktop and 390px layouts, independent panel settings, page scrolling,
+  expanded views, nested dialogs, event bubbles and map resize persistence.
+  CSV downloads and chart PNGs were inspected separately from unit tests.
+- A live browser Ask for PG&E 2024 returned 532, included the 536 spatial-count
+  qualification and appended grounded map and metric panels. This exercised
+  the SSE endpoint rather than a mocked answer or direct render call.
 
-Backend models and services, `demo/`, and `frontend/` are outside this change.
-This verifies a website migration with the existing public data API, not the
-entire 30-item feature roadmap or the scientific validity of new model outputs.
+Physical touchscreen gestures still need device testing. These checks do not
+validate the entire 30-item roadmap or the scientific validity of model outputs.
+Model surfaces, residual maps and other analyses awaiting inputs are not implied
+by the implemented panel catalog.
