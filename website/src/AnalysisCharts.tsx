@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { CHART_DATASETS as DATASETS, filterError, groupedCounts, aggregateDaily, unavailableReason, datasetNote,
-  type DatasetId, type GroupBy, type Interval } from './data.ts';
+  type DatasetId, type Interval } from './data.ts';
 import { getDailySeries, getRecords } from './api.ts';
 import { ChartFilters, LoadState } from './Controls';
 import { usePanel } from './state';
 import { useRemote } from './useRemote';
 import { useRowCapacity } from './useRowCapacity';
-import { YearComparison, SeriesModeSwitch } from './YearComparison';
+import { YearComparison } from './YearComparison';
 import { ExportActions } from './ExportActions';
 import { lineSvg, barSvg, type ExportRow } from './exports.ts';
 
@@ -52,7 +52,6 @@ function TimelineSeries() {
   return <div className="analysis-chart series-panel">
     <ExportActions disabled={Boolean(empty)} rows={()=>series.flatMap<ExportRow>(d=>d.reason ? [{dataset:d.name,period_start:filters.start,period_end:filters.end,count:null,utility:filters.utility,county:filters.county,unavailable_reason:d.reason}] : d.buckets.map(b=>({dataset:d.name,period_start:b.start,period_end:b.end,count:b.count,utility:filters.utility,county:filters.county,unavailable_reason:''})))}
       svg={()=>{const svg=plot.current?.querySelector('svg');if(!svg)throw new Error('Chart is not ready.');return lineSvg(svg,title,`${filters.start} – ${filters.end}; ${filters.utility||'All utilities'}; ${filters.county||'All counties'}; ${interval} event counts. CAL FIRE posting coverage varies by year. ${series.filter(d=>d.reason).map(d=>d.reason).join(' ')}`,visible.map(d=>({label:`${d.name}: ${d.total}`,color:d.color})));}} />
-    <SeriesModeSwitch />
     <div className="analysis-heading series-toolbar">
     <div className="dataset-switches" role="group" aria-label="Visible datasets">
       {DATASETS.map(dataset => <button key={dataset.id} type="button" role="checkbox" aria-checked={selected.includes(dataset.id)} aria-label={dataset.name}
@@ -97,7 +96,6 @@ export function Comparison() {
   const { dataset, groupBy, measure, filters } = settings;
   const setFilters = (filters: typeof settings.filters) => update({ filters });
   const setDataset = (dataset: DatasetId) => update({ dataset });
-  const setGroupBy = (groupBy: GroupBy) => update({ groupBy });
   const setMeasure = (measure: 'count' | 'share') => update({ measure });
   const config = DATASETS.find(item => item.id === dataset)!;
   const validation = filterError(filters) || unavailableReason(dataset, filters)
@@ -114,9 +112,9 @@ export function Comparison() {
     <ExportActions disabled={Boolean(error||remote.loading||!events.length)} rows={()=>rows.map(row=>({dataset:config.name,group_by:groupBy,category:row.key,count:row.value,share_percent:row.value===null?null:row.value/events.length*100,period_start:filters.start,period_end:filters.end,utility:filters.utility,county:filters.county,unavailable_reason:row.value===null?'EPSS is PG&E-only':''}))}
       svg={()=>barSvg(title,`${config.name}; ${filters.start} – ${filters.end}; ${filters.utility||'All utilities'}; ${filters.county||'All counties'}; ${groupBy}; ${measure==='share'?'percent of selected records':'event count'}; ${events.length} records. ${datasetNote(dataset)}`,rows,events.length,config.color,measure==='share')} />
     <div className="comparison-toolbar">
-    <div className="comparison-selectors">
+    <div className="comparison-context">
       <label>Dataset<select aria-label="Comparison dataset" value={dataset} onChange={event => setDataset(event.target.value as DatasetId)}>{DATASETS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-      <label>Group by<select aria-label="Group by" value={groupBy} onChange={event => setGroupBy(event.target.value as GroupBy)}><option value="cause">Cause</option><option value="utility">Utility</option><option value="county">County</option></select></label>
+      <span>By {groupBy}</span>
     </div>
     <div className="measure-switch" role="group" aria-label="Bar values"><button aria-pressed={measure === "count"} onClick={() => setMeasure("count")}>Count</button><button aria-pressed={measure === "share"} onClick={() => setMeasure("share")}>Share %</button></div>
     </div>

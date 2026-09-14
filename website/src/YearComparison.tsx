@@ -14,29 +14,6 @@ import { ExportActions } from "./ExportActions"
 import { lineSvg } from "./exports.ts"
 
 const COLORS = ["#9cc4ff", "#f3b982", "#b7a0f0", "#7ac5b1", "#ee8585"]
-export function SeriesModeSwitch() {
-  const { settings, update } = usePanel()
-  return (
-    <div
-      className="series-mode measure-switch"
-      role="group"
-      aria-label="Series view"
-    >
-      <button
-        aria-pressed={settings.seriesMode !== "yearly"}
-        onClick={() => update({ seriesMode: "timeline" })}
-      >
-        Over time
-      </button>
-      <button
-        aria-pressed={settings.seriesMode === "yearly"}
-        onClick={() => update({ seriesMode: "yearly" })}
-      >
-        By year
-      </button>
-    </div>
-  )
-}
 export function YearComparison() {
   const { settings, update, title } = usePanel()
   const dataset = CHART_DATASETS.some((d) => d.id === settings.dataset)
@@ -142,7 +119,6 @@ export function YearComparison() {
   const loading = coverage.loading || remote.loading
   return (
     <div className="analysis-chart series-panel yearly-panel">
-      <SeriesModeSwitch />
       <ExportActions
         disabled={Boolean(error || loading || !lines.length)}
         rows={() =>

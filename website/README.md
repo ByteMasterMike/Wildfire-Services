@@ -27,6 +27,20 @@ Preview the actual generated page using the command in `docs/README.md`.
 
 ## Connected panels
 
+Add panel groups ready-to-use views under the five panel categories. Selecting
+a view creates the configured panel immediately. Map offers wildfire events,
+EPSS outage circuits, PSPS areas and HDW playback; Time series offers event trends
+and year comparison; Comparison offers county, utility and cause views. Records
+and summary metrics each have one entry. Only implemented views appear.
+
+Use the header's Change view action to switch within a panel category. It retains
+the panel's position, custom name, date/geographic filters and expansion state.
+Automatic names track the current view. Unavailable filter combinations remain
+explicit rather than silently changing the selected region or utility. The view
+catalog is in `src/panelViews.ts`; future analyses can join their existing category.
+Trend modes and comparison grouping are selected here instead of separate controls
+in the chart body. Existing saved panels continue to load without a migration.
+
 - **Map:** CPUC clusters, CAL FIRE acreage bubbles, PG&E EPSS circuit lines,
   PSPS polygons, and national ignition sample points; optional HFTD and IOU
   boundaries, with an always-visible legend for the active symbols and scales.
