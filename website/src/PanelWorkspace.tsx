@@ -27,7 +27,7 @@ export function PanelWorkspace({ panels, onRemove, onRename, onUpdate, onDuplica
 }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   if (!panels.length) return null;
-  return <section className="panel-workspace" aria-label="Panel workspace"><header className="workspace-heading"><h1>Your workspace <span>{panels.length} panels</span></h1><span className="warehouse-label">Remote warehouse</span></header>
+  return <section className="panel-workspace" aria-label="Panel workspace"><header className="workspace-heading"><h1>Your workspace <span>{panels.length} panels</span></h1></header>
     <div className="panel-grid">{panels.map(panel => <PanelFrame key={panel.id} panel={panel} expanded={expandedId === panel.id}
       onExpand={() => setExpandedId(panel.id)} onRestore={() => setExpandedId(null)} onRename={onRename} onDuplicate={()=>onDuplicate(panel.id)}
       onRemove={() => { if (expandedId === panel.id) setExpandedId(null); onRemove(panel.id); }} onUpdate={patch => onUpdate(panel.id, patch)} />)}</div>

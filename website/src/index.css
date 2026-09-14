@@ -155,7 +155,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 
 .site-brand { position: absolute; top: 22px; left: 32px; font-size: 14px; letter-spacing: -.02em; z-index: 1; }
 .site-brand span { margin-left: 12px; color: #888; font-size: 11px; letter-spacing: 0; }
-.warehouse-label { color: #999; font-size: 11px; }
 .has-chat .conversation-stage { padding-top: 64px; }
 .chat-message.assistant p { margin: 0 0 8px; line-height: 1.65; }
 .chat-message.assistant { color: #ddd; }
@@ -243,7 +242,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 @media (max-width: 640px) {
   .site-brand { left: 18px; top: 16px; }
   .site-brand span { font-size: 10px; }
-  .warehouse-label { display: none; }
   .has-panels .workspace-intro { padding-top: 72px; }
   .has-chat .workspace-intro { padding-top: 0; }
   .map-filter-line { gap: 10px; }
