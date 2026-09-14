@@ -6,6 +6,7 @@ import { DataSources } from './Controls';
 import { EventDetail } from './RecordPanels';
 import { askAgent, type AgentAnswer } from './api.ts';
 import { CHART_DATASETS, DATASETS, utilityLabel, type EventRecord } from './data.ts';
+import { updatePanelSettings, viewSettings, type PanelView } from './panelViews.ts';
 
 interface Message { id: string; role: 'user' | 'assistant'; content: string; error?: boolean }
 const STORAGE_KEY = 'wildfire-workspace-v1';
@@ -21,7 +22,8 @@ function initialPanels(): PanelInstance[] {
       && Array.isArray(p.settings.overlays) && p.settings.overlays.every((id: string) => ['hftd','territories','hdw'].includes(id))
       && (p.settings.weatherYear === undefined || Number.isInteger(p.settings.weatherYear))
       && (p.settings.weatherDate === undefined || typeof p.settings.weatherDate === 'string')
-      && (p.settings.seriesMode === undefined || ['timeline','yearly'].includes(p.settings.seriesMode))
+      && (p.settings.seriesMode === undefined || ['timeline','yearly','regional','seasonal'].includes(p.settings.seriesMode))
+      && (p.settings.seasonYears === undefined || (Array.isArray(p.settings.seasonYears) && p.settings.seasonYears.every((year: unknown) => Number.isInteger(year) && Number(year) >= 1900 && Number(year) <= 2100)))
       && (p.settings.comparisonYears === undefined || (Array.isArray(p.settings.comparisonYears) && p.settings.comparisonYears.every((year: unknown) => Number.isInteger(year) && Number(year) >= 1900 && Number(year) <= 2100)))
       && !p.settings.answerStat) && new Set(saved.map(p => p.id)).size === saved.length) return saved;
   } catch { /* Storage is optional; unavailable or old state opens the default workspace. */ }
@@ -56,7 +58,11 @@ export default function App() {
     observer.observe(workspaceRef.current!); return () => observer.disconnect();
   }, []);
   function removePanel(id: number) { setPanels(current => current.filter(p => p.id !== id)); }
-  function addPanels(types: PanelId[]) { setPanels(current => [...current, ...types.map(type => newPanel(nextId.current++, type))]); }
+  function addPanel(view: PanelView) {
+    const panel = newPanel(nextId.current++, view.type);
+    panel.name = view.title; panel.settings = viewSettings(panel.settings, view);
+    setPanels(current => [...current, panel]);
+  }
   function duplicatePanel(id: number) {
     const original=panels.find(panel=>panel.id===id); if(!original) return;
     const copy: PanelInstance = { ...original, id: nextId.current++, name: `${panelTitle(original)} · copy`, settings: structuredClone(original.settings) };
@@ -125,10 +131,10 @@ export default function App() {
         </div>
       </section>
       <div ref={workspaceRef}><PanelWorkspace panels={panels} onRemove={removePanel} onDuplicate={duplicatePanel} onRename={(id, name) => setPanels(current => current.map(p => p.id === id ? { ...p, name } : p))}
-        onUpdate={(id, patch) => setPanels(current => current.map(p => p.id === id ? { ...p, settings: { ...p.settings, ...patch } } : p))} /></div>
+        onUpdate={(id, patch) => setPanels(current => current.map(p => p.id === id ? updatePanelSettings(p, patch) : p))} /></div>
       <DataSources />
       {panels.length > 0 && showBack && <a href="#workspace-top" className="back-to-panels" aria-label="Back to top">↑</a>}
-      {showPicker && <PanelPicker onSave={addPanels} onClose={() => setShowPicker(false)} />}
+      {showPicker && <PanelPicker onSelect={addPanel} onClose={() => setShowPicker(false)} />}
       {detail && <EventDetail record={detail} onClose={() => setDetail(null)} />}
     </main>
   </SelectionContext.Provider>;

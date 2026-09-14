@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { PanelSettings } from './state';
+import { PANEL_VIEWS, type PanelView } from './panelViews.ts';
 
 // Spatial context is shown directly on map events.
 export const PANELS = [
@@ -43,52 +44,33 @@ export function PanelStrip({ panels, onRemove, onOpen, onLocate }: {
   </nav>;
 }
 
-export function PanelPicker({ onSave, onClose }: {
-  onSave: (ids: PanelId[]) => void; onClose: () => void;
+export function PanelPicker({ onSelect, onClose, category, activeView }: {
+  onSelect: (view: PanelView) => void; onClose: () => void;
+  category?: PanelId; activeView?: string;
 }) {
-  const [draft, setDraft] = useState<PanelId[]>([]);
+  const [selectedType, setSelectedType] = useState<PanelId>(category ?? 'map');
   const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const element = dialog.current!;
-    element.showModal();
-    return () => element.close();
+    const previous = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden'; element.showModal();
+    return () => { element.close(); document.documentElement.style.overflow = previous; };
   }, []);
-
-  return <dialog ref={dialog} aria-labelledby="panel-picker-title" onCancel={onClose}
-    onClick={event => { if (event.target === event.currentTarget) onClose(); }}
-    className="m-auto w-[calc(100%-2rem)] max-w-xl max-h-[85dvh] overflow-y-auto rounded-2xl border border-white/10 bg-[#252525] p-0 text-white shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm">
-    <div className="p-6" onClick={event => event.stopPropagation()}>
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div><h2 id="panel-picker-title" className="text-lg font-medium">Choose panels</h2>
-          <p className="text-sm text-white/50 mt-1">Add views below. You can open more than one of each.</p></div>
-        <button type="button" onClick={onClose} aria-label="Close panel picker" className="text-white/50 hover:text-white text-xl px-2 cursor-pointer">×</button>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {PANELS.map(panel => {
-          const checked = draft.includes(panel.id);
-          return <div key={panel.id} className="relative">
-            <button type="button" role="checkbox" aria-label={panel.name} aria-checked={checked}
-              aria-describedby={`panel-description-${panel.id}`}
-              onClick={() => setDraft(current => current.includes(panel.id) ? current.filter(id => id !== panel.id) : [...current, panel.id])}
-              className={`panel-option ${checked ? "is-selected" : ""}`}>
-              <span className={checked ? "text-blue-300" : "text-white/55"}><PanelIcon path={panel.icon} /></span>
-              <span className="flex-1"><span className="block text-sm font-medium">{panel.name}</span><span id={`panel-description-${panel.id}`} className="block text-xs leading-relaxed text-white/50 mt-1">{panel.description}</span></span>
-              <span aria-hidden="true" className="panel-option-check">{checked && "✓"}</span>
-            </button>
-            {checked && <div className="panel-quantity">
-              <button type="button" aria-label={`Fewer ${panel.name}`} onClick={() => setDraft(current => { const index = current.lastIndexOf(panel.id); return current.filter((_, i) => i !== index); })}>−</button>
-              <span aria-label={`${panel.name} quantity`}>{draft.filter(id => id === panel.id).length}</span>
-              <button type="button" aria-label={`More ${panel.name}`} onClick={() => setDraft(current => [...current, panel.id])}>+</button>
-            </div>}
-          </div>;
-        })}
-      </div>
-      <div className="flex items-center justify-between gap-3 mt-6">
-        <span className="text-xs text-white/45" aria-live="polite">{draft.length} selected</span>
-        <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-white/65 hover:bg-white/5 cursor-pointer">Cancel</button>
-          <button type="button" onClick={() => { onSave(draft); onClose(); }} disabled={!draft.length} className="disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium bg-blue-400 text-[#152030] hover:bg-blue-300 transition-colors cursor-pointer">Add panels</button>
-        </div>
+  const type = PANELS.find(panel => panel.id === selectedType)!;
+  return <dialog ref={dialog} className="panel-picker" aria-labelledby={titleId}
+    onCancel={event => { event.stopPropagation(); onClose(); }}
+    onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <div onClick={event => event.stopPropagation()}>
+      <header><h2 id={titleId}>{category ? `Change ${type.name} view` : 'Add panel'}</h2><button type="button" aria-label="Close panel picker" onClick={onClose}>×</button></header>
+      {!category && <div className="panel-categories" role="group" aria-label="Panel category">
+        {PANELS.map(panel => <button key={panel.id} type="button" aria-pressed={selectedType === panel.id} onClick={() => setSelectedType(panel.id)}>{panel.name}</button>)}
+      </div>}
+      <div className="panel-view-options" aria-label={`${type.name} views`}>
+        {PANEL_VIEWS.filter(view => view.type === selectedType).map(view => <button key={view.id} type="button" aria-label={view.title} className="panel-view-option" aria-current={activeView === view.id ? 'true' : undefined}
+          onClick={() => { onSelect(view); onClose(); }}>
+          <PanelIcon path={type.icon} /><span><strong>{view.title}</strong><small>{view.description}</small></span>{activeView === view.id && <span className="current-view-mark" aria-label="Current view">✓</span>}
+        </button>)}
       </div>
     </div>
   </dialog>;

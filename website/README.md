@@ -27,6 +27,20 @@ Preview the actual generated page using the command in `docs/README.md`.
 
 ## Connected panels
 
+Add panel groups ready-to-use views under the five panel categories. Selecting
+a view creates the configured panel immediately. Map offers wildfire events,
+EPSS outage circuits, PSPS areas and HDW playback; Time series offers event trends,
+year comparison, regional trends and seasonal profiles; Comparison offers county, utility and cause views. Records
+and summary metrics each have one entry. Only implemented views appear.
+
+Use the header's Change view action to switch within a panel category. It retains
+the panel's position, custom name, date/geographic filters and expansion state.
+Automatic names track the current view. Unavailable filter combinations remain
+explicit rather than silently changing the selected region or utility. The view
+catalog is in `src/panelViews.ts`; future analyses can join their existing category.
+Trend modes and comparison grouping are selected here instead of separate controls
+in the chart body. Existing saved panels continue to load without a migration.
+
 - **Map:** CPUC clusters, CAL FIRE acreage bubbles, PG&E EPSS circuit lines,
   PSPS polygons, and national ignition sample points; optional HFTD and IOU
   boundaries, with an always-visible legend for the active symbols and scales.
@@ -43,6 +57,26 @@ Preview the actual generated page using the command in `docs/README.md`.
   align by period. Source endpoint years are clipped to the recorded date range,
   marked with `*`, and never extended with future zeros. These endpoints are
   recorded event dates, not a guarantee of complete collection coverage.
+- **Regional trends:** monthly, weekly, daily or quarterly EPSS outage counts
+  grouped by PG&E `division`, with a shared vertical scale. The overview fits the
+  highest-total divisions to the frame; View all expands every division. Missing
+  division names remain a Not recorded group. CSV and PNG include every division,
+  including those outside the overview. These are raw counts, not normalized rates.
+- **Seasonal profile:** select one to five completed calendar years in Filters, inside the
+  source's recorded date range. The mean uses 52 seven-day blocks from January 1,
+  matching the existing January-1-based weekly convention. Leap days remain in
+  their year's day-of-year sequence; trailing one or two days are excluded rather
+  than mixed into a shorter final week. A year contributes to a week only when
+  all seven daily buckets are present. Actual zero counts count toward the mean;
+  missing days do not become zeros. Inspect a week for its contributing-year
+  count. One selected year shows its weekly counts as a solid line; multiple
+  years show individual dashed lines and a thicker solid mean. Their shared
+  vertical scale includes the individual-year peaks; inspection shows both the
+  mean and yearly values, and PNG exports retain these line styles.
+  The collapsed Filters summary shows only the number of years. CSV includes the per-year counts and mean. Default years use the latest
+  five eligible years, based on global source dates rather than filtered events.
+  API-filled zero buckets describe recorded events, not audited collection
+  completeness. CAL FIRE posting changes still limit across-year interpretation.
 - **Comparison:** count/share by cause, utility or county. CPUC/CAL FIRE have
   no cause field. EPSS is PG&E-only, with explicit null bars for other utilities.
   Unknown and missing causes are separate categories.
@@ -116,7 +150,7 @@ Filters open in a separate dialog, preserving the chart area. Comparison shows
 as many ranked rows as fit, with an explicit View all button for the remainder;
 table page sizes adapt to the rendered row/header heights and available space.
 
-Each panel can expand into a modal workspace. Restore or Escape returns to the
+Each panel can expand into a modal workspace. Its top-right × or Escape returns to the
 overview with the same component, selected filters and table position. The page
 behind an expanded panel is inert and scroll-locked. Nested filters/details
 close independently. Expanded charts and tables can scroll internally; expanded
