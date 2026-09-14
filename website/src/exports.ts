@@ -1,3 +1,5 @@
+import type { RegionSeries } from './temporal.ts';
+
 export type ExportRow = Record<string, unknown>
 export function csvText(rows: ExportRow[]) {
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))]
@@ -155,4 +157,19 @@ export function lineSvg(
   copy.setAttribute("height", String(height))
   copy.removeAttribute("tabindex")
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${top + height + 16}" viewBox="0 0 ${width} ${top + height + 16}" font-family="Arial, sans-serif"><rect width="100%" height="100%" fill="#222"/><text x="16" y="28" fill="#eee" font-size="16">${escapeXML(title)}</text>${lines.map((line, i) => `<text x="16" y="${49 + i * 16}" fill="#aaa" font-size="11">${escapeXML(line)}</text>`).join("")}${legend.map((item, i) => `<text x="16" y="${60 + lines.length * 16 + i * 17}" fill="${escapeXML(item.color)}" font-size="11">${escapeXML(item.label)}</text>`).join("")}${new XMLSerializer().serializeToString(copy)}</svg>`
+}
+
+export function regionalSvg(title: string, caption: string, series: RegionSeries[]): string {
+  const width=1040, tileWidth=490, tileHeight=164;
+  const notes=wrapped(caption,145);
+  const top=68+notes.length*16;
+  const height=top+Math.ceil(series.length/2)*tileHeight+16;
+  const ceiling=Math.ceil(Math.max(4,...series.flatMap(region=>region.buckets.map(bucket=>bucket.count)))/4)*4;
+  const tiles=series.map((region,index)=>{
+    const x=(i:number)=>region.buckets.length<2?tileWidth/2:40+i/(region.buckets.length-1)*(tileWidth-56);
+    const y=(value:number)=>124-value/ceiling*76;
+    const ticks=[...new Set([0,Math.floor((region.buckets.length-1)/2),region.buckets.length-1])].filter(i=>i>=0);
+    return `<g transform="translate(${16+index%2*512},${top+Math.floor(index/2)*tileHeight})"><text x="0" y="17" fill="#ddd" font-size="13">${escapeXML(region.name)}</text><text x="${tileWidth}" y="17" fill="#bbb" font-size="12" text-anchor="end">${region.total.toLocaleString()} outages</text><text x="40" y="36" fill="#aaa" font-size="10">Outages</text>${[0,ceiling/2,ceiling].map(value=>`<path d="M40 ${y(value)}H${tileWidth-16}" stroke="#444"/><text x="33" y="${y(value)+4}" text-anchor="end" fill="#aaa" font-size="10">${value}</text>`).join('')}<polyline fill="none" stroke="#b7a0f0" stroke-width="2" points="${region.buckets.map((bucket,i)=>`${x(i)},${y(bucket.count)}`).join(' ')}"/>${ticks.map(i=>`<text x="${x(i)}" y="144" fill="#aaa" font-size="10" text-anchor="${i===0?'start':i===region.buckets.length-1?'end':'middle'}">${escapeXML(region.buckets[i].start)}</text>`).join('')}</g>`;
+  }).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="Arial,sans-serif"><rect width="100%" height="100%" fill="#222"/><text x="16" y="28" fill="#eee" font-size="17">${escapeXML(title)}</text>${notes.map((line,index)=>`<text x="16" y="${50+index*16}" fill="#aaa" font-size="11">${escapeXML(line)}</text>`).join('')}${tiles}</svg>`;
 }

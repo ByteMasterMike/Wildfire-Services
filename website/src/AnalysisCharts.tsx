@@ -7,11 +7,15 @@ import { usePanel } from './state';
 import { useRemote } from './useRemote';
 import { useRowCapacity } from './useRowCapacity';
 import { YearComparison } from './YearComparison';
+import { RegionalSeries } from './RegionalSeries';
+import { SeasonalSeries } from './SeasonalSeries';
 import { ExportActions } from './ExportActions';
 import { lineSvg, barSvg, type ExportRow } from './exports.ts';
 
 export function TimeSeries() {
   const { settings } = usePanel();
+  if (settings.seriesMode === 'regional') return <RegionalSeries />;
+  if (settings.seriesMode === 'seasonal') return <SeasonalSeries />;
   return settings.seriesMode === 'yearly' ? <YearComparison /> : <TimelineSeries />;
 }
 function TimelineSeries() {

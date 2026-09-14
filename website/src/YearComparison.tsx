@@ -369,16 +369,18 @@ export function YearComparison() {
     </div>
   )
 }
-function YearPicker({
+export function YearPicker({
   available,
   selected,
   onChange,
   onClose,
+  purpose,
 }: {
   available: number[]
   selected: number[]
   onChange: (years: number[]) => void
   onClose: () => void
+  purpose?: string
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -396,14 +398,14 @@ function YearPicker({
     <dialog
       ref={dialog}
       className="filter-dialog"
-      aria-label="Choose comparison years"
+      aria-label={purpose??"Choose comparison years"}
       onCancel={(e) => {
         e.stopPropagation()
         onClose()
       }}
     >
       <header>
-        <h2>Compare years</h2>
+        <h2>{purpose??'Compare years'}</h2>
         <button aria-label="Close years" onClick={onClose}>
           ×
         </button>

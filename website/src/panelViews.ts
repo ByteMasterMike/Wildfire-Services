@@ -16,6 +16,8 @@ export const PANEL_VIEWS: PanelView[] = [
   { id: 'weather-map', type: 'map', title: 'Fire weather', description: 'Play daily HDW alongside event starts.', settings: { dataset: 'cpuc', overlays: ['hdw'] } },
   { id: 'events-time', type: 'time_series', title: 'Event trends', description: 'Follow CPUC, EPSS and CAL FIRE over time.', settings: { seriesMode: 'timeline', datasets: ['cpuc', 'epss', 'calfire'] } },
   { id: 'annual-time', type: 'time_series', title: 'Year comparison', description: 'Compare years on the same calendar axis.', settings: { dataset: 'cpuc', seriesMode: 'yearly' } },
+  { id: 'regional-time', type: 'time_series', title: 'Regional trends', description: 'Compare EPSS trends across PG&E divisions.', settings: { dataset: 'epss', seriesMode: 'regional' } },
+  { id: 'seasonal-time', type: 'time_series', title: 'Seasonal profile', description: 'Average weekly events across selected years.', settings: { dataset: 'cpuc', seriesMode: 'seasonal' } },
   { id: 'county-comparison', type: 'comparison', title: 'County ranking', description: 'Rank counties by recorded events.', settings: { dataset: 'cpuc', groupBy: 'county' } },
   { id: 'utility-comparison', type: 'comparison', title: 'Utility comparison', description: 'Compare recorded counts across utilities.', settings: { dataset: 'cpuc', groupBy: 'utility' } },
   { id: 'cause-comparison', type: 'comparison', title: 'Cause breakdown', description: 'Compare the recorded causes of EPSS outages.', settings: { dataset: 'epss', groupBy: 'cause' } },
@@ -29,7 +31,7 @@ export function viewSettings(current: PanelSettings, view: PanelView): PanelSett
 
 export function currentView(type: PanelId, settings: PanelSettings): string {
   if (type === 'map') return settings.overlays.includes('hdw') ? 'weather-map' : settings.dataset === 'epss' ? 'outages-map' : settings.dataset === 'psps' ? 'psps-map' : 'events-map';
-  if (type === 'time_series') return settings.seriesMode === 'yearly' ? 'annual-time' : 'events-time';
+  if (type === 'time_series') return settings.seriesMode === 'regional' ? 'regional-time' : settings.seriesMode === 'seasonal' ? 'seasonal-time' : settings.seriesMode === 'yearly' ? 'annual-time' : 'events-time';
   if (type === 'comparison') return `${settings.groupBy}-comparison`;
   return type === 'record_table' ? 'event-records' : 'summary-stats';
 }

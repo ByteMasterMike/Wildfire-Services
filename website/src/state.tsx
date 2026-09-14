@@ -7,7 +7,7 @@ export interface PanelSettings {
   measure: 'count' | 'share'; metric: 'events' | 'acres' | 'counties' | 'customers';
   datasets: DatasetId[]; overlays: string[];
   weatherYear?: number; weatherDate?: string;
-  seriesMode?: 'timeline' | 'yearly'; comparisonYears?: number[];
+  seriesMode?: 'timeline' | 'yearly' | 'regional' | 'seasonal'; comparisonYears?: number[]; seasonYears?: number[];
   answerStat?: { value: number; label: string; scope: string; period: string; unit: string };
 }
 export function newPanel(id: number, type: PanelId): PanelInstance {

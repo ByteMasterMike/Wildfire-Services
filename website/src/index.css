@@ -355,8 +355,36 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .year-options label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .year-options input { accent-color: #9cc4ff; }
 .yearly-panel .series-plot { min-height: 100px; }
+.regional-panel, .seasonal-panel { height: 100%; display: flex; flex-direction: column; }
+.regional-panel > :not(.regional-grid), .seasonal-panel > :not(.seasonal-plot) { flex-shrink: 0; }
+.regional-toolbar, .seasonal-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.regional-toolbar > span { color: #bbb; font-size: 12px; }
+.regional-toolbar label { flex-direction: row; align-items: center; }
+.regional-toolbar select { width: auto; }
+.regional-meta { display: flex; justify-content: space-between; color: #999; font-size: 10px; margin-bottom: 10px; }
+.regional-grid { flex: 1; min-height: 0; display: grid; grid-auto-rows: 120px; gap: 12px 20px; align-content: start; overflow: hidden; }
+.regional-grid > .chart-empty { grid-column: 1 / -1; min-height: 100px; }
+.is-expanded .regional-grid { overflow-y: auto; overscroll-behavior: contain; padding-right: 8px; }
+.region-small-multiple { min-width: 0; }
+.region-small-multiple header { height: 24px; display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 11px; }
+.region-small-multiple h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; color: #ccc; }
+.region-small-multiple header span { color: #aaa; }
+.temporal-plot { width: 100%; height: 100%; min-height: 0; }
+.temporal-plot.is-mini { height: 96px; }
+.temporal-plot svg { display: block; width: 100%; height: 100%; }
+.temporal-plot text { fill: #999; font-size: 10px; }
+.regional-readout { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; padding-top: 8px; color: #aaa; font-size: 11px; }
+.regional-readout > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.regional-readout button { flex-shrink: 0; }
+.seasonal-toolbar { position: relative; flex-wrap: wrap; }
+.seasonal-toolbar select { width: auto; }
+.seasonal-plot { flex: 1; min-height: 140px; }
+.seasonal-plot .chart-empty { min-height: 140px; height: 100%; }
+.season-method summary { cursor: pointer; list-style: none; color: #aaa; }
+.season-method p { position: absolute; z-index: 4; right: 0; top: 100%; width: 340px; max-width: 100%; padding: 14px; border: 1px solid #ffffff25; border-radius: 8px; background: #292929; color: #ccc; font-size: 12px; line-height: 1.6; box-shadow: 0 8px 24px #0008; }
 @media (max-width: 640px) {
   .hdw-controls { gap: 6px; font-size: 10px; }
+  .seasonal-toolbar { gap: 6px; }
   .hdw-player { padding-inline: 12px; }
   .hdw-controls select { padding-inline: 3px; }
   .yearly-toolbar { gap: 7px; }
