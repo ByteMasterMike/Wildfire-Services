@@ -2,12 +2,13 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import gridCSV from '../../services/risk_forecasting/data/grid_cells.csv?raw';
 import { getBoundaries, getDetail, getRecords } from './api.ts';
-import { asText, configFor, filterError, sumMetric, unavailableReason, utilityLabel, type EventRecord } from './data.ts';
+import { asText, configFor, filterError, unavailableReason, utilityLabel, type EventRecord } from './data.ts';
 import { ChartFilters, DatasetSelect, LoadState } from './Controls';
 import { SelectionContext, usePanel } from './state';
 import { useRemote } from './useRemote';
 import { useRowCapacity } from './useRowCapacity';
 import { ExportActions } from './ExportActions';
+import { statMetrics } from './stats.ts';
 
 export function RecordTable() {
   const { settings, update, expanded } = usePanel(); const { dataset, filters } = settings;
@@ -33,22 +34,17 @@ export function RecordTable() {
   </div>;
 }
 export function StatCard() {
-  const { settings, update } = usePanel(); const { dataset, filters, metric, answerStat } = settings;
-  const validation = filterError(filters) || unavailableReason(dataset, filters)
-    || (metric === 'acres' && dataset !== 'calfire' ? 'Burned acreage is available for CAL FIRE only.' : null)
-    || (metric === 'customers' && dataset !== 'psps' ? 'Affected customer counts are available for PSPS. EPSS customer-minutes are a different measure.' : null);
+  const { settings, update } = usePanel(); const { dataset, filters, answerStat } = settings;
+  const validation = filterError(filters) || unavailableReason(dataset, filters);
   const remote = useRemote(validation || answerStat ? null : JSON.stringify(['records', dataset, filters]), () => getRecords(dataset, filters));
   const events = remote.data ?? [];
-  const counties = new Set(events.map(e => e.county).filter(Boolean));
-  const total = metric === 'acres' || metric === 'customers' ? sumMetric(events, metric) : { value: metric === 'counties' ? counties.size || (events.length ? null : 0) : events.length, missing: metric === 'counties' ? events.filter(e => !e.county).length : 0 };
+  const metrics = statMetrics(events, dataset);
   if (answerStat) return <div className="stat-content"><p className="panel-note">{answerStat.scope} · {answerStat.period}</p><div className="stat-value">{(answerStat.unit === 'risk' ? answerStat.value * 100 : answerStat.value).toLocaleString(undefined, { maximumFractionDigits: 2 })}{answerStat.unit === 'risk' ? '%' : ''}<span>{answerStat.label}{answerStat.unit === 'percentile' ? ' · percentile' : ''}</span></div><p className="panel-note">From the agent's cited result.</p></div>;
-  return <div className="analysis-chart"><div className="comparison-selectors"><DatasetSelect value={dataset} onChange={dataset => update({ dataset, metric: 'events' })} /><label>Metric<select aria-label="Metric" value={metric} onChange={e => update({ metric: e.target.value as typeof metric })}><option value="events">Events</option><option value="acres">Acres</option><option value="counties">Counties</option><option value="customers">Customers affected</option></select></label></div>
-    <ExportActions disabled={Boolean(validation||remote.error||remote.loading)} rows={()=>[{dataset:configFor(dataset).name,metric,value:total.value,missing_records:total.missing,unit:metric==='customers'?'customer-event total':metric,...filters}]} />
-    <ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} />
-    {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
-      <div className="stat-value">{total.value === null ? '—' : total.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}<span>{metric === 'customers' ? 'customer-event total' : metric} · {configFor(dataset).name}</span></div>
-      {total.missing > 0 && <p className="panel-note">{total.missing} records have no {metric === 'counties' ? 'county' : 'value'}; excluded from this metric.</p>}
-    </>}
+  return <div className="analysis-chart stat-panel"><div className="stat-toolbar"><DatasetSelect hideLabel value={dataset} onChange={dataset => update({ dataset })} /><ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} /></div>
+    <ExportActions disabled={Boolean(validation||remote.error||remote.loading)} rows={()=>metrics.map(metric=>({dataset:configFor(dataset).name,metric:metric.id,value:metric.value,missing_records:metric.missing,unit:metric.unit,...filters}))} />
+    {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <dl className="stat-metrics" aria-label={`${configFor(dataset).name} summary`}>
+      {metrics.map(metric => <div key={metric.id} className="stat-metric"><dt>{metric.label}{metric.missing > 0 && <span className="stat-missing" title={`${metric.missing} records have no value for this metric`}> · {metric.missing} missing</span>}</dt><dd>{metric.value === null ? '—' : metric.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}</dd></div>)}
+    </dl>}
   </div>;
 }
 const grid = gridCSV.trim().split(/\r?\n/).slice(1).map(line => { const [id,lat,lon] = line.split(',').map(Number); return { id, lat, lon }; });

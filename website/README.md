@@ -70,7 +70,7 @@ ported; their answer text remains available.
 
 ## HDW playback and exports
 
-Enable **HDW playback** under a map's Layers menu. The player uses the supplied
+Check **HDW** in the map's bottom layer row. The player uses the supplied
 2020–2025 JSON cubes, loaded one year at a time. Available playback years/days
 are intersected with the map's date filters. Play/Pause, speed and a day slider
 control the surface; playback stops at the last available day and pauses when
@@ -91,6 +91,14 @@ as text in spreadsheet applications to retain leading zeros. Line/bar charts can
 download PNG with titles, scope and legends. Maps export event CSV, not basemap
 images or raw HDW cubes. Duplicate copies a panel's filters, layer settings and
 year choices into independent state.
+
+Stat cards show all supported summary metrics together under one dataset and
+filter scope: CPUC events/counties/utilities, CAL FIRE events/acres/counties,
+EPSS outages/circuits/counties, and PSPS events/customer-event totals/utilities.
+The national sample exposes its record count only. County counts split CAL FIRE's
+comma-separated multi-county records before deduplication; circuits and utilities
+are also distinct counts. Missing fields stay unavailable or are marked beside
+partial totals. Stat CSV downloads include every displayed metric and its unit.
 
 Panel settings use `wildfire-workspace-v1` in browser local storage. Storage
 failure is visible; no chat text, credentials, or fetched datasets are saved.

@@ -199,10 +199,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .leaflet-touch .leaflet-bar { border-color: #ffffff18; }
 .leaflet-tooltip { background: #252525; color: #eee; border-color: #555; }
 .record-link { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; text-align: left; color: #b7d4ff; }
-.record-toolbar { display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px; }
-.record-toolbar > label { flex-shrink: 0; }
-.record-toolbar .chart-filter-drawer { flex: 1; min-width: 0; margin-bottom: 0; }
-.record-toolbar .filter-trigger { height: 100%; }
+:is(.record-toolbar, .stat-toolbar) { display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+:is(.record-toolbar, .stat-toolbar) > label { flex-shrink: 0; }
+:is(.record-toolbar, .stat-toolbar) .chart-filter-drawer { flex: 1; min-width: 0; margin-bottom: 0; }
+:is(.record-toolbar, .stat-toolbar) .filter-trigger { height: 100%; }
 .record-link:hover { text-decoration: underline; }
 .record-scroll tr:hover td { background: #ffffff03; }
 .record-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; color: #999; font-size: 11px; }
@@ -212,6 +212,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .spatial-content dd { max-width: 190px; overflow-wrap: anywhere; line-height: 1.5; }
 .analysis-chart > .comparison-selectors { margin-bottom: 14px; }
 .stat-value { font-size: clamp(38px, 5vw, 62px); padding-bottom: 20px; }
+.stat-panel { height: 100%; display: flex; flex-direction: column; }
+.stat-toolbar { flex-shrink: 0; }
+.stat-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; flex: 1; gap: 0 24px; }
+.stat-metric { min-width: 0; display: flex; flex-direction: column; padding: 24px 0; border-top: 1px solid #ffffff0b; }
+.stat-metric:first-child { grid-column: 1 / -1; border-top: 0; }
+.stat-metric dt { order: 1; margin-top: 12px; font-size: 12px; color: #aaa; }
+.stat-metric dd { color: #c2dbff; font-size: clamp(26px, 6.5cqw, 42px); line-height: 1; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.stat-metric:first-child dd { font-size: 62px; }
+.stat-missing { font-size: 10px; color: #999; }
 .data-sources { width: min(1480px, 100%); margin: -40px auto 0; padding: 0 32px 44px; color: #999; font-size: 11px; }
 .data-sources summary { cursor: pointer; padding-block: 12px; }
 .data-sources p { margin-top: 12px; line-height: 1.7; max-width: 900px; }
