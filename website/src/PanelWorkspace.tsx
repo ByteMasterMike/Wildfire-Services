@@ -3,9 +3,9 @@ import { panelTitle, type PanelId, type PanelInstance } from './PanelPicker';
 import { PanelContext, type PanelSettings } from './state';
 import { TimeSeries, Comparison } from './AnalysisCharts';
 import { EventMap } from './EventMap';
-import { RecordTable, StatCard, SpatialContext } from './RecordPanels';
+import { RecordTable, StatCard } from './RecordPanels';
 
-const CONTENT: Record<PanelId, () => React.JSX.Element> = { map: EventMap, time_series: TimeSeries, comparison: Comparison, record_table: RecordTable, stat_card: StatCard, spatial_context: SpatialContext };
+const CONTENT: Record<PanelId, () => React.JSX.Element> = { map: EventMap, time_series: TimeSeries, comparison: Comparison, record_table: RecordTable, stat_card: StatCard };
 function PanelTitle({ panel, onRename }: { panel: PanelInstance; onRename: (id: number, name: string) => void }) {
   const title = panelTitle(panel);
   const [editing, setEditing] = useState(false);

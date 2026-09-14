@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PANELS, PanelPicker, PanelStrip, panelTitle, type PanelId, type PanelInstance } from './PanelPicker';
 import { PanelWorkspace } from './PanelWorkspace';
-import { SelectionContext, newPanel, type Selection } from './state';
+import { SelectionContext, newPanel } from './state';
 import { DataSources } from './Controls';
 import { EventDetail } from './RecordPanels';
 import { askAgent, type AgentAnswer } from './api.ts';
@@ -11,7 +11,8 @@ interface Message { id: string; role: 'user' | 'assistant'; content: string; err
 const STORAGE_KEY = 'wildfire-workspace-v1';
 function initialPanels(): PanelInstance[] {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+    const saved = Array.isArray(stored) ? stored.filter(panel => panel?.type !== 'spatial_context') : stored;
     if (Array.isArray(saved) && saved.every(p => Number.isInteger(p.id) && PANELS.some(t => t.id === p.type) && (!p.name || typeof p.name === 'string') && p.settings
       && DATASETS.some(d => d.id === p.settings.dataset) && p.settings.filters && ['start','end','county','utility'].every(k => typeof p.settings.filters[k] === 'string')
       && ['daily','weekly','monthly','quarterly'].includes(p.settings.interval) && ['cause','county','utility'].includes(p.settings.groupBy)
@@ -36,7 +37,6 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
-  const [selected, select] = useState<Selection | null>(null);
   const [detail, setDetail] = useState<EventRecord | null>(null);
   const [storageError, setStorageError] = useState(false);
   const [showBack, setShowBack] = useState(false);
@@ -111,7 +111,7 @@ export default function App() {
       setMessages(current => [...current, { id: crypto.randomUUID(), role: 'assistant', content: reason instanceof Error ? reason.message : 'Agent unavailable. You can still use the data panels.', error: true }]);
     } finally { clearTimeout(timeout); setBusy(false); controller.current = null; }
   }
-  return <SelectionContext.Provider value={{ selected, select, inspect: record => { select({ record }); setDetail(record); } }}>
+  return <SelectionContext.Provider value={{ inspect: setDetail }}>
     <main className={`demo-app ${panels.length ? 'has-panels' : ''} ${messages.length ? 'has-chat' : ''}`}>
       <div className="site-brand">Wildfire <span>Analysis workspace</span></div>
       <section id="workspace-top" className="workspace-intro" aria-label="Ask and choose panels">

@@ -30,7 +30,10 @@ Preview the actual generated page using the command in `docs/README.md`.
 - **Map:** CPUC clusters, CAL FIRE acreage bubbles, PG&E EPSS circuit lines,
   PSPS polygons, and national ignition sample points; optional HFTD and IOU
   boundaries, with an always-visible legend for the active symbols and scales.
-  Click an event, then View details. Event data and the basemap
+  Hover or keyboard-focus an individual event for a compact location bubble;
+  click/tap to keep it open, then View details. Pointer exit dismisses transient
+  previews; outside clicks and Escape close them. Clusters still zoom into
+  their members. Event data and the basemap
   are fetched separately; a basemap failure does not hide event geometry.
 - **Time series:** separate CPUC, EPSS and CAL FIRE counts. All intervals are
   calculated from full daily API buckets. Weeks start January 1 and are clipped
@@ -48,9 +51,12 @@ Preview the actual generated page using the command in `docs/README.md`.
   Circuit IDs retain leading zeros.
 - **Stat card:** record counts and known counties; CAL FIRE acreage; PSPS
   customer-event totals. Missing values are reported, not converted into zeros.
-- **Spatial context:** selected event/position, point-in-polygon against remote
-  IOU/HFTD geometry, event-record county, and the saved 824-cell grid. It does
-  not infer outage coordinates from circuit midpoints or invent county values.
+- **Event location bubble:** coordinates, point-in-polygon against remote
+  IOU/HFTD geometry, event-record county, and the saved 824-cell grid. Non-point
+  geometry identifies the hovered/clicked map position, not an outage's origin.
+  Boundary data loads on demand; failed lookups remain unavailable with Retry.
+  This replaces the separate Spatial context panel and picker entry. Existing
+  saved workspaces drop that retired panel while retaining other panels and filters.
 
 The initial scope is 2024. Date inputs are not limited to that year. Recorded
 date ranges come from full-dataset daily aggregates, not a page of records.

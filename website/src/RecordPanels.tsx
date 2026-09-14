@@ -1,8 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import gridCSV from '../../services/risk_forecasting/data/grid_cells.csv?raw';
-import { getBoundaries, getDetail, getRecords } from './api.ts';
-import { asText, configFor, filterError, unavailableReason, utilityLabel, type EventRecord } from './data.ts';
+import { getDetail, getRecords } from './api.ts';
+import { configFor, filterError, unavailableReason, type EventRecord } from './data.ts';
 import { ChartFilters, DatasetSelect, LoadState } from './Controls';
 import { SelectionContext, usePanel } from './state';
 import { useRemote } from './useRemote';
@@ -45,23 +43,6 @@ export function StatCard() {
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <dl className="stat-metrics" aria-label={`${configFor(dataset).name} summary`}>
       {metrics.map(metric => <div key={metric.id} className="stat-metric"><dt>{metric.label}{metric.missing > 0 && <span className="stat-missing" title={`${metric.missing} records have no value for this metric`}> · {metric.missing} missing</span>}</dt><dd>{metric.value === null ? '—' : metric.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}</dd></div>)}
     </dl>}
-  </div>;
-}
-const grid = gridCSV.trim().split(/\r?\n/).slice(1).map(line => { const [id,lat,lon] = line.split(',').map(Number); return { id, lat, lon }; });
-export function SpatialContext() {
-  const { selected } = useContext(SelectionContext);
-  const coords = selected?.location ?? (selected?.record.geometry?.type === 'Point' ? [selected.record.geometry.coordinates[1], selected.record.geometry.coordinates[0]] : null);
-  const remote = useRemote(coords ? 'spatial-boundaries' : null, async () => ({ territories: await getBoundaries('territories'), hftd: await getBoundaries('hftd') }));
-  if (!selected) return <div className="spatial-content"><p className="chart-empty">Select an event on a map or in a record table to inspect its location.</p></div>;
-  const cell = coords ? grid.find(c => coords[0] >= c.lat && coords[0] < c.lat + .24 && coords[1] >= c.lon && coords[1] < c.lon + .24) : null;
-  const point = coords ? [coords[1], coords[0]] : null;
-  const territories = point && remote.data ? remote.data.territories.filter(f => booleanPointInPolygon(point, f)).map(f => utilityLabel(f.properties.utility)).join(', ') || 'Outside IOU territories' : 'Unresolved';
-  const tiers = point && remote.data ? remote.data.hftd.filter(f => booleanPointInPolygon(point, f)).map(f => asText(f.properties.tier)).join(', ') || 'None' : 'Unresolved';
-  return <div className="spatial-content"><p className="selected-location">{selected.record.name}</p><dl>{[
-    ['Coordinates', coords ? `${coords[0].toFixed(4)}, ${coords[1].toFixed(4)}` : 'Select a position on the map'],
-    ['IOU territory', territories], ['HFTD', tiers], ['County', selected.record.county ?? 'Not recorded'], ['Grid cell', cell ? String(cell.id) : coords ? 'Outside grid' : 'Unresolved'],
-  ].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-    {remote.error && <p className="chart-notice">Spatial boundaries could not be loaded. <button className="text-button" onClick={remote.retry}>Retry</button></p>}
   </div>;
 }
 export function EventDetail({ record, onClose }: { record: EventRecord; onClose: () => void }) {

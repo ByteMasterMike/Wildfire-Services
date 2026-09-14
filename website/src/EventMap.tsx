@@ -12,6 +12,7 @@ import { HdwPlayer, HDW_GRID } from './HdwPlayer';
 import { MapLegend, acresRadius } from './MapLegend';
 import { featuresOnDate } from './weather.ts';
 import { ExportActions } from './ExportActions';
+import { MapEventPreview, type EventPreview } from './MapEventPreview';
 
 export function EventMap() {
   const { settings, update, expanded } = usePanel();
@@ -20,7 +21,12 @@ export function EventMap() {
   const weatherDate = weather && settings.weatherDate && settings.weatherDate >= filters.start && settings.weatherDate <= filters.end ? settings.weatherDate : null;
   const selection = useContext(SelectionContext);
   const selectionRef = useRef(selection); selectionRef.current = selection;
-  const [current, setCurrent] = useState<EventRecord | null>(null);
+  const [preview, setPreview] = useState<EventPreview | null>(null);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const keepPreview = () => { if (previewTimer.current) clearTimeout(previewTimer.current); };
+  const leavePreview = () => { keepPreview(); previewTimer.current = setTimeout(() => setPreview(current => current?.pinned ? current : null), 180); };
+  useEffect(() => () => { if (previewTimer.current) clearTimeout(previewTimer.current); }, []);
   const [tileError, setTileError] = useState(false);
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -64,10 +70,11 @@ export function EventMap() {
     return () => { instance.removeLayer(layer); };
   }, [boundaries.data, boundaryKey]);
   useEffect(() => {
-    const instance = map.current; setCurrent(null);
+    const instance = map.current; keepPreview(); setPreview(null);
     if (!instance || !result.data || validation) return;
     const config = configFor(dataset);
     const featureGroup = L.featureGroup().addTo(instance);
+    const pointRenderer = dataset === 'calfire' ? L.svg() : undefined;
     const clusters = L.markerClusterGroup({ maxClusterRadius: 35, showCoverageOnHover: false, chunkedLoading: true, iconCreateFunction: cluster => L.divIcon({ className: 'event-cluster', html: `<span style="border-color:${config.color}">${cluster.getChildCount()}</span>`, iconSize: [34,34] }) });
     const points: L.Marker[] = [];
     for (const feature of shown) {
@@ -77,27 +84,49 @@ export function EventMap() {
         id: String(props.circuit_id), dataset, name: asText(props.circuit_name) ?? 'Circuit', date: asText(props.first_event) ?? '', county: null, utility: 'PG&E', cause: null, acres: null,
         geometry: feature.geometry, properties: { ...props, circuit_detail: true, scope_start: weatherDate ?? filters.start, scope_end: weatherDate ?? filters.end },
       } : recordsFromFeatures(dataset, [feature])[0];
-      const choose = (location: L.LatLng) => { setCurrent(record); selectionRef.current.select({ record, location: [location.lat, location.lng] }); };
+      const show = (location: L.LatLng, pinned = false, hover = false) => {
+        keepPreview();
+        const reveal = () => setPreview(current => current?.pinned && !pinned ? current : { record, location: [location.lat, location.lng], pinned });
+        if (hover) previewTimer.current = setTimeout(reveal, 140); else reveal();
+      };
+      const bindPreview = (layer: L.Layer, point?: L.LatLng) => {
+        layer.on('mouseover', (event: L.LeafletMouseEvent) => show(point ?? event.latlng, false, true));
+        layer.on('mouseout', leavePreview);
+        layer.on('click', (event: L.LeafletMouseEvent) => show(point ?? event.latlng, true));
+        if (point && (layer instanceof L.Marker || layer instanceof L.CircleMarker)) layer.on('add', () => {
+          const element = layer.getElement();
+          if (!element) return;
+          element.setAttribute('aria-label', record.name);
+          element.setAttribute('role', 'button');
+          element.setAttribute('tabindex', '0');
+          element.addEventListener('focus', () => show(point));
+          element.addEventListener('blur', leavePreview);
+          if (layer instanceof L.CircleMarker) element.addEventListener('keydown', event => {
+            if ((event as KeyboardEvent).key === 'Enter' || (event as KeyboardEvent).key === ' ') { event.preventDefault(); show(point, true); }
+          });
+        });
+      };
       if (feature.geometry.type === 'Point' && dataset !== 'calfire') {
         const [lon, lat] = feature.geometry.coordinates;
-        const marker = L.marker([lat, lon], { icon: L.divIcon({ className: 'event-marker', html: `<span style="background:${config.color}"></span>`, iconSize: [12,12] }), title: record.name });
-        marker.on('click', () => choose(marker.getLatLng())); points.push(marker);
+        const marker = L.marker([lat, lon], { icon: L.divIcon({ className: 'event-marker', html: `<span style="background:${config.color}"></span>`, iconSize: [12,12] }) });
+        bindPreview(marker, marker.getLatLng());
+        points.push(marker);
       } else {
         L.geoJSON(feature, {
           style: { color: dataset === 'calfire' ? '#b91c1c' : config.color, weight: dataset === 'calfire' ? 1 : 2, fillOpacity: .35 },
-          pointToLayer: (f, latlng) => L.circleMarker(latlng, { radius: acresRadius(f.properties.acres_burned), color: '#b91c1c', fillColor: '#b91c1c', fillOpacity: .35, weight: 1 }),
-          onEachFeature: (_f, layer) => { const label = document.createElement('span'); label.textContent = record.name; layer.bindTooltip(label); layer.on('click', (event: L.LeafletMouseEvent) => choose(event.latlng)); },
+          pointToLayer: (f, latlng) => L.circleMarker(latlng, { renderer: pointRenderer, radius: acresRadius(f.properties.acres_burned), color: '#b91c1c', fillColor: '#b91c1c', fillOpacity: .35, weight: 1 }),
+          onEachFeature: (feature, layer) => bindPreview(layer, feature.geometry.type === 'Point' ? L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]) : undefined),
         }).addTo(featureGroup);
       }
     }
     if (points.length) { clusters.addLayers(points); featureGroup.addLayer(clusters); }
     const bounds = featureGroup.getBounds();
     if (!weather && bounds.isValid()) instance.fitBounds(bounds, { padding: [24, 24], maxZoom: 10, animate: false });
-    return () => { instance.removeLayer(featureGroup); };
+    return () => { instance.removeLayer(featureGroup); if (pointRenderer && instance.hasLayer(pointRenderer)) instance.removeLayer(pointRenderer); };
   }, [result.data, shown, dataset, validation, filters.start, filters.end, weather, weatherDate]);
   const missing = shown.filter(f => !f.geometry).length;
   const error = validation || result.error;
-  return <div className="live-map">
+  return <div ref={frame} className="live-map">
     <ExportActions disabled={Boolean(error||result.loading||!shown.length||(weather&&!weatherDate))} rows={async()=>{
       const records=await getRecords(dataset,{...filters,start:weatherDate??filters.start,end:weatherDate??filters.end});
       return records.map(record=>({dataset:configFor(dataset).name,...record.properties}));
@@ -113,6 +142,6 @@ export function EventMap() {
     </div>
     <MapLegend dataset={dataset} hftd={overlays.includes('hftd')} territories={overlays.includes('territories')} weather={weather} />
     <div className="map-layers" role="group" aria-label="Map layers">{[['hftd','HFTD','HFTD Tier 2 / 3'],['territories','IOU','IOU territories'],['hdw','HDW','HDW playback']].map(([id,label,name]) => <label key={id} title={name}><input type="checkbox" aria-label={name} checked={overlays.includes(id)} onChange={() => update({ overlays: overlays.includes(id) ? overlays.filter(o => o !== id) : [...overlays,id] })} />{label}</label>)}</div>
-    {current && <div className="map-detail"><span>{current.name}</span><button className="text-button" onClick={() => selection.inspect(current)}>View details →</button></div>}
+    {preview && mapInstance && frame.current && <MapEventPreview map={mapInstance} container={frame.current} preview={preview} onClose={() => setPreview(null)} onEnter={keepPreview} onLeave={leavePreview} onInspect={() => { setPreview(null); selectionRef.current.inspect(preview.record); }} />}
   </div>;
 }

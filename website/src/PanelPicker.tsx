@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { PanelSettings } from './state';
 
-// Matches the six view types in services/agent/views.py.
+// Spatial context is shown directly on map events.
 export const PANELS = [
   { id: "map", name: "Map", description: "Explore wildfire and outage locations.", icon: "M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2V5zm6-2v16m6-14v16" },
   { id: "time_series", name: "Time series", description: "Track events over days, months, or years.", icon: "M3 3v18h18M6 15l4-5 4 3 6-8" },
   { id: "comparison", name: "Comparison", description: "Compare utilities, regions, or periods.", icon: "M3 3v18h18M7 17v-5m5 5V6m5 11V9" },
   { id: "record_table", name: "Record table", description: "Browse individual events and their details.", icon: "M3 4h18v16H3V4zm0 5h18M3 14h18M9 4v16" },
   { id: "stat_card", name: "Stat card", description: "Highlight counts, risk, and key metrics.", icon: "M3 5h18v14H3V5zm4 10V9m4 6v-3m4 3V8" },
-  { id: "spatial_context", name: "Spatial context", description: "Inspect coordinates, utility, county, and HFTD.", icon: "M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1114 0zM10 10a2 2 0 104 0 2 2 0 10-4 0" },
 ] as const;
 
 export type PanelId = typeof PANELS[number]["id"];

@@ -17,8 +17,7 @@ export function newPanel(id: number, type: PanelId): PanelInstance {
     datasets: ['cpuc', 'epss', 'calfire'], overlays: [],
   } };
 }
-export interface Selection { record: EventRecord; location?: [number, number] }
-export const SelectionContext = createContext<{ selected: Selection | null; select: (selection: Selection) => void; inspect: (record: EventRecord) => void }>({ selected: null, select: () => {}, inspect: () => {} });
+export const SelectionContext = createContext<{ inspect: (record: EventRecord) => void }>({ inspect: () => {} });
 export const PanelContext = createContext<{ settings: PanelSettings; update: (patch: Partial<PanelSettings>) => void; expanded: boolean; expand: () => void; actionsHost: HTMLElement | null; title: string } | null>(null);
 export function usePanel() {
   const panel = useContext(PanelContext);
