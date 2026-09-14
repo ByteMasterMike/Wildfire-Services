@@ -311,6 +311,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .filter-dialog header button { font-size: 22px; color: #aaa; }
 .filter-dialog .analysis-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .filter-dialog .quiet-button { display: block; margin-left: auto; }
+.filter-years { margin: 0 0 22px; padding: 0; border: 0; }
+.filter-years legend { font-size: 12px; color: #aaa; }
+.filter-years .year-options { padding-top: 12px; }
+.filter-years .year-options label { flex-direction: row; gap: 8px; color: #ddd; }
 @media (max-width: 640px) {
   .workspace-panel.is-expanded { inset: 8px; width: calc(100% - 16px); height: calc(100dvh - 16px); border-radius: 10px; }
   .series-panel > .panel-note { font-size: 10px; }
@@ -380,11 +384,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .seasonal-toolbar select { width: auto; }
 .seasonal-plot { flex: 1; min-height: 140px; }
 .seasonal-plot .chart-empty { min-height: 140px; height: 100%; }
+.season-legend { display: flex; flex-wrap: wrap; gap: 7px 14px; margin-bottom: 8px; color: #bbb; font-size: 11px; }
+.season-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.season-legend i { width: 19px; border-top: 2px solid; }
+.season-legend .is-dashed { border-top-style: dashed; }
+.seasonal-readout { min-height: 64px; align-content: flex-start; }
+.seasonal-readout > div { gap: 6px 12px; }
 .season-method summary { cursor: pointer; list-style: none; color: #aaa; }
 .season-method p { position: absolute; z-index: 4; right: 0; top: 100%; width: 340px; max-width: 100%; padding: 14px; border: 1px solid #ffffff25; border-radius: 8px; background: #292929; color: #ccc; font-size: 12px; line-height: 1.6; box-shadow: 0 8px 24px #0008; }
 @media (max-width: 640px) {
   .hdw-controls { gap: 6px; font-size: 10px; }
   .seasonal-toolbar { gap: 6px; }
+  .seasonal-readout { min-height: 88px; }
   .hdw-player { padding-inline: 12px; }
   .hdw-controls select { padding-inline: 3px; }
   .yearly-toolbar { gap: 7px; }

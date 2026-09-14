@@ -7,7 +7,7 @@ import {
 } from "./data.ts"
 import { getCoverage, getDailySeries } from "./api.ts"
 import { annualAxis, annualPoints, yearRange } from "./annual.ts"
-import { ChartFilters, DatasetSelect, LoadState } from "./Controls"
+import { ChartFilters, DatasetSelect, LoadState, YearOptions } from "./Controls"
 import { usePanel } from "./state"
 import { useRemote } from "./useRemote"
 import { ExportActions } from "./ExportActions"
@@ -369,18 +369,16 @@ export function YearComparison() {
     </div>
   )
 }
-export function YearPicker({
+function YearPicker({
   available,
   selected,
   onChange,
   onClose,
-  purpose,
 }: {
   available: number[]
   selected: number[]
   onChange: (years: number[]) => void
   onClose: () => void
-  purpose?: string
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -398,14 +396,14 @@ export function YearPicker({
     <dialog
       ref={dialog}
       className="filter-dialog"
-      aria-label={purpose??"Choose comparison years"}
+      aria-label="Choose comparison years"
       onCancel={(e) => {
         e.stopPropagation()
         onClose()
       }}
     >
       <header>
-        <h2>{purpose??'Compare years'}</h2>
+        <h2>Compare years</h2>
         <button aria-label="Close years" onClick={onClose}>
           ×
         </button>
@@ -413,25 +411,7 @@ export function YearPicker({
       <p className="panel-note">
         Choose up to five years. Dates use the dataset's recorded range.
       </p>
-      <div className="year-options">
-        {available.map((year) => (
-          <label key={year}>
-            <input
-              type="checkbox"
-              checked={selected.includes(year)}
-              disabled={!selected.includes(year) && selected.length >= 5}
-              onChange={() =>
-                onChange(
-                  selected.includes(year)
-                    ? selected.filter((y) => y !== year)
-                    : [...selected, year],
-                )
-              }
-            />
-            {year}
-          </label>
-        ))}
-      </div>
+      <YearOptions available={available} selected={selected} onChange={onChange}/>
       <button className="quiet-button" onClick={onClose}>
         Done
       </button>

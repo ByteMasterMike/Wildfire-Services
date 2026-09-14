@@ -42,6 +42,7 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const wasExpanded = useRef(false);
   const Content = CONTENT[panel.type];
   const [actionsHost,setActionsHost]=useState<HTMLDivElement|null>(null);
@@ -54,7 +55,7 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
     if (expanded) {
       root.style.overflow = 'hidden';
       element.showModal();
-      expandButton.current?.focus({ preventScroll: true });
+      closeButton.current?.focus({ preventScroll: true });
     } else {
       // Nonmodal overview: keep the same content and Leaflet instance mounted.
       element.open = true;
@@ -71,9 +72,9 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></svg>
       </button>}
       <div ref={setActionsHost} className="panel-export-host" /><button className="panel-expand" aria-label={`Duplicate ${panelTitle(panel)}`} title="Duplicate panel with filters" onClick={onDuplicate}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg></button>
-      <button ref={expandButton} className="panel-expand" title={expanded ? 'Return to workspace (Esc)' : 'Expand panel'} aria-label={`${expanded ? 'Restore' : 'Expand'} ${panelTitle(panel)}`} onClick={expanded ? onRestore : onExpand}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d={expanded ? 'M4 10h6V4m10 10h-6v6M10 10 3 3m11 11 7 7' : 'M9 3H3v6m12 12h6v-6M3 3l7 7m11 11-7-7'} /></svg>
-      </button><button className="panel-close" aria-label={`Close ${panelTitle(panel)}`} onClick={onRemove}>×</button>
+      {!expanded && <button ref={expandButton} className="panel-expand" title="Expand panel" aria-label={`Expand ${panelTitle(panel)}`} onClick={onExpand}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M9 3H3v6m12 12h6v-6M3 3l7 7m11 11-7-7" /></svg>
+      </button>}<button ref={closeButton} className="panel-close" title={expanded ? 'Return to workspace (Esc)' : 'Remove panel'} aria-label={`${expanded ? 'Restore' : 'Close'} ${panelTitle(panel)}`} onClick={expanded ? onRestore : onRemove}>×</button>
     </div></header>
     <div className="panel-body" role="region" aria-label={`${panelTitle(panel)} content`} tabIndex={expanded ? 0 : undefined}>
       <PanelContext.Provider value={{ settings: panel.settings, update: onUpdate, expanded, expand: onExpand, actionsHost, title: panelTitle(panel) }}><Content /></PanelContext.Provider>

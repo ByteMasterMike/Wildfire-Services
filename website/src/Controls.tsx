@@ -6,14 +6,20 @@ import { useRemote } from './useRemote';
 export function DatasetSelect({ value, onChange, label = 'Dataset', hideLabel = false, all = true }: { value: DatasetId; onChange: (value: DatasetId) => void; label?: string; hideLabel?: boolean; all?: boolean }) {
   return <label>{!hideLabel && label}<select aria-label={label} value={value} onChange={e => onChange(e.target.value as DatasetId)}>{(all ? DATASETS : DATASETS.slice(0, 3)).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>;
 }
-export function ChartFilters({ filters, onChange, dataset, years }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; years?: number[] }) {
+interface YearSelection { available: number[]; onChange: (years: number[]) => void }
+export function YearOptions({available, selected, onChange}: {available: number[]; selected: number[]; onChange: (years: number[]) => void}) {
+  return <div className="year-options">{available.map(year => <label key={year}><input type="checkbox" checked={selected.includes(year)} disabled={!selected.includes(year) && selected.length >= 5}
+    onChange={() => onChange(selected.includes(year) ? selected.filter(value => value !== year) : [...selected, year])}/>{year}</label>)}</div>;
+}
+export function ChartFilters({ filters, onChange, dataset, years, yearSelection }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; years?: number[]; yearSelection?: YearSelection }) {
   const [open, setOpen] = useState(false);
+  const summary = years ? yearSelection ? `${years.length} ${years.length === 1 ? 'year' : 'years'}` : years.join(' / ') : `${filters.start} – ${filters.end}`;
   return <div className="chart-filter-drawer">
-    <button className="filter-trigger" aria-label="Filters" aria-haspopup="dialog" onClick={() => setOpen(true)}><span>Filters</span><span className="filter-summary">{years ? years.join(' / ') : `${filters.start} – ${filters.end}`}{filters.county && ` · ${filters.county}`}{filters.utility && ` · ${filters.utility}`}</span></button>
-    {open && <FilterDialog filters={filters} onChange={onChange} dataset={dataset} years={years} onClose={() => setOpen(false)} />}
+    <button className="filter-trigger" aria-label="Filters" aria-haspopup="dialog" onClick={() => setOpen(true)}><span>Filters</span><span className="filter-summary">{summary}{filters.county && ` · ${filters.county}`}{filters.utility && ` · ${filters.utility}`}</span></button>
+    {open && <FilterDialog filters={filters} onChange={onChange} dataset={dataset} years={years} yearSelection={yearSelection} onClose={() => setOpen(false)} />}
   </div>;
 }
-function FilterDialog({ filters, onChange, dataset, years, onClose }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; years?: number[]; onClose: () => void }) {
+function FilterDialog({ filters, onChange, dataset, years, yearSelection, onClose }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; years?: number[]; yearSelection?: YearSelection; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useId();
   useEffect(() => {
@@ -25,6 +31,7 @@ function FilterDialog({ filters, onChange, dataset, years, onClose }: { filters:
   return <dialog ref={dialog} className="filter-dialog analysis-chart" aria-labelledby={title} onCancel={event => { event.stopPropagation(); onClose(); }}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}><div onClick={event => event.stopPropagation()}>
     <header><h2 id={title}>{dataset ? `${configFor(dataset).name} filters` : 'Time series filters'}</h2><button aria-label="Close filters" onClick={onClose}>×</button></header>
+    {yearSelection && <fieldset className="filter-years"><legend>Years</legend><YearOptions available={yearSelection.available} selected={years??[]} onChange={yearSelection.onChange}/></fieldset>}
     <div className="analysis-filters">
       {!years && <><label>From<input aria-label="Start date" type="date" value={filters.start} onChange={e => onChange({ ...filters, start: e.target.value })} /></label>
       <label>To<input aria-label="End date" type="date" value={filters.end} onChange={e => onChange({ ...filters, end: e.target.value })} /></label></>}

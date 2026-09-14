@@ -62,14 +62,18 @@ in the chart body. Existing saved panels continue to load without a migration.
   highest-total divisions to the frame; View all expands every division. Missing
   division names remain a Not recorded group. CSV and PNG include every division,
   including those outside the overview. These are raw counts, not normalized rates.
-- **Seasonal profile:** select two to five completed calendar years inside the
+- **Seasonal profile:** select one to five completed calendar years in Filters, inside the
   source's recorded date range. The mean uses 52 seven-day blocks from January 1,
   matching the existing January-1-based weekly convention. Leap days remain in
   their year's day-of-year sequence; trailing one or two days are excluded rather
   than mixed into a shorter final week. A year contributes to a week only when
   all seven daily buckets are present. Actual zero counts count toward the mean;
   missing days do not become zeros. Inspect a week for its contributing-year
-  count. CSV includes the per-year counts and mean. Default years use the latest
+  count. One selected year shows its weekly counts as a solid line; multiple
+  years show individual dashed lines and a thicker solid mean. Their shared
+  vertical scale includes the individual-year peaks; inspection shows both the
+  mean and yearly values, and PNG exports retain these line styles.
+  The collapsed Filters summary shows only the number of years. CSV includes the per-year counts and mean. Default years use the latest
   five eligible years, based on global source dates rather than filtered events.
   API-filled zero buckets describe recorded events, not audited collection
   completeness. CAL FIRE posting changes still limit across-year interpretation.
@@ -146,7 +150,7 @@ Filters open in a separate dialog, preserving the chart area. Comparison shows
 as many ranked rows as fit, with an explicit View all button for the remainder;
 table page sizes adapt to the rendered row/header heights and available space.
 
-Each panel can expand into a modal workspace. Restore or Escape returns to the
+Each panel can expand into a modal workspace. Its top-right × or Escape returns to the
 overview with the same component, selected filters and table position. The page
 behind an expanded panel is inert and scroll-locked. Nested filters/details
 close independently. Expanded charts and tables can scroll internally; expanded
