@@ -6,6 +6,8 @@ export interface PanelSettings {
   dataset: DatasetId; filters: Filters; interval: Interval; groupBy: GroupBy;
   measure: 'count' | 'share'; metric: 'events' | 'acres' | 'counties' | 'customers';
   datasets: DatasetId[]; overlays: string[];
+  weatherYear?: number; weatherDate?: string;
+  seriesMode?: 'timeline' | 'yearly'; comparisonYears?: number[];
   answerStat?: { value: number; label: string; scope: string; period: string; unit: string };
 }
 export function newPanel(id: number, type: PanelId): PanelInstance {
@@ -15,9 +17,8 @@ export function newPanel(id: number, type: PanelId): PanelInstance {
     datasets: ['cpuc', 'epss', 'calfire'], overlays: [],
   } };
 }
-export interface Selection { record: EventRecord; location?: [number, number] }
-export const SelectionContext = createContext<{ selected: Selection | null; select: (selection: Selection) => void; inspect: (record: EventRecord) => void }>({ selected: null, select: () => {}, inspect: () => {} });
-export const PanelContext = createContext<{ settings: PanelSettings; update: (patch: Partial<PanelSettings>) => void; expanded: boolean; expand: () => void } | null>(null);
+export const SelectionContext = createContext<{ inspect: (record: EventRecord) => void }>({ inspect: () => {} });
+export const PanelContext = createContext<{ settings: PanelSettings; update: (patch: Partial<PanelSettings>) => void; expanded: boolean; expand: () => void; actionsHost: HTMLElement | null; title: string } | null>(null);
 export function usePanel() {
   const panel = useContext(PanelContext);
   if (!panel) throw new Error('Panel context missing');
