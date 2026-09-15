@@ -1,0 +1,106 @@
+<div id="workspace-layout-explainer">
+  <div class="viz-controls">
+    <label class="form-label" for="wl-count">面板数量 <output id="wl-count-value" class="tabular-nums">6</output>
+      <input id="wl-count" class="form-range" type="range" min="1" max="19" value="6">
+    </label>
+    <label class="form-label" for="wl-width">页面宽度
+      <select id="wl-width" class="form-select">
+        <option value="desktop">桌面 · 1480px</option>
+        <option value="tablet">平板 · 900px</option>
+        <option value="mobile">手机 · 390px</option>
+      </select>
+    </label>
+  </div>
+  <div class="viz-row text-small">
+    <span>框高 480px</span><span>标题栏 52px</span><span id="wl-gap">间距 18px</span><span>内部滚动条 4px</span>
+  </div>
+  <div id="wl-drawing"></div>
+  <div id="wl-detail" class="text-small tabular-nums" aria-live="polite"></div>
+  <style>
+    #workspace-layout-explainer #wl-drawing { width: 100%; margin-block: 16px; }
+    #workspace-layout-explainer .wl-plot { display: block; width: 100%; }
+    #workspace-layout-explainer .wl-frame { fill: var(--muted); stroke: var(--border); stroke-width: 1; }
+    #workspace-layout-explainer .wl-rule { stroke: var(--border); stroke-width: 1; }
+    #workspace-layout-explainer .wl-label { fill: var(--foreground); }
+    #workspace-layout-explainer .wl-muted { fill: var(--muted-foreground); }
+  </style>
+  <script>
+    (() => {
+      const root = document.getElementById('workspace-layout-explainer');
+      const countControl = root.querySelector('#wl-count');
+      const widthControl = root.querySelector('#wl-width');
+      const countLabel = root.querySelector('#wl-count-value');
+      const drawing = root.querySelector('#wl-drawing');
+      const detail = root.querySelector('#wl-detail');
+      const gapLabel = root.querySelector('#wl-gap');
+      const names = ['地图', '趋势', '比较', '记录', '指标', '位置'];
+      const ns = 'http://www.w3.org/2000/svg';
+
+      function node(tag, attrs, text) {
+        const element = document.createElementNS(ns, tag);
+        Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, String(value)));
+        if (text !== undefined) element.textContent = text;
+        return element;
+      }
+
+      function rowsFor(count, mode) {
+        const rows = [];
+        if (mode !== 'desktop') {
+          const columns = mode === 'tablet' ? 2 : 1;
+          for (let index = 0; index < count; index += columns) {
+            rows.push(Array.from({ length: Math.min(columns, count - index) }, (_, i) => index + i));
+          }
+          return rows;
+        }
+        for (let start = 0; start < count; start += 9) {
+          const size = Math.min(9, count - start);
+          const columns = size <= 2 || size === 4 ? 2 : 3;
+          for (let index = 0; index < size; index += columns) {
+            rows.push(Array.from({ length: Math.min(columns, size - index) }, (_, i) => start + index + i));
+          }
+        }
+        return rows;
+      }
+
+      function draw() {
+        const count = Number(countControl.value);
+        const mode = widthControl.value;
+        const rows = rowsFor(count, mode);
+        const width = drawing.getBoundingClientRect().width;
+        if (!width) return;
+        const realGap = mode === 'mobile' ? 14 : 18;
+        const realWidth = mode === 'desktop' ? 1416 : mode === 'tablet' ? 836 : 362;
+        const gap = 12;
+        const rowHeight = 92;
+        const top = 32;
+        const height = top + rows.length * (rowHeight + gap);
+        const svg = node('svg', { class: 'wl-plot', viewBox: `0 0 ${width} ${height}`, height, role: 'img', 'aria-label': `${count} 个面板，每行数量为 ${rows.map(row => row.length).join('、')}；示意图非等比例。` });
+        svg.append(node('text', { x: 0, y: 16, class: 'wl-muted text-small' }, '当前网格 · 排版示意'));
+        const widths = new Set();
+        rows.forEach((row, rowIndex) => {
+          const cellWidth = (width - gap * (row.length - 1)) / row.length;
+          const actualWidth = Math.round((realWidth - realGap * (row.length - 1)) / row.length);
+          widths.add(actualWidth);
+          row.forEach((index, column) => {
+            const x = column * (cellWidth + gap);
+            const y = top + rowIndex * (rowHeight + gap);
+            const group = node('g', { 'aria-label': `面板 ${index + 1}：${actualWidth} × 480px` });
+            group.append(node('rect', { x: x + .5, y: y + .5, width: cellWidth - 1, height: rowHeight - 1, rx: 8, class: 'wl-frame' }));
+            group.append(node('line', { x1: x + 1, x2: x + cellWidth - 1, y1: y + 32, y2: y + 32, class: 'wl-rule' }));
+            group.append(node('text', { x: x + 10, y: y + 22, class: 'wl-label text-small' }, `${String(index + 1).padStart(2, '0')} ${names[index % names.length]}`));
+            svg.append(group);
+          });
+        });
+        drawing.replaceChildren(svg);
+        countLabel.value = String(count);
+        gapLabel.textContent = `间距 ${realGap}px`;
+        detail.textContent = `每行：${rows.map(row => row.length).join(' + ')}　｜　对应框宽：${[...widths].join(' / ')}px`;
+      }
+
+      countControl.addEventListener('input', draw);
+      widthControl.addEventListener('change', draw);
+      new ResizeObserver(draw).observe(drawing);
+      draw();
+    })();
+  </script>
+</div>
