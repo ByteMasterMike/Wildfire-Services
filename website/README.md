@@ -131,6 +131,9 @@ in the chart body. Existing saved panels continue to load without a migration.
   Unknown and missing causes are separate categories.
 - **Record table:** complete filtered records, local search, overview pages sized
   to the available height, 25-row pages in expanded view, and remote detail.
+  Fixed column widths keep headers and values aligned across pages; headers stay
+  visible while scrolling expanded records. A page change resets vertical table
+  scrolling. Long names retain their full value on hover and in event details.
   Circuit IDs retain leading zeros. The existing detail dialog includes expandable
   EPSS outage records for circuits and affected-circuit records for PSPS events.
   An empty related-record list is distinct from a missing collection (`No data`).

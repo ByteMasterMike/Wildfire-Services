@@ -61,9 +61,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .missing-bar { display: inline-flex; align-items: center; justify-content: center; height: 24px; width: 76px; color: #ddd; font-size: 10px; background: repeating-linear-gradient(135deg, #414141, #414141 4px, #303030 4px, #303030 8px); border: 1px solid #666; border-radius: 3px; }
 .record-search { width: 100%; background: #ffffff05; border: 1px solid #ffffff12; border-radius: 6px; padding: 9px; font-size: 12px; }
 .record-scroll { overflow: auto; margin-top: 12px; }
-.record-scroll table { width: 100%; text-align: left; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
+.record-scroll table { width: 100%; min-width: 360px; table-layout: fixed; text-align: left; border-collapse: separate; border-spacing: 0; font-size: 11px; white-space: nowrap; }
+.record-col-event { width: 28%; }
+.record-col-county { width: 32%; }
+.record-col-date { width: 24%; }
+.record-col-value { width: 16%; }
 .record-scroll th { font-weight: 400; color: #999; }
 .record-scroll td, .record-scroll th { padding: 10px 9px; border-bottom: 1px solid #ffffff0c; }
+.record-scroll td { overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.record-scroll .record-link { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .record-scroll td:first-child, .record-scroll th:first-child { padding-left: 0; }
 .stat-value { width: fit-content; padding: 18px 0 0; font-size: 62px; line-height: 1; color: #c2dbff; letter-spacing: -.04em; }
 .stat-value span { display: block; font-size: 13px; margin-top: 12px; color: #aaa; letter-spacing: normal; }
@@ -319,7 +325,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .workspace-panel:not(.is-expanded) .bar-value small { display: none; }
 .overview-more { min-height: 26px; padding-top: 8px; font-size: 11px; color: #999; }
 .is-expanded .comparison-panel .analysis-bars { overflow-y: auto; overscroll-behavior-y: contain; padding-right: 8px; }
-.records-panel .record-scroll { flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; }
+.records-panel .record-scroll { flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; scrollbar-gutter: stable; }
 .records-panel .record-scroll :is(td, th) { height: 34px; padding: 0 9px; }
 .records-panel .record-scroll th { position: sticky; top: 0; background: #222; z-index: 1; }
 .is-expanded .records-panel .record-scroll { overflow-y: auto; overscroll-behavior-y: contain; }

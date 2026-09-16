@@ -21,11 +21,16 @@ export function RecordTable() {
   const pageSize = expanded ? 25 : capacity;
   const current = Math.min(offset, Math.max(0, rows.length - 1));
   useEffect(() => setOffset(0), [dataset, filters, query]);
+  useEffect(() => { if (viewport.current) viewport.current.scrollTop = 0; }, [current, pageSize]);
   return <div className="analysis-chart records-panel"><div className="record-toolbar"><DatasetSelect hideLabel value={dataset} onChange={dataset => update({ dataset })} /><ChartFilters filters={filters} onChange={filters => update({ filters })} dataset={dataset} /></div>
     <ExportActions datasets={[dataset]} disabled={Boolean(validation||remote.error||remote.loading||!rows.length)} rows={()=>rows.map(record=>({dataset:configFor(dataset).name,...record.properties}))} />
     <input className="record-search" aria-label="Filter records" placeholder="Filter by event, county, utility, or cause…" value={query} onChange={e => setQuery(e.target.value)} />
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
-      <div ref={viewport} className="record-scroll"><table><thead><tr><th>Event</th><th>County</th><th>Date</th><th>{dataset === 'calfire' ? 'Acres' : 'Utility'}</th></tr></thead><tbody>{rows.slice(current, current + pageSize).map(e => <tr key={e.id}><td><button className="record-link" onClick={() => inspect(e)}>{e.name}</button></td><td>{e.county ?? '—'}</td><td>{e.date || '—'}</td><td>{dataset === 'calfire' ? e.acres?.toLocaleString() ?? '—' : e.utility ?? '—'}</td></tr>)}</tbody></table></div>
+      <div ref={viewport} className="record-scroll"><table>
+        <colgroup><col className="record-col-event"/><col className="record-col-county"/><col className="record-col-date"/><col className="record-col-value"/></colgroup>
+        <thead><tr><th scope="col">Event</th><th scope="col">County</th><th scope="col">Date</th><th scope="col">{dataset === 'calfire' ? 'Acres' : 'Utility'}</th></tr></thead>
+        <tbody>{rows.slice(current, current + pageSize).map(e => <tr key={e.id}><td><button className="record-link" title={e.name} onClick={() => inspect(e)}>{e.name}</button></td><td title={e.county ?? undefined}>{e.county ?? '—'}</td><td>{e.date || '—'}</td><td>{dataset === 'calfire' ? e.acres?.toLocaleString() ?? '—' : e.utility ?? '—'}</td></tr>)}</tbody>
+      </table></div>
       {!rows.length && <p className="panel-note">No matching records.</p>}
       <div className="record-pagination"><span>{rows.length ? `${current + 1}–${Math.min(current + pageSize, rows.length)}` : '0'} of {rows.length.toLocaleString()} records{query && ` (${events.length.toLocaleString()} before search)`}</span><div><button aria-label="Previous page" disabled={current === 0} onClick={() => setOffset(Math.max(0, current - pageSize))}>←</button><button aria-label="Next page" disabled={current + pageSize >= rows.length} onClick={() => setOffset(current + pageSize)}>→</button></div></div>
     </>}
