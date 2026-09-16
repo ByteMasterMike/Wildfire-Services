@@ -26,6 +26,7 @@ from services.agent.schemas import (
     VisualizationInspectArgs,
 )
 from services.agent.time_resolve import apply_harness_years
+from services.shared.dataset_registry import data_query_path
 
 
 @dataclass
@@ -388,16 +389,7 @@ class ToolExecutor:
     def _map_data_records(
         self, args: DataQueryRecordsArgs
     ) -> tuple[str, dict[str, Any]]:
-        path = {
-            "cpuc_ignitions": "/ignitions",
-            "us_ignitions": "/us-ignitions",
-            "epss_outages": "/epss/outages",
-            "psps_events": "/psps/events",
-            "calfire_incidents": "/calfire/incidents",
-            "circuits": "/circuits",
-            "hftd": "/hftd",
-            "iou_territories": "/iou-territories",
-        }[args.dataset.value]
+        path = data_query_path(args.dataset.value)
         params = args.model_dump(mode="json", exclude_none=True)
         params.pop("dataset", None)
         mode = params.pop("result_mode", "count")
