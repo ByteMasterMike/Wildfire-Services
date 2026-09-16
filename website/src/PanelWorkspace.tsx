@@ -33,7 +33,7 @@ export function PanelWorkspace({ panels, onRemove, onRename, onUpdate, onDuplica
   if (!panels.length) return null;
   return <section className="panel-workspace" aria-label="Panel workspace"><header className="workspace-heading"><h1>Your workspace <span>{panels.length} panels</span></h1></header>
     <div ref={drag.gridRef} className="panel-grid">{panels.map(panel => <PanelFrame key={panel.id} panel={panel} expanded={expandedId === panel.id} drag={drag}
-      onExpand={() => setExpandedId(panel.id)} onRestore={() => setExpandedId(null)} onRename={onRename} onDuplicate={()=>onDuplicate(panel.id)}
+      onExpand={() => { drag.stopMotion(); setExpandedId(panel.id); }} onRestore={() => setExpandedId(null)} onRename={onRename} onDuplicate={()=>onDuplicate(panel.id)}
       onRemove={() => { if (expandedId === panel.id) setExpandedId(null); onRemove(panel.id); }} onUpdate={patch => onUpdate(panel.id, patch)} />)}</div>
   </section>;
 }

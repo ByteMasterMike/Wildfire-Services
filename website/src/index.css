@@ -23,7 +23,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .panel-strip { display: flex; flex-wrap: wrap; justify-content: center; align-items: start; gap: 18px; width: 100%; max-width: 1100px; margin-inline: auto; }
 .panel-shortcut { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; color: #b8b8b8; }
 .panel-shortcut-label { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.panel-shortcut-icon { width: 44px; height: 44px; border: 1px solid #ffffff16; background: #ffffff0c; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: background .15s, border-color .15s; }
+.panel-shortcut-icon { width: 44px; height: 44px; border: 1px solid #ffffff16; background: #ffffff0c; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: background .15s, border-color .15s, transform .15s; }
 .panel-shortcut-icon:hover { background: #ffffff1c; }
 .shortcut-remove { position: absolute; top: -5px; right: 0; width: 20px; height: 20px; border-radius: 50%; background: #373737; color: #ccc; font-size: 14px; }
 .shortcut-remove:hover { background: #555; }
@@ -32,7 +32,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .workspace-heading h1 { font-size: 17px; font-weight: 500; }
 .workspace-heading h1 span { display: inline-block; color: #999; font-size: 12px; margin-left: 12px; }
 .panel-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; align-items: start; }
-.panel-slot { position: relative; isolation: isolate; grid-column: span 3; min-width: 0; height: 520px; }
+.panel-slot { position: relative; isolation: isolate; grid-column: span 3; min-width: 0; height: 520px; animation: panel-appear .18s ease-out; }
 .panel-slot.is-dragging { z-index: 20; }
 .panel-slot.is-dragging::before { content: ''; position: absolute; inset: 0; border: 1px dashed #ffffff30; border-radius: 14px; background: #ffffff03; }
 .panel-slot.is-drop-target::after { content: ''; position: absolute; inset: 0; border: 2px solid #9cc4ff90; border-radius: 14px; pointer-events: none; }
@@ -184,7 +184,7 @@ html.is-reordering-panels, html.is-reordering-panels * { cursor: grabbing !impor
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { transition: none !important; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
 .site-brand { position: absolute; top: 22px; left: 32px; font-size: 14px; letter-spacing: -.02em; z-index: 1; }
@@ -318,7 +318,13 @@ html.is-reordering-panels, html.is-reordering-panels * { cursor: grabbing !impor
 .export-error { color: #d4c1a8; font-size: 10px; }
 .panel-expand { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: #aaa; }
 .panel-expand:hover { background: #ffffff0c; color: #fff; }
-.workspace-panel.is-expanded { position: fixed; inset: 24px; margin: auto; width: calc(100% - 48px); max-width: 1480px; height: calc(100dvh - 48px); box-shadow: 0 20px 80px #0009; }
+.panel-actions :is(button, summary), .record-pagination button, .panel-title-button, .filter-trigger { transition: background .14s, color .14s, border-color .14s, transform .14s; }
+.panel-actions :is(button, summary):active, .record-pagination button:not(:disabled):active, .panel-shortcut-icon:active { transform: scale(.95); }
+.workspace-panel.is-expanded { position: fixed; inset: 24px; margin: auto; width: calc(100% - 48px); max-width: 1480px; height: calc(100dvh - 48px); box-shadow: 0 20px 80px #0009; animation: panel-appear .16s ease-out; }
+.workspace-panel::backdrop, .panel-picker, .filter-dialog, .event-dialog { animation: panel-appear .16s ease-out; }
+.records-panel tbody { animation: records-appear .14s ease-out; }
+@keyframes panel-appear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes records-appear { from { opacity: .5; } to { opacity: 1; } }
 .workspace-panel::backdrop { background: #101010bd; backdrop-filter: blur(3px); }
 .workspace-panel.is-expanded .panel-body { overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
 .workspace-panel.is-expanded[data-panel-type="map"] .panel-body { overflow: hidden; scrollbar-gutter: auto; }

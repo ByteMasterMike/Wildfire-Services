@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { nearestPanelSlot } from './panelOrder.ts';
 
 interface DragSession {
@@ -13,9 +13,36 @@ export function usePanelDrag(onReorder: (id: number, index: number) => void) {
   const session = useRef<DragSession | null>(null);
   const frame = useRef(0);
   const ignoreClick = useRef(false);
+  const settleFrom = useRef<Map<HTMLElement, {left: number; top: number}> | null>(null);
+  const animations = useRef(new Set<Animation>());
   const reorder = useRef(onReorder); reorder.current = onReorder;
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [targetId, setTargetId] = useState<number | null>(null);
+
+  function stopMotion() {
+    for (const animation of animations.current) animation.cancel();
+    animations.current.clear();
+  }
+
+  useLayoutEffect(() => {
+    const previous = settleFrom.current;
+    if (!previous) return;
+    settleFrom.current = null;
+    stopMotion();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    for (const [element, before] of previous) {
+      if (!element.isConnected) continue;
+      const after = element.getBoundingClientRect();
+      const x = before.left - after.left - window.scrollX;
+      const y = before.top - after.top - window.scrollY;
+      if (Math.abs(x) < .5 && Math.abs(y) < .5) continue;
+      const animation = element.animate([
+        {transform: `translate3d(${x}px, ${y}px, 0)`}, {transform: 'translate3d(0, 0, 0)'},
+      ], {duration: 180, easing: 'cubic-bezier(.2,.75,.25,1)'});
+      animations.current.add(animation);
+      animation.onfinish = () => animations.current.delete(animation);
+    }
+  });
 
   function target(drag: DragSession) {
     const slots = Array.from(gridRef.current?.children ?? []).map(element => {
@@ -37,6 +64,12 @@ export function usePanelDrag(onReorder: (id: number, index: number) => void) {
     const drag = session.current;
     if (!drag) return;
     const destination = commit && drag.active ? target(drag) : null;
+    if (notify && drag.active) {
+      settleFrom.current = new Map(Array.from(gridRef.current?.querySelectorAll<HTMLElement>('.workspace-panel:not(.is-expanded)') ?? []).map(element => {
+        const rect = element.getBoundingClientRect();
+        return [element, {left: rect.left + window.scrollX, top: rect.top + window.scrollY}];
+      }));
+    }
     session.current = null;
     cancelAnimationFrame(frame.current);
     drag.panel.style.removeProperty('transform');
@@ -103,6 +136,8 @@ export function usePanelDrag(onReorder: (id: number, index: number) => void) {
       window.removeEventListener('blur', cancel);
       window.removeEventListener('resize', cancel);
       finish(false, false);
+      stopMotion();
+      settleFrom.current = null;
     };
   }, []);
 
@@ -111,6 +146,7 @@ export function usePanelDrag(onReorder: (id: number, index: number) => void) {
     if (event.button !== 0 || !event.isPrimary || session.current) return;
     const control = (event.target as Element).closest('button, input, select, textarea, a, summary, [contenteditable="true"]');
     if (control && !control.classList.contains('panel-title-button')) return;
+    stopMotion();
     const panel = event.currentTarget.closest<HTMLElement>('.workspace-panel')!;
     const rect = panel.getBoundingClientRect();
     session.current = {id, pointerId: event.pointerId, handle: event.currentTarget, panel, active: false,
@@ -124,5 +160,5 @@ export function usePanelDrag(onReorder: (id: number, index: number) => void) {
     event.preventDefault(); event.stopPropagation(); ignoreClick.current = false;
   }
 
-  return {gridRef, draggingId, targetId, start, suppressDragClick};
+  return {gridRef, draggingId, targetId, start, suppressDragClick, stopMotion};
 }

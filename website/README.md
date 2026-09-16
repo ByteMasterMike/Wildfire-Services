@@ -224,6 +224,9 @@ bar or grip; release it to insert at the closest grid slot while the intervening
 panels shift in order. The page scrolls near the viewport edges during a drag.
 Escape cancels the move. A simple title click still renames the panel, and header
 actions, chart interactions and expanded panels do not start a drag.
+Reordered panels settle into place over 180 ms, with brief opacity transitions for
+panel/dialog entry and record-page changes. These effects respect the system's
+reduced-motion preference and keep the mounted chart and map instances intact.
 
 ## Scrolling and expanded views
 
