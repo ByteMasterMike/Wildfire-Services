@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import psycopg
@@ -939,3 +939,518 @@ def _rank_wrap_sql(
     """
     count_sql = f"SELECT count(*) AS count FROM ({groups_sql}) groups"
     return select_sql, count_sql, list(params or [])
+
+
+# ---- Workspace aggregates (grouped-counts / summary / regional-series) ----
+
+NOT_RECORDED = "Not recorded"
+WORKSPACE_UTILITIES = ("PG&E", "SCE", "SDG&E")
+GROUPED_DATASETS = frozenset(
+    {
+        "cpuc_ignitions",
+        "calfire_incidents",
+        "epss_outages",
+        "psps_events",
+        "us_ignitions",
+    }
+)
+GROUP_BY_FIELDS = frozenset({"cause", "utility", "county"})
+REGIONAL_INTERVALS = frozenset({"daily", "weekly", "monthly", "quarterly"})
+SUMMARY_METRIC_IDS = {
+    "cpuc_ignitions": ("events", "counties", "utilities"),
+    "calfire_incidents": ("events", "acres", "counties"),
+    "epss_outages": ("events", "circuits", "counties"),
+    "psps_events": ("events", "customers", "utilities"),
+    "us_ignitions": ("events",),
+}
+
+
+class AggregateQueryError(ValueError):
+    """Invalid aggregate request; the route converts this to HTTP 400."""
+
+
+def _utility_display_expr(col: str) -> str:
+    return (
+        "COALESCE("
+        f"CASE NULLIF(BTRIM({col}), '') "
+        "WHEN 'PGE' THEN 'PG&E' "
+        "WHEN 'SDGE' THEN 'SDG&E' "
+        f"ELSE NULLIF(BTRIM({col}), '') END, "
+        f"'{NOT_RECORDED}')"
+    )
+
+
+def _text_group_expr(col: str) -> str:
+    return f"COALESCE(NULLIF(BTRIM({col}), ''), '{NOT_RECORDED}')"
+
+
+def _metric_number(value: Any) -> int | float | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return int(value)
+    number = float(value)
+    if number.is_integer() and abs(number) < 2**53:
+        return int(number)
+    return number
+
+
+def _sort_grouped_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
+        rows,
+        key=lambda row: (
+            -(row["value"] if row["value"] is not None else -1),
+            row["key"],
+        ),
+    )
+
+
+def _pad_utility_rows(
+    counts: dict[str, int],
+    *,
+    dataset: str,
+    utility_filter: str | None,
+) -> list[dict[str, Any]]:
+    if utility_filter:
+        seed = [_utility_display_label(utility_filter)]
+    else:
+        seed = list(WORKSPACE_UTILITIES)
+    keys = list(dict.fromkeys([*seed, *sorted(counts)]))
+    rows: list[dict[str, Any]] = []
+    for key in keys:
+        if dataset == "epss_outages" and key != "PG&E":
+            rows.append({"key": key, "value": None})
+        else:
+            rows.append({"key": key, "value": int(counts.get(key, 0))})
+    return _sort_grouped_rows(rows)
+
+
+def _utility_display_label(code: str) -> str:
+    return {"PGE": "PG&E", "SDGE": "SDG&E"}.get(code, code)
+
+
+def _cpuc_aggregate_where(
+    *,
+    utility: str | None,
+    county: str | None,
+    start_date: date | None,
+    end_date: date | None,
+) -> tuple[str, list[Any]]:
+    where = ["TRUE"]
+    params: list[Any] = []
+    if utility == "untagged":
+        where.append("i.utility IS NULL")
+    elif utility is not None:
+        where.append("i.utility = %s")
+        params.append(utility)
+    if county is not None:
+        where.append("lower(i.county) = lower(%s)")
+        params.append(county)
+    if start_date is not None:
+        where.append("i.event_date >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("i.event_date <= %s")
+        params.append(end_date)
+    return " AND ".join(where), params
+
+
+def _calfire_aggregate_where(
+    *,
+    utility: str | None,
+    county: str | None,
+    start_date: date | None,
+    end_date: date | None,
+) -> tuple[str, list[Any]]:
+    where = ["c.incident_type IN ('Wildfire', 'Fire')"]
+    params: list[Any] = []
+    if utility == "untagged":
+        where.append("c.utility IS NULL")
+    elif utility is not None:
+        where.append("c.utility = %s")
+        params.append(utility)
+    if county is not None:
+        where.append("lower(c.county) = lower(%s)")
+        params.append(county)
+    if start_date is not None:
+        where.append("c.date_only_created >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("c.date_only_created <= %s")
+        params.append(end_date)
+    return " AND ".join(where), params
+
+
+def _epss_aggregate_where(
+    *,
+    county: str | None,
+    start_date: date | None,
+    end_date: date | None,
+) -> tuple[str, list[Any]]:
+    where = ["TRUE"]
+    params: list[Any] = []
+    if county is not None:
+        where.append("lower(e.county) = lower(%s)")
+        params.append(county)
+    if start_date is not None:
+        where.append("e.start_date >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("e.start_date <= %s")
+        params.append(end_date)
+    return " AND ".join(where), params
+
+
+def _psps_aggregate_where(
+    *,
+    utility: str | None,
+    start_date: date | None,
+    end_date: date | None,
+) -> tuple[str, list[Any]]:
+    where = ["TRUE"]
+    params: list[Any] = []
+    if utility == "untagged":
+        where.append("FALSE")
+    elif utility is not None:
+        where.append("p.utility = %s")
+        params.append(utility)
+    if start_date is not None:
+        where.append("p.deenergization_start_date >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("p.deenergization_start_date <= %s")
+        params.append(end_date)
+    return " AND ".join(where), params
+
+
+def _us_aggregate_where(
+    *,
+    start_date: date | None,
+    end_date: date | None,
+) -> tuple[str, list[Any]]:
+    where = ["TRUE"]
+    params: list[Any] = []
+    if start_date is not None:
+        where.append("u.event_date >= %s")
+        params.append(start_date)
+    if end_date is not None:
+        where.append("u.event_date <= %s")
+        params.append(end_date)
+    return " AND ".join(where), params
+
+
+def _dataset_from_sql(dataset: str) -> tuple[str, str]:
+    return {
+        "cpuc_ignitions": ("wildfire.cpuc_ignitions i", "i"),
+        "calfire_incidents": ("wildfire.calfire_incidents c", "c"),
+        "epss_outages": ("wildfire.epss_outages e", "e"),
+        "psps_events": ("wildfire.psps_events p", "p"),
+        "us_ignitions": ("wildfire.us_ignitions u", "u"),
+    }[dataset]
+
+
+def _aggregate_where(
+    dataset: str,
+    *,
+    utility: str | None,
+    county: str | None,
+    start_date: date | None,
+    end_date: date | None,
+) -> tuple[str, list[Any]]:
+    if dataset == "cpuc_ignitions":
+        return _cpuc_aggregate_where(
+            utility=utility, county=county, start_date=start_date, end_date=end_date
+        )
+    if dataset == "calfire_incidents":
+        return _calfire_aggregate_where(
+            utility=utility, county=county, start_date=start_date, end_date=end_date
+        )
+    if dataset == "epss_outages":
+        return _epss_aggregate_where(
+            county=county, start_date=start_date, end_date=end_date
+        )
+    if dataset == "psps_events":
+        return _psps_aggregate_where(
+            utility=utility, start_date=start_date, end_date=end_date
+        )
+    return _us_aggregate_where(start_date=start_date, end_date=end_date)
+
+
+def _validate_aggregate_request(
+    dataset: str,
+    *,
+    utility: str | None,
+    county: str | None,
+) -> None:
+    if dataset not in GROUPED_DATASETS:
+        raise AggregateQueryError(
+            f"unknown dataset {dataset!r}; allowed: {', '.join(sorted(GROUPED_DATASETS))}"
+        )
+    if dataset == "us_ignitions" and (utility or county):
+        raise AggregateQueryError(
+            "us_ignitions does not support county or utility filters"
+        )
+    if dataset == "psps_events" and county:
+        raise AggregateQueryError("PSPS county filtering is not available")
+
+
+def _group_expr(dataset: str, group_by: str) -> str | None:
+    """SQL expression for the group key, or None when the column does not exist."""
+    columns = {
+        ("cpuc_ignitions", "county"): "i.county",
+        ("cpuc_ignitions", "utility"): "i.utility",
+        ("calfire_incidents", "county"): "c.county",
+        ("calfire_incidents", "utility"): "c.utility",
+        ("epss_outages", "county"): "e.county",
+        ("epss_outages", "cause"): "e.cause",
+        ("psps_events", "utility"): "p.utility",
+    }
+    col = columns.get((dataset, group_by))
+    if col is None:
+        return None
+    if group_by == "utility":
+        return _utility_display_expr(col)
+    return _text_group_expr(col)
+
+
+def query_grouped_counts(
+    conn: psycopg.Connection,
+    *,
+    dataset: str,
+    group_by: str,
+    utility: str | None,
+    county: str | None,
+    start_date: date | None,
+    end_date: date | None,
+) -> dict[str, Any]:
+    _validate_aggregate_request(dataset, utility=utility, county=county)
+    if group_by not in GROUP_BY_FIELDS:
+        raise AggregateQueryError(
+            f"group_by must be one of {', '.join(sorted(GROUP_BY_FIELDS))}"
+        )
+
+    empty_epss = dataset == "epss_outages" and _epss_rank_empty(utility)
+    from_sql, _alias = _dataset_from_sql(dataset)
+    where_sql, params = _aggregate_where(
+        dataset,
+        utility=utility,
+        county=county,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    if empty_epss:
+        total = 0
+        grouped: list[tuple[str, int]] = []
+    else:
+        group_expr = _group_expr(dataset, group_by)
+        with conn.cursor(row_factory=dict_row) as cur:
+            if group_expr is None:
+                cur.execute(
+                    f"SELECT COUNT(*)::bigint AS total FROM {from_sql} WHERE {where_sql}",
+                    params,
+                )
+                total = int(cur.fetchone()["total"])
+                grouped = [(NOT_RECORDED, total)] if total else []
+            else:
+                cur.execute(
+                    f"""
+                    SELECT {group_expr} AS key, COUNT(*)::bigint AS value
+                    FROM {from_sql}
+                    WHERE {where_sql}
+                    GROUP BY 1
+                    """,
+                    params,
+                )
+                grouped = [(str(row["key"]), int(row["value"])) for row in cur.fetchall()]
+                total = sum(value for _key, value in grouped)
+
+    if group_by == "utility":
+        if dataset == "epss_outages":
+            counts = {"PG&E": total} if total and not empty_epss else {}
+        else:
+            counts = dict(grouped)
+        rows = _pad_utility_rows(
+            counts, dataset=dataset, utility_filter=utility
+        )
+    else:
+        rows = _sort_grouped_rows(
+            [{"key": key, "value": value} for key, value in grouped]
+        )
+
+    return {"rows": rows, "total": total}
+
+
+def _distinct_split_count_sql(column: str) -> str:
+    return f"""
+        (SELECT COUNT(DISTINCT BTRIM(part))
+           FROM filtered f,
+                LATERAL unnest(string_to_array(f.{column}, ',')) AS part
+          WHERE f.{column} IS NOT NULL
+            AND BTRIM(f.{column}) <> ''
+            AND BTRIM(part) <> '')
+    """
+
+
+def query_summary(
+    conn: psycopg.Connection,
+    *,
+    dataset: str,
+    utility: str | None,
+    county: str | None,
+    start_date: date | None,
+    end_date: date | None,
+) -> dict[str, Any]:
+    _validate_aggregate_request(dataset, utility=utility, county=county)
+    metric_ids = SUMMARY_METRIC_IDS[dataset]
+    if dataset == "epss_outages" and _epss_rank_empty(utility):
+        return {
+            "total": 0,
+            "metrics": [
+                {"id": metric_id, "value": 0, "missing": 0} for metric_id in metric_ids
+            ],
+        }
+
+    from_sql, alias = _dataset_from_sql(dataset)
+    where_sql, params = _aggregate_where(
+        dataset,
+        utility=utility,
+        county=county,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    selects = ["COUNT(*)::bigint AS total"]
+    if "counties" in metric_ids:
+        selects.append(
+            f"COUNT(*) FILTER (WHERE {alias}.county IS NULL OR BTRIM({alias}.county) = '')"
+            " AS counties_missing"
+        )
+        selects.append(f"{_distinct_split_count_sql('county')} AS counties_value")
+    if "utilities" in metric_ids:
+        selects.append(
+            f"COUNT(*) FILTER (WHERE {alias}.utility IS NULL OR BTRIM({alias}.utility) = '')"
+            " AS utilities_missing"
+        )
+        selects.append(
+            f"COUNT(DISTINCT NULLIF(BTRIM({alias}.utility), '')) AS utilities_value"
+        )
+    if "circuits" in metric_ids:
+        selects.append(
+            f"COUNT(*) FILTER (WHERE {alias}.circuit_id IS NULL OR BTRIM({alias}.circuit_id) = '')"
+            " AS circuits_missing"
+        )
+        selects.append(
+            f"COUNT(DISTINCT NULLIF(BTRIM({alias}.circuit_id), '')) AS circuits_value"
+        )
+    if "acres" in metric_ids:
+        selects.append(
+            f"COUNT(*) FILTER (WHERE {alias}.acres_burned IS NULL) AS acres_missing"
+        )
+        selects.append(f"SUM({alias}.acres_burned) AS acres_value")
+    if "customers" in metric_ids:
+        selects.append(
+            f"COUNT(*) FILTER (WHERE {alias}.customers_deenergized IS NULL)"
+            " AS customers_missing"
+        )
+        selects.append(f"SUM({alias}.customers_deenergized) AS customers_value")
+
+    sql = f"""
+        WITH filtered AS (
+            SELECT * FROM {from_sql} WHERE {where_sql}
+        )
+        SELECT {", ".join(selects)}
+        FROM filtered {alias}
+    """
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(sql, params)
+        row = cur.fetchone() or {}
+
+    total = int(row.get("total") or 0)
+    metrics: list[dict[str, Any]] = [{"id": "events", "value": total, "missing": 0}]
+    for metric_id in metric_ids:
+        if metric_id == "events":
+            continue
+        raw_value = row.get(f"{metric_id}_value")
+        missing = int(row.get(f"{metric_id}_missing") or 0)
+        if metric_id in {"counties", "utilities", "circuits"}:
+            value = None if total > 0 and missing == total else int(raw_value or 0)
+        elif total == 0:
+            value = 0
+        else:
+            # acres / customers: all-null → null (matches client-side reduce)
+            value = _metric_number(raw_value)
+        metrics.append({"id": metric_id, "value": value, "missing": missing})
+    return {"total": total, "metrics": metrics}
+
+
+def query_regional_series(
+    conn: psycopg.Connection,
+    *,
+    start_date: date,
+    end_date: date,
+    utility: str | None,
+    county: str | None,
+    interval: str,
+) -> dict[str, Any]:
+    if interval not in REGIONAL_INTERVALS:
+        raise AggregateQueryError(
+            f"interval must be one of {', '.join(sorted(REGIONAL_INTERVALS))}"
+        )
+    from services.visualization.aggregations import interval_bin_meta
+
+    template = interval_bin_meta(start_date, end_date, interval)
+    day_to_idx: dict[date, int] = {}
+    for index, bucket in enumerate(template):
+        cursor = date.fromisoformat(bucket["start"])
+        bucket_end = date.fromisoformat(bucket["end"])
+        while cursor <= bucket_end:
+            day_to_idx[cursor] = index
+            cursor += timedelta(days=1)
+
+    if _epss_rank_empty(utility):
+        return {"series": [], "total": 0}
+
+    where_sql, params = _epss_aggregate_where(
+        county=county, start_date=start_date, end_date=end_date
+    )
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            f"""
+            SELECT COALESCE(NULLIF(BTRIM(e.division), ''), '{NOT_RECORDED}') AS name,
+                   e.start_date AS day,
+                   COUNT(*)::bigint AS n
+            FROM wildfire.epss_outages e
+            WHERE {where_sql}
+            GROUP BY 1, 2
+            """,
+            params,
+        )
+        grouped = list(cur.fetchall())
+
+    regions: dict[str, list[dict[str, Any]]] = {}
+    region_totals: dict[str, int] = {}
+    for row in grouped:
+        name = str(row["name"])
+        day = row["day"]
+        if isinstance(day, str):
+            day = date.fromisoformat(day)
+        if day not in day_to_idx:
+            continue
+        if name not in regions:
+            regions[name] = [
+                {"start": bucket["start"], "end": bucket["end"], "count": 0}
+                for bucket in template
+            ]
+            region_totals[name] = 0
+        count = int(row["n"])
+        regions[name][day_to_idx[day]]["count"] += count
+        region_totals[name] += count
+
+    series = [
+        {"name": name, "buckets": regions[name], "total": region_totals[name]}
+        for name in regions
+    ]
+    series.sort(key=lambda item: (-item["total"], item["name"]))
+    return {"series": series, "total": sum(item["total"] for item in series)}
+

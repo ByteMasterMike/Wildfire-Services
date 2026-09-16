@@ -35,6 +35,9 @@ Connection settings come from repo-root `.env` via `shared/db.py` (default port 
 | `GET /spatial/point` | IOU + HFTD + grid cell + county (Census TIGER PIP) |
 | `GET /spatial/summary` | Counts inside utility **or** HFTD polygon |
 | `GET /rank` | Single-dataset top-N (`group_by=county\|utility\|circuit`, `metric=count\|acres_burned`, default limit 10, cap 25). Ties at the cutoff are included. Not US-by-state or EPSS-by-utility. |
+| `GET /grouped-counts` | All-group counts (`dataset`, `group_by=cause\|utility\|county`). Missing labels are `Not recorded`. EPSS-by-utility returns `null` for SCE/SDG&E, not 0. |
+| `GET /summary` | Filtered row count plus dataset-specific metrics (events always; acres/customers/circuits/counties/utilities as listed in the workspace client). |
+| `GET /regional-series` | EPSS-only division time series. `interval=daily\|weekly\|monthly\|quarterly`; every bucket in `[start_date, end_date]` is present, including zeros. |
 
 Common query params: `utility`, `year`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`.
 
