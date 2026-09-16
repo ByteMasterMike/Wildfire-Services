@@ -35,8 +35,50 @@ Connection settings come from repo-root `.env` via `shared/db.py` (default port 
 | `GET /spatial/point` | IOU + HFTD + grid cell + county (Census TIGER PIP) |
 | `GET /spatial/summary` | Counts inside utility **or** HFTD polygon |
 | `GET /rank` | Single-dataset top-N (`group_by=county\|utility\|circuit`, `metric=count\|acres_burned`, default limit 10, cap 25). Ties at the cutoff are included. Not US-by-state or EPSS-by-utility. |
+| `GET /grouped-counts` | Complete CPUC/EPSS/CAL FIRE counts by county or utility; EPSS also supports cause. No top-N cutoff. |
+| `GET /summary` | Event totals, supported distinct counts, acreage and customer-event sums, with explicit missing-record counts. |
+| `GET /regional-series` | EPSS outage counts by recorded division; daily, January-1-based weekly, monthly or quarterly bins. |
 
 Common query params: `utility`, `year`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`.
+
+The three workspace aggregate routes require `start_date` and `end_date` and
+accept `utility` and `county` where the dataset supports them. They return
+geometry-free JSON and have no pagination or top-N truncation. `/summary` supports
+`cpuc_ignitions`, `epss_outages`, `calfire_incidents`, `psps_events`, and
+`us_ignitions`; `/grouped-counts` supports the first three plus `group_by`.
+`/regional-series` is EPSS-only and takes `interval` (default `monthly`).
+
+CAL FIRE aggregates use the existing Wildfire/Fire definition. Utility filtering
+is attribute-based. Unsupported geographic filters return 400. EPSS utility
+comparisons return null for SCE/SDG&E, never zero. Summary `metrics` contain
+`id`, `value`, and `missing`; labels and units stay in the frontend. Empty
+populations yield zero; an all-missing metric in a nonempty population yields
+null. PSPS customers are summed across events, not deduplicated people.
+Distinct county summaries split comma-separated source values, while county
+grouping retains the original field as a category, matching prior workspace
+behavior. Regional grouping uses `epss_outages.division`, including a
+`Not recorded` group, and fills event-free bins with zero. All bins are clipped
+to the requested range; weekly bins reset on January 1, including short year-end
+bins. Existing `/rank` behavior and its 25-row cap are unchanged.
+
+Deploy this service and expose these routes before publishing the frontend that
+uses them. Configure `VITE_DATA_QUERY_URL` for the browser's public base URL and
+verify production responses against the warehouse. No schema changes, reloaders
+or model fitting are required for this migration.
+
+Regression coverage uses real PostgreSQL with controlled fixtures:
+
+```powershell
+# Use a disposable database with no wildfire schema; never point this at the warehouse.
+$env:AGGREGATE_TEST_DSN = 'postgresql://user:password@127.0.0.1:5432/empty_test_db'
+python -m pytest tests/test_workspace_aggregates.py -q
+```
+
+Tests create the fixture schema inside a transaction and roll it back after each
+case. They fail if the schema already exists. Frontend aggregate-request tests
+verify full category results, total consistency and no GeoJSON fallback. The
+former browser counting cases now run against SQL; seasonal calculations remain
+covered by the Node suite.
 
 Special tokens: `utility=untagged`, `incident_type=untyped`, `include_untagged=true`.
 
