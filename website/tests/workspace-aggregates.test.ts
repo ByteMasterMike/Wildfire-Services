@@ -132,3 +132,13 @@ test('explicit service mode uses aggregate responses and never hides a deploymen
   await assert.rejects(configured.getSummary('cpuc', DEFAULT_FILTERS), /HTTP 404/);
   assert.equal(fetch.mock.callCount(), 4);
 });
+
+test('both client modes block unsupported EPSS summaries before upstream can return an empty population', async t => {
+  clearDataCache(); t.after(clearDataCache);
+  const fetch = t.mock.method(globalThis, 'fetch', async () => { throw new Error('Unsupported scope must not reach the backend'); });
+  for (const useDataQuery of [false, true]) {
+    const client = createWorkspaceAggregates(useDataQuery);
+    await assert.rejects(client.getSummary('epss', {...DEFAULT_FILTERS, utility: 'SCE'}), /PG&E only/);
+  }
+  assert.equal(fetch.mock.callCount(), 0);
+});

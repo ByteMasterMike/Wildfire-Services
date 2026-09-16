@@ -16,6 +16,12 @@ from fastapi.testclient import TestClient
 from services.data_query.app import app, get_conn
 
 
+@pytest.mark.parametrize("path", ["/grouped-counts", "/summary", "/regional-series"])
+def test_each_workspace_aggregate_route_is_registered_once(path):
+    routes = [route for route in app.routes if getattr(route, "path", None) == path]
+    assert len(routes) == 1, f"Duplicate {path} handlers would hide the merged implementation"
+
+
 @pytest.fixture
 def aggregate_db():
     dsn = os.environ.get("AGGREGATE_TEST_DSN")
@@ -144,6 +150,33 @@ def test_national_summary_is_sample_record_count_only(aggregate_db, aggregate_cl
     assert metric_values(read(aggregate_client, "/summary", dataset="us_ignitions")) == {"events": (1, 0)}
 
 
+def test_upstream_summary_keeps_optional_dates(aggregate_db, aggregate_client):
+    aggregate_db.execute("INSERT INTO wildfire.us_ignitions (event_date) VALUES ('2024-01-01'),('2023-01-01')")
+    response = aggregate_client.get("/summary", params={"dataset": "us_ignitions"})
+    assert response.status_code == 200, response.text
+    assert response.json()["total"] == aggregate_db.execute("SELECT COUNT(*) FROM wildfire.us_ignitions").fetchone()[0] == 2
+
+
+def test_upstream_missing_group_attribute_is_not_recorded(aggregate_db, aggregate_client):
+    aggregate_db.execute("INSERT INTO wildfire.cpuc_ignitions (event_date,utility) VALUES ('2024-01-01','PGE'),('2024-02-01','SCE')")
+    total = aggregate_db.execute("SELECT COUNT(*) FROM wildfire.cpuc_ignitions").fetchone()[0]
+    # PR #3 groups a dataset without a cause column under an explicit missing label.
+    body = read(aggregate_client, "/grouped-counts", dataset="cpuc_ignitions", group_by="cause")
+    assert body == {"rows": [{"key": "Not recorded", "value": total}], "total": total}
+
+
+def test_upstream_non_pge_epss_filter_matches_the_existing_record_api(aggregate_db, aggregate_client):
+    insert_outages(aggregate_db, [("2024-01-01", "043371102", "Marin", "Unknown", "North Bay")])
+    assert aggregate_db.execute("SELECT COUNT(*) FROM wildfire.epss_outages").fetchone()[0] == 1
+    # Upstream follows the record API's empty-population convention here. The
+    # browser separately blocks this unsupported scope before requesting data.
+    body = read(aggregate_client, "/summary", dataset="epss_outages", utility="SCE")
+    assert metric_values(body) == {"events": (0, 0), "circuits": (0, 0), "counties": (0, 0)}
+    groups = read(aggregate_client, "/grouped-counts", dataset="epss_outages", utility="SCE", group_by="utility")
+    assert groups == {"rows": [{"key": "SCE", "value": None}], "total": 0}
+    assert read(aggregate_client, "/regional-series", interval="monthly", utility="SCE") == {"series": [], "total": 0}
+
+
 def test_regional_counts_fill_empty_periods_and_keep_unknown_divisions(aggregate_db, aggregate_client):
     insert_outages(aggregate_db, [(day, "043371102", "Marin", None, division) for day, division in [
         ("2024-01-01", "Sierra"), ("2024-01-01", "Sierra"), ("2024-03-31", "Sierra"), ("2024-03-31", None), ("2023-12-31", "Sierra"),
@@ -174,10 +207,8 @@ def test_regional_bins_conserve_events_and_clip_leap_year_boundaries(aggregate_d
 @pytest.mark.parametrize("path,params", [
     ("/summary", {"dataset": "us_ignitions", "county": "Marin"}),
     ("/summary", {"dataset": "psps_events", "county": "Marin"}),
-    ("/summary", {"dataset": "epss_outages", "utility": "SCE"}),
     ("/summary", {"dataset": "unknown"}),
     ("/summary", {"dataset": "cpuc_ignitions", "end_date": "2023-01-01"}),
-    ("/grouped-counts", {"dataset": "cpuc_ignitions", "group_by": "cause"}),
     ("/grouped-counts", {"dataset": "epss_outages", "group_by": "cause; DROP SCHEMA wildfire"}),
     ("/regional-series", {"interval": "invalid"}),
 ])

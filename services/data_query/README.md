@@ -35,18 +35,21 @@ Connection settings come from repo-root `.env` via `shared/db.py` (default port 
 | `GET /spatial/point` | IOU + HFTD + grid cell + county (Census TIGER PIP) |
 | `GET /spatial/summary` | Counts inside utility **or** HFTD polygon |
 | `GET /rank` | Single-dataset top-N (`group_by=county\|utility\|circuit`, `metric=count\|acres_burned`, default limit 10, cap 25). Ties at the cutoff are included. Not US-by-state or EPSS-by-utility. |
-| `GET /grouped-counts` | Complete CPUC/EPSS/CAL FIRE counts by county or utility; EPSS also supports cause. No top-N cutoff. |
-| `GET /summary` | Event totals, supported distinct counts, acreage and customer-event sums, with explicit missing-record counts. |
-| `GET /regional-series` | EPSS outage counts by recorded division; daily, January-1-based weekly, monthly or quarterly bins. |
+| `GET /grouped-counts` | All-group counts (`dataset`, `group_by=cause\|utility\|county`). Missing labels are `Not recorded`. EPSS-by-utility returns `null` for SCE/SDG&E, not 0. |
+| `GET /summary` | Filtered row count plus dataset-specific metrics (events always; acres/customers/circuits/counties/utilities as listed in the workspace client). |
+| `GET /regional-series` | EPSS-only division time series. `interval=daily\|weekly\|monthly\|quarterly`; every bucket in `[start_date, end_date]` is present, including zeros. |
 
 Common query params: `utility`, `year`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`.
 
-The three workspace aggregate routes require `start_date` and `end_date` and
-accept `utility` and `county` where the dataset supports them. They return
-geometry-free JSON and have no pagination or top-N truncation. `/summary` supports
+Workspace aggregate routes accept `utility` and `county` where the dataset
+supports them. They return geometry-free JSON and have no pagination or top-N
+truncation. `/summary` and `/grouped-counts` support
 `cpuc_ignitions`, `epss_outages`, `calfire_incidents`, `psps_events`, and
-`us_ignitions`; `/grouped-counts` supports the first three plus `group_by`.
-`/regional-series` is EPSS-only and takes `interval` (default `monthly`).
+`us_ignitions`, with optional `start_date` and `end_date`; `/grouped-counts`
+additionally requires `group_by`. `/regional-series` is EPSS-only and requires
+both dates and `interval`. These routes use the implementation merged in upstream
+PR #3; each path is registered once. Missing group attributes are returned as
+`Not recorded`.
 
 CAL FIRE aggregates use the existing Wildfire/Fire definition. Utility filtering
 is attribute-based. Unsupported geographic filters return 400. EPSS utility
@@ -60,6 +63,10 @@ behavior. Regional grouping uses `epss_outages.division`, including a
 `Not recorded` group, and fills event-free bins with zero. All bins are clipped
 to the requested range; weekly bins reset on January 1, including short year-end
 bins. Existing `/rank` behavior and its 25-row cap are unchanged.
+
+As in the existing EPSS record API, a direct non-PG&E utility filter returns an
+empty aggregate population. The workspace rejects that unavailable combination
+before making a request, so it is not presented as an observed zero count.
 
 Deploy this service, expose these routes and verify production responses against
 the warehouse before setting the frontend's `VITE_DATA_QUERY_URL` and rebuilding.

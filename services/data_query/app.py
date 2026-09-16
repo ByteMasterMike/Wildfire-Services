@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import date
 from typing import Any, Generator, Optional
 from urllib.parse import unquote
 
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from services.data_query import aggregates, queries
+from services.data_query import queries
 from services.data_query.filters import (
     DEFAULT_LIMIT,
     MAX_LIMIT,
@@ -100,54 +99,6 @@ def health(conn: psycopg.Connection = Depends(get_conn)) -> dict[str, Any]:
         "detail": _db_ok,
         "tables": counts,
     }
-
-
-def _aggregate_scope(dataset: str, start_date: date, end_date: date, utility: str | None, county: str | None) -> dict[str, Any]:
-    validate_date_range(start_date, end_date)
-    util = parse_utility(utility)
-    try:
-        aggregates.validate_scope(dataset, util, county)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return {"dataset": dataset, "start_date": start_date, "end_date": end_date, "utility": util, "county": county}
-
-
-@app.get("/grouped-counts")
-def grouped_counts(
-    dataset: str = Query(...), group_by: str = Query(...),
-    start_date: date = Query(...), end_date: date = Query(...),
-    utility: str | None = Query(None), county: str | None = Query(None),
-    conn: psycopg.Connection = Depends(get_conn),
-) -> dict[str, Any]:
-    scope = _aggregate_scope(dataset, start_date, end_date, utility, county)
-    try:
-        return {**aggregates.grouped_counts(conn, group_by=group_by, **scope), "filters": scope}
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@app.get("/summary")
-def summary(
-    dataset: str = Query(...), start_date: date = Query(...), end_date: date = Query(...),
-    utility: str | None = Query(None), county: str | None = Query(None),
-    conn: psycopg.Connection = Depends(get_conn),
-) -> dict[str, Any]:
-    scope = _aggregate_scope(dataset, start_date, end_date, utility, county)
-    return {**aggregates.summary(conn, **scope), "filters": scope}
-
-
-@app.get("/regional-series")
-def regional_series(
-    start_date: date = Query(...), end_date: date = Query(...),
-    interval: str = Query("monthly"), utility: str | None = Query(None),
-    county: str | None = Query(None), conn: psycopg.Connection = Depends(get_conn),
-) -> dict[str, Any]:
-    scope = _aggregate_scope("epss_outages", start_date, end_date, utility, county)
-    scope.pop("dataset")
-    try:
-        return {**aggregates.regional_series(conn, interval=interval, **scope), "filters": scope}
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/rank")
@@ -258,6 +209,107 @@ def rank(
         for row in rows
     ]
     return envelope
+
+
+@app.get("/grouped-counts")
+def grouped_counts(
+    dataset: str = Query(
+        ...,
+        description="cpuc_ignitions | calfire_incidents | epss_outages | psps_events | us_ignitions",
+    ),
+    group_by: str = Query(..., description="cause | utility | county"),
+    utility: Optional[str] = Query(None),
+    county: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    """All-group counts for the workspace client (not a top-N ranking)."""
+    dataset_key = dataset.strip().lower()
+    group_key = group_by.strip().lower()
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    county_filter = county.strip() if county and county.strip() else None
+    try:
+        return queries.query_grouped_counts(
+            conn,
+            dataset=dataset_key,
+            group_by=group_key,
+            utility=util,
+            county=county_filter,
+            start_date=start,
+            end_date=end,
+        )
+    except queries.AggregateQueryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/summary")
+def summary(
+    dataset: str = Query(
+        ...,
+        description="cpuc_ignitions | calfire_incidents | epss_outages | psps_events | us_ignitions",
+    ),
+    utility: Optional[str] = Query(None),
+    county: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    """Filtered totals plus the dataset's workspace summary metrics."""
+    dataset_key = dataset.strip().lower()
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    county_filter = county.strip() if county and county.strip() else None
+    try:
+        return queries.query_summary(
+            conn,
+            dataset=dataset_key,
+            utility=util,
+            county=county_filter,
+            start_date=start,
+            end_date=end,
+        )
+    except queries.AggregateQueryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/regional-series")
+def regional_series(
+    interval: str = Query(..., description="daily | weekly | monthly | quarterly"),
+    start_date: str = Query(..., description="YYYY-MM-DD inclusive"),
+    end_date: str = Query(..., description="YYYY-MM-DD inclusive"),
+    utility: Optional[str] = Query(None),
+    county: Optional[str] = Query(None),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    """EPSS outages bucketed by division across a gap-filled interval."""
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    if start is None or end is None:
+        raise HTTPException(
+            status_code=400, detail="start_date and end_date are required"
+        )
+    validate_date_range(start, end)
+    county_filter = county.strip() if county and county.strip() else None
+    try:
+        return queries.query_regional_series(
+            conn,
+            start_date=start,
+            end_date=end,
+            utility=util,
+            county=county_filter,
+            interval=interval.strip().lower(),
+        )
+    except queries.AggregateQueryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/ignitions")
