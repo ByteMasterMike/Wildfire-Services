@@ -7,7 +7,48 @@ from datetime import date
 from typing import Any
 
 from services.agent.tools import ToolExecution, ToolExecutor
-from shared.dataset_caveats import DATASET_CAVEATS
+from services.shared.dataset_registry import DATASETS
+
+# Static catalog text. Dynamic caveats (CAL FIRE missingness counts,
+# US sample notes from service meta, ignition definition pairs) format
+# additional strings at collect time. Registry stores ids only.
+CAVEAT_TEXT = {
+    "cpuc_utility_caused": (
+        "CPUC ignitions in this warehouse are utility-caused / "
+        "utility-attributed only; they are not all-cause wildfire "
+        "counts and are not comparable to CAL FIRE or US ignitions."
+    ),
+    "us_ignitions_sample": (
+        "US ignitions are an all-cause FireCastRL classification sample, "
+        "not a complete census and not comparable to CPUC utility ignitions."
+    ),
+    "epss_pge_only": (
+        "EPSS data in this warehouse is PG&E-only. Other utilities are "
+        "not zero; comparison results must be null with a reason."
+    ),
+    "calfire_map_feed_counts": (
+        "CAL FIRE rows in this warehouse are the fire.ca.gov incident-map "
+        "feed, not CAL FIRE's Redbook census. The map's posting threshold "
+        "dropped in 2024 (median acreage 70 to 43; sub-100-acre incidents "
+        "71 to 422). The 133 to 611 Wildfire/Fire count change is a posting "
+        "change, not a change in fire occurrence. Acreage totals in the feed "
+        "track the Redbook at 95–97% in both years, so acre-based comparisons "
+        "remain valid; count-based year-to-year comparisons do not."
+    ),
+    "cnhpp_grid_resolution": (
+        "cNHPP is fitted on a 0.24° (~25 km) grid, coarser than circuits. "
+        "Place answers are cell aggregates, not circuit-level risk."
+    ),
+    "cnhpp_contagion_tie": (
+        "cNHPP vs NHPP out-of-sample ΔLL is a statistical tie; the "
+        "contagion term is not contributing. Regional P(≥1) assumes "
+        "independent Poisson cells."
+    ),
+        "cnhpp_cell_461": (
+        "Grid cell 461 has no vegetation data (all-NaN NDVI/fm100); "
+        "its score is mean-filled on those covariates."
+    ),
+}
 
 
 async def collect_qualifications(
@@ -66,23 +107,18 @@ async def collect_qualifications(
         # Path-independent: any successful CPUC ignition read gets the
         # utility-caused definition caveat (det and model answer_origin alike).
         if _is_cpuc_ignitions(execution):
-            add(
-                "cpuc_utility_caused",
-                DATASET_CAVEATS["cpuc_utility_caused"],
-                "dataset_definition",
-            )
+            for cid in DATASETS["cpuc_ignitions"].caveat_ids:
+                add(cid, CAVEAT_TEXT[cid], "dataset_definition")
 
         # US ignitions carry complete sample/census caveats in metadata.
         if _is_us_ignitions(execution):
             geography = metadata.get("sample_geography") or {}
             note = geography.get("note")
-            base = metadata.get("notes") or (
-                "US ignitions are an all-cause FireCastRL classification sample, "
-                "not a complete census and not comparable to CPUC utility ignitions."
-            )
+            base = metadata.get("notes") or CAVEAT_TEXT["us_ignitions_sample"]
             if note:
                 base = f"{base} {note}"
-            add("us_ignitions_sample", str(base), "service_response.meta")
+            for cid in DATASETS["us_ignitions"].caveat_ids:
+                add(cid, str(base), "service_response.meta")
 
         # CAL FIRE metadata is present on data_query but not all viz/comparison calls.
         if _uses_calfire(execution):
@@ -129,14 +165,8 @@ async def collect_qualifications(
             )
 
         if _uses_epss(execution):
-            add(
-                "epss_pge_only",
-                (
-                    "EPSS data in this warehouse is PG&E-only. Other utilities are "
-                    "not zero; comparison results must be null with a reason."
-                ),
-                "service_response.meta",
-            )
+            for cid in DATASETS["epss_outages"].caveat_ids:
+                add(cid, CAVEAT_TEXT[cid], "service_response.meta")
 
         # General utility-scoped ignition ambiguity: every utility and date range.
         if _is_attribute_utility_ignition(execution):
@@ -281,37 +311,25 @@ async def collect_qualifications(
     if _needs_cnhpp_risk_caveats(working):
         add(
             "cnhpp_grid_resolution",
-            (
-                "cNHPP is fitted on a 0.24° (~25 km) grid, coarser than circuits. "
-                "Place answers are cell aggregates, not circuit-level risk."
-            ),
+            CAVEAT_TEXT["cnhpp_grid_resolution"],
             "model_limitation",
         )
         add(
             "cnhpp_contagion_tie",
-            (
-                "cNHPP vs NHPP out-of-sample ΔLL is a statistical tie; the "
-                "contagion term is not contributing. Regional P(≥1) assumes "
-                "independent Poisson cells."
-            ),
+            CAVEAT_TEXT["cnhpp_contagion_tie"],
             "model_limitation",
         )
         if _risk_includes_cell_461(working):
             add(
                 "cnhpp_cell_461",
-                (
-                    "Grid cell 461 has no vegetation data (all-NaN NDVI/fm100); "
-                    "its score is mean-filled on those covariates."
-                ),
+                CAVEAT_TEXT["cnhpp_cell_461"],
                 "data_gap",
             )
 
     if _needs_calfire_map_feed_caveat(working):
-        add(
-            "calfire_map_feed_counts",
-            DATASET_CAVEATS["calfire_map_feed_counts"],
-            "dataset_definition",
-        )
+        cid = "calfire_map_feed_counts"
+        if cid in DATASETS["calfire_incidents"].caveat_ids:
+            add(cid, CAVEAT_TEXT[cid], "dataset_definition")
 
     return qualifications, companion, None
 
