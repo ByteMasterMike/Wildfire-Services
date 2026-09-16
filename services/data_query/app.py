@@ -211,6 +211,107 @@ def rank(
     return envelope
 
 
+@app.get("/grouped-counts")
+def grouped_counts(
+    dataset: str = Query(
+        ...,
+        description="cpuc_ignitions | calfire_incidents | epss_outages | psps_events | us_ignitions",
+    ),
+    group_by: str = Query(..., description="cause | utility | county"),
+    utility: Optional[str] = Query(None),
+    county: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    """All-group counts for the workspace client (not a top-N ranking)."""
+    dataset_key = dataset.strip().lower()
+    group_key = group_by.strip().lower()
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    county_filter = county.strip() if county and county.strip() else None
+    try:
+        return queries.query_grouped_counts(
+            conn,
+            dataset=dataset_key,
+            group_by=group_key,
+            utility=util,
+            county=county_filter,
+            start_date=start,
+            end_date=end,
+        )
+    except queries.AggregateQueryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/summary")
+def summary(
+    dataset: str = Query(
+        ...,
+        description="cpuc_ignitions | calfire_incidents | epss_outages | psps_events | us_ignitions",
+    ),
+    utility: Optional[str] = Query(None),
+    county: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    """Filtered totals plus the dataset's workspace summary metrics."""
+    dataset_key = dataset.strip().lower()
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    validate_date_range(start, end)
+    county_filter = county.strip() if county and county.strip() else None
+    try:
+        return queries.query_summary(
+            conn,
+            dataset=dataset_key,
+            utility=util,
+            county=county_filter,
+            start_date=start,
+            end_date=end,
+        )
+    except queries.AggregateQueryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/regional-series")
+def regional_series(
+    interval: str = Query(..., description="daily | weekly | monthly | quarterly"),
+    start_date: str = Query(..., description="YYYY-MM-DD inclusive"),
+    end_date: str = Query(..., description="YYYY-MM-DD inclusive"),
+    utility: Optional[str] = Query(None),
+    county: Optional[str] = Query(None),
+    conn: psycopg.Connection = Depends(get_conn),
+) -> dict[str, Any]:
+    """EPSS outages bucketed by division across a gap-filled interval."""
+    util = parse_utility(utility) if utility else None
+    start = parse_date_param(start_date, "start_date")
+    end = parse_date_param(end_date, "end_date")
+    if start is None or end is None:
+        raise HTTPException(
+            status_code=400, detail="start_date and end_date are required"
+        )
+    validate_date_range(start, end)
+    county_filter = county.strip() if county and county.strip() else None
+    try:
+        return queries.query_regional_series(
+            conn,
+            start_date=start,
+            end_date=end,
+            utility=util,
+            county=county_filter,
+            interval=interval.strip().lower(),
+        )
+    except queries.AggregateQueryError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.get("/ignitions")
 def ignitions(
     utility: Optional[str] = Query(None),

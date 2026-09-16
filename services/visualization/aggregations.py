@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Iterable, Literal
 
-Interval = Literal["daily", "weekly", "monthly"]
+Interval = Literal["daily", "weekly", "monthly", "quarterly"]
 
 
 def week_index_in_year(d: date, year: int) -> int | None:
@@ -73,6 +73,80 @@ def daily_bin_meta(start: date, end: date) -> list[dict]:
         buckets.append({"start": iso, "end": iso, "label": iso, "count": 0})
         d += timedelta(days=1)
     return buckets
+
+
+def week_bin_meta_range(start: date, end: date) -> list[dict]:
+    """Week bins clipped to [start, end], indexed from Jan 1 of each year.
+
+    Matches the workspace client: first bucket start == start, last end == end.
+    Visualization `/time-series` weekly still uses `week_bin_meta(year)` (full year).
+    """
+    buckets: list[dict] = []
+    current_key: str | None = None
+    d = start
+    while d <= end:
+        key = f"{d.year}-W{(d - date(d.year, 1, 1)).days // 7}"
+        if key != current_key:
+            buckets.append(
+                {
+                    "start": d.isoformat(),
+                    "end": d.isoformat(),
+                    "label": key,
+                    "count": 0,
+                }
+            )
+            current_key = key
+        else:
+            buckets[-1]["end"] = d.isoformat()
+        d += timedelta(days=1)
+    return buckets
+
+
+def quarter_bin_meta(start: date, end: date) -> list[dict]:
+    buckets: list[dict] = []
+    year = start.year
+    quarter = (start.month - 1) // 3 + 1
+    while True:
+        start_month = (quarter - 1) * 3 + 1
+        bin_start = date(year, start_month, 1)
+        if quarter == 4:
+            next_first = date(year + 1, 1, 1)
+        else:
+            next_first = date(year, start_month + 3, 1)
+        bin_end = next_first - timedelta(days=1)
+        clipped_start = max(bin_start, start)
+        clipped_end = min(bin_end, end)
+        if clipped_start <= clipped_end:
+            buckets.append(
+                {
+                    "start": clipped_start.isoformat(),
+                    "end": clipped_end.isoformat(),
+                    "label": f"{year}-Q{quarter}",
+                    "count": 0,
+                }
+            )
+        if clipped_end >= end:
+            break
+        if quarter == 4:
+            year, quarter = year + 1, 1
+        else:
+            quarter += 1
+    return buckets
+
+
+def interval_bin_meta(start: date, end: date, interval: str) -> list[dict]:
+    """Gap-filled buckets covering [start, end] inclusive for workspace series."""
+    if start > end:
+        raise ValueError("start must be <= end")
+    if interval == "daily":
+        return daily_bin_meta(start, end)
+    if interval == "weekly":
+        return week_bin_meta_range(start, end)
+    if interval == "monthly":
+        return month_bin_meta(start, end)
+    if interval == "quarterly":
+        return quarter_bin_meta(start, end)
+    raise ValueError(f"unknown interval: {interval}")
 
 
 def aggregate_dates(
