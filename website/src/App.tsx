@@ -9,6 +9,7 @@ import { ToolTrace } from './ToolTrace';
 import { DATASETS, type EventRecord } from './data.ts';
 import { panelsFromAnswer } from './answerPanels.ts';
 import { updatePanelSettings, viewSettings, type PanelView } from './panelViews.ts';
+import { movePanel } from './panelOrder.ts';
 
 interface Message { id: string; role: 'user' | 'assistant'; content: string; error?: boolean; response?: AgentAnswer; events?: AgentStreamEvent[] }
 const STORAGE_KEY = 'wildfire-workspace-v1';
@@ -115,6 +116,7 @@ export default function App() {
         </div>
       </section>
       <div ref={workspaceRef}><PanelWorkspace panels={panels} onRemove={removePanel} onDuplicate={duplicatePanel} onRename={(id, name) => setPanels(current => current.map(p => p.id === id ? { ...p, name, nameIsCustom: true } : p))}
+        onReorder={(id, index) => setPanels(current => movePanel(current, id, index))}
         onUpdate={(id, patch) => setPanels(current => current.map(p => p.id === id ? updatePanelSettings(p, patch) : p))} /></div>
       <DataSources />
       {panels.length > 0 && showBack && <a href="#workspace-top" className="back-to-panels" aria-label="Back to top">↑</a>}

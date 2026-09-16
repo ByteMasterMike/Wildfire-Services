@@ -219,6 +219,11 @@ partial totals. Stat CSV downloads include every displayed metric and its unit.
 
 Panel settings use `wildfire-workspace-v1` in browser local storage. Storage
 failure is visible; no chat text, credentials, or fetched datasets are saved.
+Panel order is saved in the same workspace. Drag an overview panel by its title
+bar or grip; release it to insert at the closest grid slot while the intervening
+panels shift in order. The page scrolls near the viewport edges during a drag.
+Escape cancels the move. A simple title click still renames the panel, and header
+actions, chart interactions and expanded panels do not start a drag.
 
 ## Scrolling and expanded views
 
