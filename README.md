@@ -47,7 +47,7 @@ services/data_query/            # read API over warehouse tables
 services/visualization/         # styled GeoJSON / time series / detail
 services/comparison/            # cross-utility / region / period metrics
 services/agent/                 # local-LLM routing feasibility harness
-services/gpu_control/           # start/stop demo GPU (Ollama) on port 8005
+services/gpu_control/           # optional EC2/Ollama control on port 8005
 services/risk_forecasting/
   models.py                     # HPP / NHPP / cNHPP (do not modify lightly)
   grid_data_prep.py             # grid data loaders (do not modify lightly)
@@ -164,7 +164,7 @@ Run each API in a separate terminal from the repository root. These are the loca
 | Visualization | 8002 | GeoJSON layers, time series, territory and event detail |
 | Comparison | 8003 | Backend utility, region and period comparisons |
 | Agent | 8004 | Deterministic/model routing and SSE answers |
-| GPU control (optional) | 8005 | Authenticated start/stop of the configured demo GPU |
+| GPU control (optional) | 8005 | Authenticated start/stop when EC2/Ollama is configured; disabled with no defaults |
 | PostGIS | 5433 | Local database host port; container port is 5432 |
 
 The current website's direct data panels need Visualization and its warehouse; SQL aggregation additionally requires the updated Data Query service. Ask uses Agent and the relevant downstream services. Historical scoring additionally requires the model input files described below.
@@ -252,17 +252,22 @@ the harness, not by the model.
 
 ### GPU control (optional)
 
-Deployment support for starting/stopping the configured demo GPU instance. The current React website does not call these controls.
+The current test deployment uses the CPU model at `AGENT_MODEL_BASE_URL`.
+`gpu_control` remains available for a future explicitly configured EC2/Ollama
+resource; it is not on the agent request path. The current React website does not call these controls.
 
 ```bash
 uvicorn services.gpu_control.app:app --port 8005 --app-dir .
 ```
 
-`POST /gpu/start` and `POST /gpu/stop` require `X-GPU-Control-Token`. Missing
-`GPU_CONTROL_TOKEN` returns 503 so start is never open. Status is unauthenticated
-and pollable. Concurrent `/gpu/start` is locked: in-progress starts (and any
-state other than `stopped`/`error`) return current status and do not call
-`StartInstances` again. Stopping EC2 does not remove its EBS storage. See
+`GPU_INSTANCE_ID`, `GPU_OLLAMA_URL`, and `GPU_MODEL` have no defaults. When
+they are absent, status reports disabled and EC2 is not called. An explicitly
+configured service requires `X-GPU-Control-Token` on `POST /gpu/start` and
+`POST /gpu/stop`. Missing `GPU_CONTROL_TOKEN` returns 503 so start is never
+open. Status is unauthenticated and pollable. Concurrent `/gpu/start` is
+locked: in-progress starts (and any state other than `stopped`/`error`) return
+current status and do not call `StartInstances` again. Stopping EC2 does not
+remove its EBS storage. See
 [`services/gpu_control/README.md`](services/gpu_control/README.md).
 
 ### Local Historical Map and Planning Tool
