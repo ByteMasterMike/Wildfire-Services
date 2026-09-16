@@ -24,6 +24,7 @@ from services.data_query.filters import (
 )
 from services.data_query.filters import parse_bbox as parse_bbox_filter
 from services.data_query.geo import respond
+from services.shared.dataset_registry import US_IGNITIONS_META_DATA_QUERY
 from shared.db import connect, get_settings
 
 _db_ok: Optional[str] = None
@@ -372,31 +373,8 @@ def ignitions(
     )
 
 
-US_IGNITIONS_META = {
-    "source": "firecastrl_irwin_sample",
-    "utility_attributed": False,
-    "census": False,
-    "coverage": "CONUS",
-    "not_comparable_to": "cpuc_ignitions",
-    "sample_geography": {
-        "method": "point-in-polygon vs Census-derived state boundaries",
-        "california_share_overall": 0.4015,
-        "california_share_2024": 0.5872,
-        "west_region_share_overall": 0.7343,
-        "west_region_share_2024": 0.7828,
-        "note": (
-            "Sample is California-heavy (≈40% of all rows; ≈59% of 2024). "
-            "A national map view overstates geographic balance."
-        ),
-    },
-    "notes": (
-        "All-cause IRWIN-derived ignitions from FireCastRL Kaggle dataset. "
-        "Classification sample (event windows), not a complete census. "
-        "Not utility-attributed — do not compare counts to California CPUC ignitions. "
-        "Geographically skewed: California ≈40% overall / ≈59% of 2024 "
-        "(Census region West ≈73% / ≈78%)."
-    ),
-}
+# Discrepancy: notes text differs from visualization US_IGNITIONS_META.
+US_IGNITIONS_META = US_IGNITIONS_META_DATA_QUERY
 
 
 @app.get("/us-ignitions")
