@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { CHART_DATASETS as DATASETS, filterError, aggregateDaily, unavailableReason, datasetNote,
   type DatasetId, type Interval } from './data.ts';
-import { getDailySeries, getGroupedCounts } from './api.ts';
+import { getDailySeries } from './api.ts';
+import { getGroupedCounts } from './workspaceAggregates.ts';
 import { ChartFilters, LoadState } from './Controls';
 import { usePanel } from './state';
 import { useRemote } from './useRemote';

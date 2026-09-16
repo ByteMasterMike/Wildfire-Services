@@ -15,6 +15,7 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/panelViews.ts`, `src/PanelPicker.tsx` | Five categories and 13 implemented analysis presets |
 | `src/PanelWorkspace.tsx`, `src/Controls.tsx` | Panel layout, expansion, filters and common controls |
 | `src/api.ts`, `src/useRemote.ts` | Remote records, pagination, request state and streamed Ask responses |
+| `src/workspaceAggregates.ts` | Existing record-based aggregation by default; explicitly configured SQL aggregation |
 | `src/agentContracts.ts`, `src/answerPanels.ts` | Agent wire contracts and the currently supported view adapters |
 | `src/agentTrace.ts`, `src/ToolTrace.tsx` | Streamed and final service/tool activity in a collapsed disclosure |
 | `src/EventMap.tsx`, `src/MapEventPreview.tsx`, `src/spatial.ts` | Leaflet maps, event bubbles and location lookups |
@@ -24,11 +25,12 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/RecordPanels.tsx` | Record tables and summary metrics |
 | `src/ExportActions.tsx`, `src/exports.ts` | CSV and chart PNG exports |
 
-Maps and records use the Visualization API. Grouped comparisons, summary metrics
-and regional time series use the Data Query API; those panels never page full
-GeoJSON to compute their totals. Calendar alignment and seasonal profiles retain
-the existing daily time-series API. The browser does not call the Comparison API
-directly. Ask uses Agent and its downstream services.
+Maps and records use the Visualization API. By default, grouped comparisons,
+summary metrics and regional time series use its complete-record path and retain
+the existing browser calculations. Setting `VITE_DATA_QUERY_URL` explicitly moves
+those three panel types to geometry-free Data Query aggregates. Calendar alignment
+and seasonal profiles retain the existing daily time-series API. The browser does
+not call the Comparison API directly. Ask uses Agent and its downstream services.
 
 ## Development
 
@@ -61,13 +63,14 @@ rebuild after changing them. These are public browser URLs; do not put secrets
 in `VITE_` variables. The repository-root `.env` configures Python services.
 Ordinary website preview does not require a local database or model runtime.
 
-Deploy the Data Query aggregate endpoints before publishing this frontend.
-`VITE_DATA_QUERY_URL` defaults to the CloudFront host's `/api/data-query` prefix;
-the proxy must forward query strings and route to the service's unprefixed paths.
-The public Data Query OpenAPI URL and `/summary` were still returning 404 on September 16, 2026.
-Local SQL and browser verification does not establish that the production route
-has been deployed. API failures remain visible and do not trigger client-side
-counting as a fallback.
+Leave `VITE_DATA_QUERY_URL` unset to use the currently deployed record APIs.
+Deploy and verify the Data Query aggregate endpoints before setting this variable.
+The proxy must forward query strings and route to the service's unprefixed paths.
+The proposed public `/api/data-query` prefix returned static-server 404s on
+September 16, 2026; the origin's OpenAPI also lacked the three new aggregate routes.
+Local SQL tests do not establish that the production route has been deployed.
+Source selection happens at build time: configured Data Query failures remain
+visible and never trigger a runtime switch back to browser calculations.
 
 ## Connected panels
 

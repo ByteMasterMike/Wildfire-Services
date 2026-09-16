@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react';
-import { getDetail, getRecords, getSummary } from './api.ts';
+import { getDetail, getRecords } from './api.ts';
+import { getSummary } from './workspaceAggregates.ts';
 import { configFor, filterError, unavailableReason, type EventRecord } from './data.ts';
 import { ChartFilters, DatasetSelect, LoadState } from './Controls';
 import { SelectionContext, usePanel } from './state';

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getRegionalSeries } from './api.ts';
+import { getRegionalSeries } from './workspaceAggregates.ts';
 import { filterError, unavailableReason, type Interval } from './data.ts';
 import { ChartFilters, LoadState } from './Controls';
 import { ExportActions } from './ExportActions';

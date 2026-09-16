@@ -61,10 +61,12 @@ behavior. Regional grouping uses `epss_outages.division`, including a
 to the requested range; weekly bins reset on January 1, including short year-end
 bins. Existing `/rank` behavior and its 25-row cap are unchanged.
 
-Deploy this service and expose these routes before publishing the frontend that
-uses them. Configure `VITE_DATA_QUERY_URL` for the browser's public base URL and
-verify production responses against the warehouse. No schema changes, reloaders
-or model fitting are required for this migration.
+Deploy this service, expose these routes and verify production responses against
+the warehouse before setting the frontend's `VITE_DATA_QUERY_URL` and rebuilding.
+With that variable unset, the workspace retains its existing Visualization API
+record path and browser calculations. Configured aggregate-service failures stay
+visible without switching data sources. No schema changes, reloaders or model
+fitting are required for this migration.
 
 Regression coverage uses real PostgreSQL with controlled fixtures:
 
@@ -76,9 +78,9 @@ python -m pytest tests/test_workspace_aggregates.py -q
 
 Tests create the fixture schema inside a transaction and roll it back after each
 case. They fail if the schema already exists. Frontend aggregate-request tests
-verify full category results, total consistency and no GeoJSON fallback. The
-former browser counting cases now run against SQL; seasonal calculations remain
-covered by the Node suite.
+verify full category results, total consistency and no GeoJSON fallback in
+configured service mode. The Node suite also covers the default record path,
+deployment compatibility, missing values and calendar calculations.
 
 Special tokens: `utility=untagged`, `incident_type=untyped`, `include_untagged=true`.
 

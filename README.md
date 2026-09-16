@@ -11,7 +11,7 @@ flowchart LR
     Source["website/: React + TypeScript"] -->|Vite build| Web["docs/: static website in the browser"]
     Web -->|GeoJSON, daily counts, event detail| Viz["Visualization API :8002"]
     Web -->|POST /ask/stream| Agent["Agent prototype :8004"]
-    Web -->|Grouped counts, summaries, regional series| Query
+    Web -->|Explicitly configured SQL aggregates| Query
     Web -->|Load yearly assets| HDW["Bundled HDW cubes"]
     Agent --> Viz
     Agent --> Query["Data Query API :8000"]
@@ -26,7 +26,7 @@ flowchart LR
     Raw["Read-only source datasets"] --> Loaders["db/loaders"] --> DB
 ```
 
-Maps and record tables request complete filtered records from the Visualization API. Grouped comparisons, summary metrics and regional series come from geometry-free Data Query aggregates. Calendar alignment and seasonal averages use the existing daily time-series buckets. HDW playback loads the supplied static weather cubes. The Agent API can additionally route questions to the Data Query, Comparison and Risk services and returns structured views alongside its answer.
+Maps and record tables request complete filtered records from the Visualization API. Grouped comparisons, summary metrics and regional series use those records by default; an explicitly configured Data Query URL enables geometry-free SQL aggregates. Calendar alignment and seasonal averages use the existing daily time-series buckets. HDW playback loads the supplied static weather cubes. The Agent API can additionally route questions to the Data Query, Comparison and Risk services and returns structured views alongside its answer.
 
 The default website connects to the deployed APIs configured in [`website/src/api.ts`](website/src/api.ts). Local services are useful for backend development but are not prerequisites for previewing the built website. The agent remains a routing prototype; the website currently renders only the view contracts it can reproduce faithfully.
 
@@ -130,14 +130,15 @@ Restart the development server or rebuild the website afterward. Without overrid
 the existing deployed URLs are used. The repository-root `.env` configures Python
 services. The older `frontend/assets/js/api-config.js` belongs to the separate local UI.
 
-**Aggregation rollout:** deploy the updated Data Query API and make its
-`/grouped-counts`, `/summary` and `/regional-series` routes browser-accessible
-before publishing this frontend build. Set `VITE_DATA_QUERY_URL` to that service;
-its default proxy path is `/api/data-query` on the existing CloudFront host.
-The public Data Query OpenAPI URL and a `/summary` request returned 404 during implementation verification,
-so production routing and warehouse totals still need deployment-side verification.
-The new frontend reports API failures instead of silently downloading full layers
-and recomputing these statistics. See the [API guide](services/data_query/README.md).
+**Aggregation rollout:** without `VITE_DATA_QUERY_URL`, comparison, summary and
+regional panels retain the deployed Visualization API's complete-record path and
+calculate their aggregates in the browser. To enable SQL aggregation, first deploy
+`/grouped-counts`, `/summary` and `/regional-series`, verify their public routing,
+CORS and warehouse totals, then set `VITE_DATA_QUERY_URL` and rebuild. A configured
+service failure remains visible; it does not switch to browser calculations.
+The proposed CloudFront `/api/data-query` prefix returned static-server 404s during
+verification, and the existing origin did not expose these new endpoints. Do not
+enable that URL until deployment is verified. See the [API guide](services/data_query/README.md).
 
 ## Local backend setup
 
@@ -168,7 +169,7 @@ Run each API in a separate terminal from the repository root. These are the loca
 | GPU control (optional) | 8005 | Authenticated start/stop of the configured demo GPU |
 | PostGIS | 5433 | Local database host port; container port is 5432 |
 
-The current website's direct data panels need Visualization, Data Query and their warehouse. Ask uses Agent and the relevant downstream services. Historical scoring additionally requires the model input files described below.
+The current website's direct data panels need Visualization and its warehouse; SQL aggregation additionally requires the updated Data Query service. Ask uses Agent and the relevant downstream services. Historical scoring additionally requires the model input files described below.
 
 ### PostGIS warehouse (map layers + grid)
 
