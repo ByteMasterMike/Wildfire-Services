@@ -1,7 +1,12 @@
-import { configFor, filterError, unavailableReason, utilityCode, recordsFromFeatures, type Bucket, type DatasetId, type Filters, type LayerResponse, type Boundary } from './data.ts';
+import { configFor, filterError, unavailableReason, utilityCode, recordsFromFeatures, type Bucket, type DatasetId, type Filters, type GroupBy, type Interval, type LayerResponse, type Boundary } from './data.ts';
+import type { AgentAnswer, AgentStreamEvent } from './agentContracts.ts';
+import { readSummary, type SummaryResponse } from './stats.ts';
+import type { RegionSeries } from './temporal.ts';
+export type { AgentAnswer, AgentStreamEvent } from './agentContracts.ts';
 
-export const VISUALIZATION_URL = 'https://d3t70p3if3twy3.cloudfront.net/api/visualization';
-export const AGENT_URL = 'https://d3t70p3if3twy3.cloudfront.net/api/agent';
+export const VISUALIZATION_URL = (import.meta.env?.VITE_VISUALIZATION_URL || 'https://d3t70p3if3twy3.cloudfront.net/api/visualization').replace(/\/+$/, '');
+export const AGENT_URL = (import.meta.env?.VITE_AGENT_URL || 'https://d3t70p3if3twy3.cloudfront.net/api/agent').replace(/\/+$/, '');
+export const DATA_QUERY_URL = (import.meta.env?.VITE_DATA_QUERY_URL || 'https://d3t70p3if3twy3.cloudfront.net/api/data-query').replace(/\/+$/, '');
 const cache = new Map<string, { at: number; promise: Promise<unknown> }>();
 export function clearDataCache() { cache.clear(); }
 export async function getJSON<T>(url: string): Promise<T> {
@@ -54,6 +59,38 @@ export async function getLayer(dataset: DatasetId, filters: Filters, outages = f
 export async function getRecords(dataset: DatasetId, filters: Filters) {
   return recordsFromFeatures(dataset, (await getLayer(dataset, filters, true)).geojson.features);
 }
+function aggregateParams(dataset: DatasetId, filters: Filters) {
+  const params = queryParams(dataset, filters);
+  params.set('dataset', configFor(dataset).query);
+  return params;
+}
+export interface GroupedCounts {rows: {key: string; value: number | null}[]; total: number}
+export async function getGroupedCounts(dataset: DatasetId, filters: Filters, groupBy: GroupBy): Promise<GroupedCounts> {
+  const params = aggregateParams(dataset, filters); params.set('group_by', groupBy);
+  const result = await getJSON<GroupedCounts>(`${DATA_QUERY_URL}/grouped-counts?${params}`);
+  if (!Number.isSafeInteger(result.total) || result.total < 0 || !Array.isArray(result.rows)
+    || result.rows.some(row => !row || typeof row.key !== 'string' || (row.value !== null && (!Number.isSafeInteger(row.value) || row.value < 0)))
+    || new Set(result.rows.map(row => row.key)).size !== result.rows.length
+    || result.rows.reduce((sum, row) => sum + (row.value ?? 0), 0) !== result.total) throw new Error('Grouped counts do not match the complete dataset.');
+  return {...result, rows: [...result.rows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1) || a.key.localeCompare(b.key))};
+}
+export async function getSummary(dataset: DatasetId, filters: Filters) {
+  const params = aggregateParams(dataset, filters);
+  return readSummary(await getJSON<SummaryResponse>(`${DATA_QUERY_URL}/summary?${params}`), dataset);
+}
+export async function getRegionalSeries(filters: Filters, interval: Interval) {
+  const params = aggregateParams('epss', filters); params.delete('dataset'); params.set('interval', interval);
+  const result = await getJSON<{series: RegionSeries[]; total: number}>(`${DATA_QUERY_URL}/regional-series?${params}`);
+  if (!Number.isSafeInteger(result.total) || result.total < 0 || !Array.isArray(result.series)
+    || result.series.some(region => !region || typeof region.name !== 'string' || !Number.isSafeInteger(region.total) || region.total < 0
+      || !Array.isArray(region.buckets) || !region.buckets.length
+      || region.buckets.some(bucket => !bucket || typeof bucket.start !== 'string' || typeof bucket.end !== 'string' || !Number.isSafeInteger(bucket.count) || bucket.count < 0)
+      || region.buckets[0].start !== filters.start || region.buckets.at(-1)!.end !== filters.end
+      || region.buckets.reduce((sum, bucket) => sum + bucket.count, 0) !== region.total)
+    || new Set(result.series.map(region => region.name)).size !== result.series.length
+    || result.series.reduce((sum, region) => sum + region.total, 0) !== result.total) throw new Error('Regional series do not match the complete dataset.');
+  return {...result, series: [...result.series].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name))};
+}
 export async function getDailySeries(dataset: DatasetId, filters: Filters) {
   const params = queryParams(dataset, filters); params.set('interval', 'daily');
   const result = await getJSON<{ buckets: Bucket[]; meta: { total_events: number } }>(`${VISUALIZATION_URL}/time-series?${params}`);
@@ -73,20 +110,31 @@ export async function getBoundaries(kind: 'hftd' | 'territories'): Promise<Bound
   const results = await Promise.all(['PGE', 'SCE', 'SDGE'].map(utility => getJSON<{ geojson: Boundary }>(`${VISUALIZATION_URL}/utility-territory?utility=${utility}`)));
   return results.map(result => result.geojson);
 }
-export interface DetailResponse { attributes: Record<string, unknown>; detail_fields: { label: string; value: unknown }[]; geometry: GeoJSON.Geometry | null }
-export function getDetail(dataset: DatasetId, id: string, circuitScope?: { start: string; end: string }) {
+export interface DetailResponse {
+  attributes: Record<string, unknown>;
+  detail_fields: { label: string; value: unknown }[];
+  geometry: GeoJSON.Geometry | null;
+  outages?: Record<string, unknown>[] | null;
+  affected_circuits?: Record<string, unknown>[] | null;
+}
+export async function getDetail(dataset: DatasetId, id: string, circuitScope?: { start: string; end: string }) {
   const params = new URLSearchParams({ dataset: circuitScope ? 'circuits' : configFor(dataset).api, id });
   if (circuitScope) { params.set('start_date', circuitScope.start); params.set('end_date', circuitScope.end); }
-  return getJSON<DetailResponse>(`${VISUALIZATION_URL}/event-detail?${params}`);
+  const result = await getJSON<DetailResponse>(`${VISUALIZATION_URL}/event-detail?${params}`);
+  for (const rows of [result.outages, result.affected_circuits]) {
+    if (rows !== undefined && rows !== null && (!Array.isArray(rows) || rows.some(row => !row || typeof row !== 'object' || Array.isArray(row)))) {
+      throw new Error('The detail service returned invalid related records. Please retry.');
+    }
+  }
+  return result;
 }
-export interface AgentAnswer { answer_text: string; status: string; qualifications?: { text: string }[]; views?: { type: string; params: Record<string, unknown> }[] }
 export function parseSSE(frame: string): { event: string; data: unknown } | null {
   const lines = frame.split('\n');
   const payload = lines.filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
   if (!payload) return null;
   return { event: lines.find(line => line.startsWith('event:'))?.slice(6).trim() ?? 'message', data: JSON.parse(payload) };
 }
-export async function askAgent(question: string, signal: AbortSignal, onProgress: (text: string) => void): Promise<AgentAnswer> {
+export async function askAgent(question: string, signal: AbortSignal, onProgress: (text: string) => void, onEvent?: (event: AgentStreamEvent) => void): Promise<AgentAnswer> {
   const response = await fetch(`${AGENT_URL}/ask/stream`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' }, body: JSON.stringify({ question }), signal });
   if (!response.ok || !response.body) throw new Error(`Agent unavailable (HTTP ${response.status}). You can still use the data panels.`);
   const reader = response.body.getReader();
@@ -101,11 +149,13 @@ export async function askAgent(question: string, signal: AbortSignal, onProgress
       while ((boundary = buffer.indexOf('\n\n')) >= 0) {
         const parsed = parseSSE(buffer.slice(0, boundary)); buffer = buffer.slice(boundary + 2);
         if (!parsed) continue;
+        if (!parsed.data || typeof parsed.data !== 'object' || Array.isArray(parsed.data)) throw new Error('The agent returned an invalid stream event.');
         if (parsed.event === 'answer' || parsed.event === 'error') {
           const answer = parsed.data as AgentAnswer;
           if (typeof answer.answer_text !== 'string') throw new Error('The agent returned an incomplete answer.');
           return answer;
         }
+        onEvent?.({event: parsed.event, data: parsed.data as Record<string, unknown>});
         onProgress(parsed.event.includes('tool') ? 'Reading data…' : 'Working on your question…');
       }
       if (done) throw new Error('The connection ended before an answer arrived. Please retry.');

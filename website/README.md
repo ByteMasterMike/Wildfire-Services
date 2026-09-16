@@ -15,6 +15,8 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/panelViews.ts`, `src/PanelPicker.tsx` | Five categories and 13 implemented analysis presets |
 | `src/PanelWorkspace.tsx`, `src/Controls.tsx` | Panel layout, expansion, filters and common controls |
 | `src/api.ts`, `src/useRemote.ts` | Remote records, pagination, request state and streamed Ask responses |
+| `src/agentContracts.ts`, `src/answerPanels.ts` | Agent wire contracts and the currently supported view adapters |
+| `src/agentTrace.ts`, `src/ToolTrace.tsx` | Streamed and final service/tool activity in a collapsed disclosure |
 | `src/EventMap.tsx`, `src/MapEventPreview.tsx`, `src/spatial.ts` | Leaflet maps, event bubbles and location lookups |
 | `src/HdwPlayer.tsx`, `src/weather.ts` | Yearly static weather cubes and daily playback |
 | `src/AnalysisCharts.tsx`, `src/YearComparison.tsx`, `src/RegionalSeries.tsx`, `src/SeasonalSeries.tsx` | Grouped and temporal visualizations |
@@ -22,10 +24,11 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/RecordPanels.tsx` | Record tables and summary metrics |
 | `src/ExportActions.tsx`, `src/exports.ts` | CSV and chart PNG exports |
 
-Direct data panels use the Visualization API. The browser computes summaries
-and comparisons from complete records or daily buckets; it does not call the
-Comparison API directly. Ask uses the Agent API, whose backend can call the
-Data Query, Visualization, Comparison and Risk services.
+Maps and records use the Visualization API. Grouped comparisons, summary metrics
+and regional time series use the Data Query API; those panels never page full
+GeoJSON to compute their totals. Calendar alignment and seasonal profiles retain
+the existing daily time-series API. The browser does not call the Comparison API
+directly. Ask uses Agent and its downstream services.
 
 ## Development
 
@@ -51,12 +54,20 @@ temporary directory on success or failure. Other `docs/` assets are preserved.
 Preview the actual generated page using the command in the
 [Pages guide](../docs/README.md).
 
-The deployed API defaults are the `VISUALIZATION_URL` and `AGENT_URL` constants
-in `src/api.ts`. To use local services, change them to
-`http://127.0.0.1:8002` and `http://127.0.0.1:8004`, respectively, then use the
-development server or rebuild. The repository `.env` configures Python services,
-not these browser constants. Ordinary website preview does not require a local
-database or model runtime.
+The deployed API defaults remain in `src/api.ts`. To use local services, copy
+`website/.env.example` to `website/.env.local`, or set `VITE_VISUALIZATION_URL`,
+`VITE_AGENT_URL` and `VITE_DATA_QUERY_URL` in the build environment. Restart the development server or
+rebuild after changing them. These are public browser URLs; do not put secrets
+in `VITE_` variables. The repository-root `.env` configures Python services.
+Ordinary website preview does not require a local database or model runtime.
+
+Deploy the Data Query aggregate endpoints before publishing this frontend.
+`VITE_DATA_QUERY_URL` defaults to the CloudFront host's `/api/data-query` prefix;
+the proxy must forward query strings and route to the service's unprefixed paths.
+The public Data Query OpenAPI URL and `/summary` were still returning 404 on September 16, 2026.
+Local SQL and browser verification does not establish that the production route
+has been deployed. API failures remain visible and do not trigger client-side
+counting as a fallback.
 
 ## Connected panels
 
@@ -117,7 +128,9 @@ in the chart body. Existing saved panels continue to load without a migration.
   Unknown and missing causes are separate categories.
 - **Record table:** complete filtered records, local search, overview pages sized
   to the available height, 25-row pages in expanded view, and remote detail.
-  Circuit IDs retain leading zeros.
+  Circuit IDs retain leading zeros. The existing detail dialog includes expandable
+  EPSS outage records for circuits and affected-circuit records for PSPS events.
+  An empty related-record list is distinct from a missing collection (`No data`).
 - **Stat card:** record counts and known counties; CAL FIRE acreage; PSPS
   customer-event totals. Missing values are reported, not converted into zeros.
 - **Event location bubble:** coordinates, point-in-polygon against remote
@@ -138,10 +151,28 @@ partial total. Runtime API failures do not fall back to synthetic data.
 
 Ask uses the deployed SSE endpoint and preserves the answer's qualifications.
 It can append the supported harness-planned views; it does not execute render
-instructions from model prose. A 45-second timeout or Cancel leaves the data
+instructions from model prose. A four-minute timeout or Cancel leaves the data
 panels usable. Generated scalar answers are not saved across page refreshes.
 Multiple-dataset map specs and advanced comparison/spatial specs are not yet
 ported; their answer text remains available.
+
+`src/agentContracts.ts` defines all six existing `ComponentSpec` types, including
+their parameters, evidence IDs and artifact references. The complete answer,
+including views, scope, qualifications and trace metadata, stays attached to the
+conversation message in memory for later agent integration. Extend
+`src/answerPanels.ts` when adding the remaining renderers; contract support alone
+does not imply that those views already render. Conversation payloads are not
+saved in browser storage.
+
+Each answer has a default-collapsed **Tool chain** when routing or tool activity
+is available. It shows services, tool names, executed arguments, status, timing
+and evidence references. Activity is available while streaming and remains after
+failure or cancellation. The final trajectory includes qualification calls and
+replaces the streamed trace so completed calls are not duplicated.
+
+Seasonal inspection uses `No data` for incomplete weeks and missing yearly
+values; observed zeros remain `0`. Detail fields retain a literal source
+`Unknown` value and show `No data` for nulls.
 
 ## HDW playback and exports
 
@@ -166,6 +197,11 @@ as text in spreadsheet applications to retain leading zeros. Line/bar charts can
 download PNG with titles, scope and legends. Maps export event CSV, not basemap
 images or raw HDW cubes. Duplicate copies a panel's filters, layer settings and
 year choices into independent state.
+
+CPUC and CAL FIRE CSV exports prepend quoted `# Note:` rows with the dataset
+definitions from `shared/dataset_caveats.json`, also used by Agent qualifications.
+Readers importing these CSVs should skip those note rows before the column header.
+Missing values remain empty fields, distinct from numeric zero.
 
 Stat cards show all supported summary metrics together under one dataset and
 filter scope: CPUC events/counties/utilities, CAL FIRE events/acres/counties,
@@ -197,7 +233,7 @@ scrolling; expand the map to pan and pinch-zoom.
 
 Run `npm test` and `npm run build` from this directory. The Node suite covers
 pagination consistency, event counting, missing values, SSE parsing, spatial
-lookups, weather decoding, annual alignment, regional/seasonal aggregation,
+lookups, weather decoding, annual alignment, regional API contracts, seasonal aggregation,
 view switching and exports. These tests use local fixtures or mocked requests;
 they do not require the live APIs. The build also checks TypeScript.
 

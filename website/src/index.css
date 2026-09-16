@@ -258,6 +258,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .event-dialog dl > div { display: grid; grid-template-columns: minmax(100px, 1fr) 2fr; gap: 16px; border-top: 1px solid #ffffff0b; padding: 10px 0; font-size: 12px; }
 .event-dialog dt { color: #999; }
 .event-dialog dd { overflow-wrap: anywhere; }
+.event-dialog .detail-related { margin-top: 22px; }
+.event-dialog .detail-related h3 { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+.event-dialog .detail-related h3 span { color: #999; font-weight: 400; }
+.event-dialog .detail-related-record { border-top: 1px solid #ffffff0b; }
+.event-dialog .detail-related-record > summary { padding: 12px 0; font-size: 12px; cursor: pointer; overflow-wrap: anywhere; }
+.event-dialog .detail-related-record > summary:focus-visible { outline: 2px solid #9cc4ff; outline-offset: 2px; }
+.tool-trace { margin-top: 10px; font-size: 12px; color: #aaa; }
+.tool-trace > summary { cursor: pointer; padding: 4px 0; width: fit-content; }
+.tool-trace > summary:focus-visible { outline: 2px solid #9cc4ff; outline-offset: 2px; }
+.tool-trace .trace-route { margin: 10px 0 6px; font-size: 11px; }
+.tool-trace ol { list-style: none; padding: 0; margin: 0; }
+.tool-trace li { padding: 12px 0; border-top: 1px solid #ffffff12; overflow-wrap: anywhere; }
+.tool-trace .trace-step-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 4px; }
+.tool-trace .trace-step-heading strong { color: #ddd; font-weight: 500; }
+.tool-trace :is(code, small, .trace-qualification) { font-size: 11px; }
+.tool-trace small { display: block; margin-top: 6px; }
+.tool-trace dl { margin: 8px 0 0; }
+.tool-trace dl > div { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr); gap: 12px; padding: 2px 0; font-size: 11px; }
+.tool-trace dd { color: #ccc; overflow-wrap: anywhere; }
+.tool-trace .trace-error { color: #eeaaaa; margin: 6px 0 0; }
 @media (max-width: 640px) {
   .site-brand { left: 18px; top: 16px; }
   .site-brand span { font-size: 10px; }

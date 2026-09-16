@@ -38,7 +38,7 @@ export function currentView(type: PanelId, settings: PanelSettings): string {
 
 export function updatePanelSettings(panel: PanelInstance, patch: Partial<PanelSettings>): PanelInstance {
   const settings = { ...panel.settings, ...patch };
-  const automaticTitle = PANEL_VIEWS.some(view => view.type === panel.type && view.title === panel.name);
+  const automaticTitle = !panel.name || (!panel.nameIsCustom && PANEL_VIEWS.some(view => view.type === panel.type && view.title === panel.name));
   const name = automaticTitle ? PANEL_VIEWS.find(view => view.id === currentView(panel.type, settings))!.title : panel.name;
   return { ...panel, name, settings };
 }

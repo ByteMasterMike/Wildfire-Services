@@ -120,6 +120,7 @@ export function YearComparison() {
   return (
     <div className="analysis-chart series-panel yearly-panel">
       <ExportActions
+        datasets={[dataset]}
         disabled={Boolean(error || loading || !lines.length)}
         rows={() =>
           lines.flatMap((line) =>

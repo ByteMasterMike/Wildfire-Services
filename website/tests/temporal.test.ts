@@ -1,23 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { regionalSeries, seasonalProfile, seasonalYears } from '../src/temporal.ts';
-import { regionalSvg } from '../src/exports.ts';
-import type { Bucket, EventRecord } from '../src/data.ts';
+import { seasonalProfile, seasonalYears } from '../src/temporal.ts';
+import { csvText, regionalSvg } from '../src/exports.ts';
+import type { Bucket } from '../src/data.ts';
 
-const event=(id:string,date:string,division:string|null):EventRecord=>({id,date,dataset:'epss',name:id,county:null,utility:'PG&E',cause:null,acres:null,geometry:null,properties:{division,circuit_id:'043371102'}});
 const days=(year:number,length:number,count:number):Bucket[]=>Array.from({length},(_,i)=>{const date=new Date(Date.UTC(year,0,i+1)).toISOString().slice(0,10);return {start:date,end:date,count};});
 
-test('regional counts retain every outage, fill empty periods, and keep unknown divisions visible',()=>{
-  const records=[event('1','2024-01-01','Sierra'),event('2','2024-01-01','Sierra'),event('3','2024-03-31','Sierra'),event('4','2024-03-31',null),event('5','2023-12-31','Sierra')];
-  const filters={start:'2024-01-01',end:'2024-03-31',county:'',utility:''};
-  const rows=regionalSeries(records,filters,'monthly');
-  assert.deepEqual(rows[0].buckets.map(bucket=>bucket.count),[2,0,1]);
-  assert.equal(rows[0].total,3);
-  assert.equal(rows[1].name,'Not recorded');
-  assert.equal(rows.reduce((sum,row)=>sum+row.total,0),4);
-  const cross=regionalSeries(records,{...filters,start:'2023-12-31',end:'2024-01-02'},'weekly');
-  assert.deepEqual(cross[0].buckets.map(bucket=>[bucket.start,bucket.end,bucket.count]),[['2023-12-31','2023-12-31',1],['2024-01-01','2024-01-02',2]]);
-});
 
 test('seasonal years exclude source endpoint years and the current calendar year',()=>{
   assert.deepEqual(seasonalYears({start:'2021-11-01',end:'2025-11-15'},new Date('2026-01-01')),[2022,2023,2024]);
@@ -32,6 +20,16 @@ test('seasonal averages include real zeros but exclude a year with an incomplete
   assert.equal(profile[0].counts[2024],null);
   assert.equal(profile[1].mean,null);
   assert.equal(profile[1].years.length,0);
+});
+
+test('seasonal CSV keeps incomplete weeks empty and observed zero weeks numeric', () => {
+  const profile = seasonalProfile([{year: 2023, daily: days(2023, 7, 0)}, {year: 2024, daily: days(2024, 6, 10)}]);
+  const csv = csvText(profile.slice(0, 2).map(week => ({week: week.week, mean: week.mean, events_2023: week.counts[2023], events_2024: week.counts[2024]})));
+  assert.deepEqual(csv.slice(1).split('\r\n'), [
+    '"week","mean","events_2023","events_2024"',
+    '"1","0","0",""',
+    '"2","","",""',
+  ]);
 });
 
 test('seasonal weeks always contain seven days, with trailing leap/non-leap days excluded',()=>{

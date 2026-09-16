@@ -44,3 +44,13 @@ test('automatic titles follow direct source/layer changes while custom names sta
   assert.deepEqual(panel.settings.overlays,['hdw']);
   assert.equal(updatePanelSettings({...panel,name:'Marin study'},{dataset:'epss',overlays:[]}).name,'Marin study');
 });
+
+test('initial panels acquire the current view title when their settings change', () => {
+  const panel = {id: 1, type: 'map' as const, settings: {...settings, dataset: 'cpuc' as const, overlays: []}};
+  assert.equal(updatePanelSettings(panel, {dataset: 'epss'}).name, 'Outage circuits');
+});
+
+test('an explicitly chosen name stays custom even when it matches a preset title', () => {
+  const panel = {id: 8, type: 'map' as const, name: 'Wildfire events', nameIsCustom: true, settings};
+  assert.equal(updatePanelSettings(panel, {dataset: 'epss', overlays: []}).name, 'Wildfire events');
+});

@@ -1,7 +1,7 @@
 import type { RegionSeries } from './temporal.ts';
 
 export type ExportRow = Record<string, unknown>
-export function csvText(rows: ExportRow[]) {
+export function csvText(rows: ExportRow[], caveats: readonly string[] = []) {
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))]
   const cell = (value: unknown) => {
     let text =
@@ -17,6 +17,7 @@ export function csvText(rows: ExportRow[]) {
   return (
     "\uFEFF" +
     [
+      ...caveats.map(note => cell(`# Note: ${note}`)),
       columns.map(cell).join(","),
       ...rows.map((row) =>
         columns.map((column) => cell(row[column])).join(","),

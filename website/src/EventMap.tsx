@@ -101,7 +101,7 @@ export function EventMap() {
           element.setAttribute('tabindex', '0');
           element.addEventListener('focus', () => show(point));
           element.addEventListener('blur', leavePreview);
-          if (layer instanceof L.CircleMarker) element.addEventListener('keydown', event => {
+          element.addEventListener('keydown', event => {
             if ((event as KeyboardEvent).key === 'Enter' || (event as KeyboardEvent).key === ' ') { event.preventDefault(); show(point, true); }
           });
         });
@@ -127,7 +127,7 @@ export function EventMap() {
   const missing = shown.filter(f => !f.geometry).length;
   const error = validation || result.error;
   return <div ref={frame} className="live-map">
-    <ExportActions disabled={Boolean(error||result.loading||!shown.length||(weather&&!weatherDate))} rows={async()=>{
+    <ExportActions datasets={[dataset]} disabled={Boolean(error||result.loading||!shown.length||(weather&&!weatherDate))} rows={async()=>{
       const records=await getRecords(dataset,{...filters,start:weatherDate??filters.start,end:weatherDate??filters.end});
       return records.map(record=>({dataset:configFor(dataset).name,...record.properties}));
     }} />

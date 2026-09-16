@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { CHART_DATASETS as DATASETS, filterError, groupedCounts, aggregateDaily, unavailableReason, datasetNote,
+import { CHART_DATASETS as DATASETS, filterError, aggregateDaily, unavailableReason, datasetNote,
   type DatasetId, type Interval } from './data.ts';
-import { getDailySeries, getRecords } from './api.ts';
+import { getDailySeries, getGroupedCounts } from './api.ts';
 import { ChartFilters, LoadState } from './Controls';
 import { usePanel } from './state';
 import { useRemote } from './useRemote';
@@ -54,7 +54,7 @@ function TimelineSeries() {
   const empty = error || remote.error || (remote.loading ? "Loading records…" : null) || (!selected.length ? "Select at least one dataset to show a line." : !visible.length ? "No data is available for the selected datasets and utility." : null);
 
   return <div className="analysis-chart series-panel">
-    <ExportActions disabled={Boolean(empty)} rows={()=>series.flatMap<ExportRow>(d=>d.reason ? [{dataset:d.name,period_start:filters.start,period_end:filters.end,count:null,utility:filters.utility,county:filters.county,unavailable_reason:d.reason}] : d.buckets.map(b=>({dataset:d.name,period_start:b.start,period_end:b.end,count:b.count,utility:filters.utility,county:filters.county,unavailable_reason:''})))}
+    <ExportActions datasets={selected} disabled={Boolean(empty)} rows={()=>series.flatMap<ExportRow>(d=>d.reason ? [{dataset:d.name,period_start:filters.start,period_end:filters.end,count:null,utility:filters.utility,county:filters.county,unavailable_reason:d.reason}] : d.buckets.map(b=>({dataset:d.name,period_start:b.start,period_end:b.end,count:b.count,utility:filters.utility,county:filters.county,unavailable_reason:''})))}
       svg={()=>{const svg=plot.current?.querySelector('svg');if(!svg)throw new Error('Chart is not ready.');return lineSvg(svg,title,`${filters.start} – ${filters.end}; ${filters.utility||'All utilities'}; ${filters.county||'All counties'}; ${interval} event counts. CAL FIRE posting coverage varies by year. ${series.filter(d=>d.reason).map(d=>d.reason).join(' ')}`,visible.map(d=>({label:`${d.name}: ${d.total}`,color:d.color})));}} />
     <div className="analysis-heading series-toolbar">
     <div className="dataset-switches" role="group" aria-label="Visible datasets">
@@ -104,17 +104,17 @@ export function Comparison() {
   const config = DATASETS.find(item => item.id === dataset)!;
   const validation = filterError(filters) || unavailableReason(dataset, filters)
     || (groupBy === 'cause' && !config.hasCause ? `Cause data is not available for ${config.name}. Choose Utility or County.` : null);
-  const remote = useRemote(validation ? null : JSON.stringify(['records', dataset, filters]), () => getRecords(dataset, filters));
-  const events = remote.data ?? [];
+  const remote = useRemote(validation ? null : JSON.stringify(['grouped-counts', dataset, groupBy, filters]), () => getGroupedCounts(dataset, filters, groupBy));
+  const total = remote.data?.total ?? 0;
   const error = validation || remote.error;
-  const rows = error ? [] : groupedCounts(events, dataset, groupBy, filters);
+  const rows = error ? [] : remote.data?.rows ?? [];
   const viewport = useRef<HTMLDivElement>(null);
   const capacity = useRowCapacity(viewport, '.analysis-bar-row', rows.length > 0);
   const visibleRows = expanded ? rows : rows.slice(0, capacity);
   const max = Math.max(1, ...rows.map(row => row.value ?? 0));
   return <div className="analysis-chart comparison-panel">
-    <ExportActions disabled={Boolean(error||remote.loading||!events.length)} rows={()=>rows.map(row=>({dataset:config.name,group_by:groupBy,category:row.key,count:row.value,share_percent:row.value===null?null:row.value/events.length*100,period_start:filters.start,period_end:filters.end,utility:filters.utility,county:filters.county,unavailable_reason:row.value===null?'EPSS is PG&E-only':''}))}
-      svg={()=>barSvg(title,`${config.name}; ${filters.start} – ${filters.end}; ${filters.utility||'All utilities'}; ${filters.county||'All counties'}; ${groupBy}; ${measure==='share'?'percent of selected records':'event count'}; ${events.length} records. ${datasetNote(dataset)}`,rows,events.length,config.color,measure==='share')} />
+    <ExportActions datasets={[dataset]} disabled={Boolean(error||remote.loading||!total)} rows={()=>rows.map(row=>({dataset:config.name,group_by:groupBy,category:row.key,count:row.value,share_percent:row.value===null?null:row.value/total*100,period_start:filters.start,period_end:filters.end,utility:filters.utility,county:filters.county,unavailable_reason:row.value===null?'EPSS is PG&E-only':''}))}
+      svg={()=>barSvg(title,`${config.name}; ${filters.start} – ${filters.end}; ${filters.utility||'All utilities'}; ${filters.county||'All counties'}; ${groupBy}; ${measure==='share'?'percent of selected records':'event count'}; ${total} records. ${datasetNote(dataset)}`,rows,total,config.color,measure==='share')} />
     <div className="comparison-toolbar">
     <div className="comparison-context">
       <label>Dataset<select aria-label="Comparison dataset" value={dataset} onChange={event => setDataset(event.target.value as DatasetId)}>{DATASETS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -123,11 +123,11 @@ export function Comparison() {
     <div className="measure-switch" role="group" aria-label="Bar values"><button aria-pressed={measure === "count"} onClick={() => setMeasure("count")}>Count</button><button aria-pressed={measure === "share"} onClick={() => setMeasure("share")}>Share %</button></div>
     </div>
     <ChartFilters filters={filters} onChange={setFilters} dataset={dataset} />
-    {error || remote.loading || !events.length ? <LoadState loading={remote.loading} error={error} retry={remote.error ? remote.retry : undefined} /> : <>
-      <div className="bar-summary"><span>{config.name} · {events.length} events</span><span>{measure === "count" ? "Event count" : "% of selected records"}</span></div>
+    {error || remote.loading || !total ? <LoadState loading={remote.loading} error={error} retry={remote.error ? remote.retry : undefined} /> : <>
+      <div className="bar-summary"><span>{config.name} · {total} events</span><span>{measure === "count" ? "Event count" : "% of selected records"}</span></div>
       <div ref={viewport} className="analysis-bars" role="list" aria-label="Grouped event counts">
         {visibleRows.map(row => {
-          const share = (row.value ?? 0) / events.length * 100;
+          const share = (row.value ?? 0) / total * 100;
           return <div key={row.key} className="analysis-bar-row" role="listitem">
             <span className="bar-label" title={row.key}>{row.key}</span>
             <div className="bar-track">{row.value === null ? <span className="missing-bar" title="EPSS is PG&E-only">No data</span> : <div className="value-bar" style={{ background: row.key === "Not recorded" ? "#777" : config.color, width: `${measure === "count" ? row.value / max * 100 : share}%` }} />}</div>

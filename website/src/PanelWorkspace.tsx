@@ -81,7 +81,6 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
     </div>
     {choosingView && <PanelPicker category={panel.type} activeView={currentView(panel.type, panel.settings)} onClose={() => setChoosingView(false)} onSelect={view => {
       onUpdate(viewSettings(panel.settings, view));
-      if (!panel.name || PANEL_VIEWS.some(item => item.title === panel.name)) onRename(panel.id, view.title);
     }} />}
   </dialog></div>;
 }

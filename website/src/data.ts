@@ -1,11 +1,11 @@
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
 
 export const DATASETS = [
-  { id: 'cpuc', api: 'ignitions', name: 'CPUC', color: '#f3a16c', hasCause: false },
-  { id: 'epss', api: 'epss', name: 'EPSS', color: '#b7a0f0', hasCause: true },
-  { id: 'calfire', api: 'calfire', name: 'CAL FIRE', color: '#ee8585', hasCause: false },
-  { id: 'psps', api: 'psps', name: 'PSPS', color: '#7caef1', hasCause: false },
-  { id: 'us_ignitions', api: 'us_ignitions', name: 'US ignitions', color: '#dc2626', hasCause: false },
+  { id: 'cpuc', api: 'ignitions', query: 'cpuc_ignitions', name: 'CPUC', color: '#f3a16c', hasCause: false },
+  { id: 'epss', api: 'epss', query: 'epss_outages', name: 'EPSS', color: '#b7a0f0', hasCause: true },
+  { id: 'calfire', api: 'calfire', query: 'calfire_incidents', name: 'CAL FIRE', color: '#ee8585', hasCause: false },
+  { id: 'psps', api: 'psps', query: 'psps_events', name: 'PSPS', color: '#7caef1', hasCause: false },
+  { id: 'us_ignitions', api: 'us_ignitions', query: 'us_ignitions', name: 'US ignitions', color: '#dc2626', hasCause: false },
 ] as const;
 export type DatasetId = typeof DATASETS[number]['id'];
 export const CHART_DATASETS = DATASETS.slice(0, 3);
@@ -71,16 +71,6 @@ export function recordsFromFeatures(dataset: DatasetId, features: LayerResponse[
   }
   return [...records.values()].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
 }
-export function groupedCounts(events: EventRecord[], dataset: DatasetId, groupBy: GroupBy, filters: Filters) {
-  const counts = new Map<string, number>();
-  for (const event of events) {
-    const key = event[groupBy] ?? 'Not recorded';
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  const keys = groupBy === 'utility' ? [...new Set([...(filters.utility ? [filters.utility] : UTILITIES), ...counts.keys()])] : [...counts.keys()];
-  return keys.map(key => ({ key, value: groupBy === 'utility' && dataset === 'epss' && key !== 'PG&E' ? null : counts.get(key) ?? 0 }))
-    .sort((a, b) => (b.value ?? -1) - (a.value ?? -1) || a.key.localeCompare(b.key));
-}
 export function aggregateDaily(buckets: Bucket[], interval: Interval): Bucket[] {
   const groups = new Map<string, Bucket>();
   for (const bucket of buckets) {
@@ -94,9 +84,5 @@ export function aggregateDaily(buckets: Bucket[], interval: Interval): Bucket[] 
     else groups.set(key, { ...bucket });
   }
   return [...groups.values()];
-}
-export function sumMetric(events: EventRecord[], metric: 'acres' | 'customers') {
-  const values = events.map(e => metric === 'acres' ? e.acres : asNumber(e.properties.customers_deenergized));
-  return { value: !values.length || values.some(v => v !== null) ? values.reduce<number>((sum, v) => sum + (v ?? 0), 0) : null, missing: values.filter(v => v === null).length };
 }
 export type Boundary = Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, Record<string, unknown>>;

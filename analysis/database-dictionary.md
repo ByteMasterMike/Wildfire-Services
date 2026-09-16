@@ -8,7 +8,7 @@
 - 远端可视化服务的 OpenAPI 当前只有 health、map-layer、time-series、utility-territory、event-detail；尝试 `/api/data-query/openapi.json` 返回 404。当前工作环境未发现数据库直连配置。
 - 已实际读取六类 event-detail，非几何属性字段与下列六张表的声明一致：circuits、epss_outages、psps_events、cpuc_ignitions、calfire_incidents、us_ignitions。API 将 geom 单独返回为 geometry。API 投影一致仍不能证明远端没有额外隐藏字段或其他表。
 - 要获得远端的最终完整目录，请在数据库端执行 [只读核对 SQL](database_inventory_readonly.sql)。它会先列出非系统关系，再导出 wildfire 的全部列及 cause 分布。尚未在远端执行这份 SQL。
-- 本次未修改网站、加载器或模型，也没有运行拟合。
+- 2026-09-13 的这次数据库字段核对未修改网站、加载器或模型，也没有运行拟合；此处仅说明该核对工作的范围。
 
 ## 1. 全部业务表头
 

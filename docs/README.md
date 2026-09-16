@@ -35,10 +35,12 @@ the other assets, including the existing HDW files, are retained.
 ## Data and behavior
 
 - `website/src/api.ts` configures the remote visualization and agent URLs.
-- Map layers, event detail, and daily time-series buckets come from the deployed
-  visualization service. The browser collects every filtered page before
-  calculating record-based statistics or comparisons. EPSS circuit features are
-  expanded into their outage records for event counts.
+- Map layers, event detail, record tables and daily time-series buckets use the
+  visualization service. Grouped comparisons, summary metrics and regional series
+  use complete server aggregates from Data Query. EPSS aggregates count outages,
+  while map features represent circuits. The new Data Query endpoints and public
+  routing must be deployed before this frontend is published; configure
+  `VITE_DATA_QUERY_URL` at build time for the intended service.
 - Each panel has independent filters. Names, order and settings persist in the
   browser; conversation text and selected-event context do not.
 - Add panel groups the available views under Map, Time series, Comparison,

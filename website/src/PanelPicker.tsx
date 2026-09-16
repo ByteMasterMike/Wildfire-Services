@@ -12,7 +12,7 @@ export const PANELS = [
 ] as const;
 
 export type PanelId = typeof PANELS[number]["id"];
-export interface PanelInstance { id: number; type: PanelId; name?: string; settings: PanelSettings }
+export interface PanelInstance { id: number; type: PanelId; name?: string; nameIsCustom?: boolean; settings: PanelSettings }
 export function panelTitle(panel: PanelInstance) {
   return panel.name ?? `${PANELS.find(item => item.id === panel.type)!.name} ${panel.id}`;
 }

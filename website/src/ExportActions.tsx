@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePanel } from "./state"
+import { datasetCaveats } from './caveats.ts'
+import type { DatasetId } from './data.ts'
 import {
   csvText,
   downloadBlob,
@@ -10,10 +12,12 @@ import {
 } from "./exports.ts"
 
 export function ExportActions({
+  datasets,
   rows,
   svg,
   disabled = false,
 }: {
+  datasets: readonly DatasetId[]
   rows: () => ExportRow[] | Promise<ExportRow[]>
   svg?: () => string
   disabled?: boolean
@@ -45,7 +49,7 @@ export function ExportActions({
     try {
       const blob =
         type === "csv"
-          ? new Blob([csvText(await rows())], {
+          ? new Blob([csvText(await rows(), datasetCaveats(datasets))], {
               type: "text/csv;charset=utf-8",
             })
           : await svgPng(svg!())

@@ -1,26 +1,7 @@
-import { aggregateDaily, asText, type Bucket, type EventRecord, type Filters, type Interval } from './data.ts';
+import type { Bucket } from './data.ts';
 
 const DAY = 86400000;
 export interface RegionSeries { name: string; total: number; buckets: Bucket[] }
-export function regionalSeries(events: EventRecord[], filters: Filters, interval: Interval): RegionSeries[] {
-  const days: Bucket[] = [];
-  for (let time = Date.parse(filters.start); time <= Date.parse(filters.end); time += DAY) {
-    const date = new Date(time).toISOString().slice(0,10);
-    days.push({start: date, end: date, count: 0});
-  }
-  const groups = new Map<string, Map<string, number>>();
-  for (const event of events) {
-    if (event.date < filters.start || event.date > filters.end) continue;
-    const name = asText(event.properties.division)?.trim() || 'Not recorded';
-    if (!groups.has(name)) groups.set(name, new Map());
-    const counts = groups.get(name)!;
-    counts.set(event.date, (counts.get(event.date) ?? 0) + 1);
-  }
-  return [...groups].map(([name, counts]) => {
-    const buckets = aggregateDaily(days.map(day => ({...day, count: counts.get(day.start) ?? 0})), interval);
-    return { name, buckets, total: buckets.reduce((sum, bucket) => sum + bucket.count, 0) };
-  }).sort((a,b) => b.total - a.total || a.name.localeCompare(b.name));
-}
 
 export function seasonalYears(coverage: {start: string | null; end: string | null}, now = new Date()): number[] {
   if (!coverage.start || !coverage.end) return [];
