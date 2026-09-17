@@ -15,7 +15,7 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/panelViews.ts`, `src/PanelPicker.tsx` | Five categories and 13 implemented analysis presets |
 | `src/PanelWorkspace.tsx`, `src/Controls.tsx` | Panel layout, expansion, filters and common controls |
 | `src/api.ts`, `src/useRemote.ts` | Remote records, pagination, request state and streamed Ask responses |
-| `src/workspaceAggregates.ts` | Existing record-based aggregation by default; explicitly configured SQL aggregation |
+| `src/workspaceAggregates.ts` | Configured SQL aggregation; record-based mode when the Data Query URL is empty |
 | `src/agentContracts.ts`, `src/answerPanels.ts` | Agent wire contracts and the currently supported view adapters |
 | `src/agentTrace.ts`, `src/ToolTrace.tsx` | Streamed and final service/tool activity in a collapsed disclosure |
 | `src/PanelCaveats.tsx`, `src/caveats.ts` | Dataset notes in card headers and the shared CSV caveat catalog |
@@ -26,10 +26,9 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/RecordPanels.tsx` | Record tables and summary metrics |
 | `src/ExportActions.tsx`, `src/exports.ts` | CSV and chart PNG exports |
 
-Maps and records use the Visualization API. In production builds without a Data
-Query URL, grouped comparisons, summary metrics and regional time series retain
-the complete-record path and browser calculations. Setting `VITE_DATA_QUERY_URL` moves
-those three panel types to geometry-free Data Query aggregates. Calendar alignment
+Maps and records use the Visualization API. The development and production build
+profiles set `VITE_DATA_QUERY_URL`, so grouped comparisons, summary metrics and
+regional time series use geometry-free Data Query aggregates. Calendar alignment
 and seasonal profiles retain the existing daily time-series API. The browser does
 not call the Comparison API directly. Ask uses Agent and its downstream services.
 
@@ -46,11 +45,11 @@ npm run dev
 
 Development URL: `http://127.0.0.1:8771/`.
 
-The checked-in `.env.development` sets `VITE_DATA_QUERY_URL` to the verified
-read-only Data Query origin at `http://18.233.17.247:8000`, so the local HTTP
-development server uses PR #3's SQL aggregates. Override it in `.env.local` for
-another service; set `VITE_DATA_QUERY_URL=` explicitly to use browser aggregation.
-This development profile is not loaded by the production build.
+The checked-in `.env.development` and `.env.production` set `VITE_DATA_QUERY_URL`
+to `https://d3t70p3if3twy3.cloudfront.net/api/data-query`. Both profiles use PR #3's
+SQL aggregates. Override the URL in `.env.development.local` or
+`.env.production.local` for the corresponding mode, or in the build environment.
+Set `VITE_DATA_QUERY_URL=` explicitly to use browser aggregation.
 
 ```sh
 npm test
@@ -64,19 +63,17 @@ Preview the actual generated page using the command in the
 [Pages guide](../docs/README.md).
 
 The deployed API defaults remain in `src/api.ts`. To use local services, copy
-`website/.env.example` to `website/.env.local`, or set `VITE_VISUALIZATION_URL`,
+`website/.env.example` to `website/.env.development.local`, or set `VITE_VISUALIZATION_URL`,
 `VITE_AGENT_URL` and `VITE_DATA_QUERY_URL` in the build environment. Restart the development server or
 rebuild after changing them. These are public browser URLs; do not put secrets
 in `VITE_` variables. The repository-root `.env` configures Python services.
 Ordinary website preview does not require a local database or model runtime.
 
-Production builds leave `VITE_DATA_QUERY_URL` unset to use the existing record APIs.
-Verify an HTTPS Data Query route before setting this variable for production.
-The proxy must forward query strings and route to the service's unprefixed paths.
-On September 16, 2026, all three endpoints were verified against the HTTP origin
-with the frontend response validators and CORS enabled. The proposed CloudFront
-`/api/data-query` prefix still returned a static-server 404. Do not put the HTTP
-origin in an HTTPS site's build: browser mixed-content rules would block it.
+The production build uses the verified HTTPS Data Query route. After the
+CloudFront behavior and path rewrite were fixed, all three aggregate endpoints
+passed the frontend response validators, filter query and CORS checks through
+`/api/data-query`. The proxy forwards query strings and rewrites the prefix to
+the service's unprefixed paths.
 Source selection happens at build time: configured Data Query failures remain
 visible and never trigger a runtime switch back to browser calculations.
 

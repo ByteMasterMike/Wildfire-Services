@@ -26,7 +26,7 @@ flowchart LR
     Raw["Read-only source datasets"] --> Loaders["db/loaders"] --> DB
 ```
 
-Maps and record tables request complete filtered records from the Visualization API. Grouped comparisons, summary metrics and regional series use those records by default; an explicitly configured Data Query URL enables geometry-free SQL aggregates. Calendar alignment and seasonal averages use the existing daily time-series buckets. HDW playback loads the supplied static weather cubes. The Agent API can additionally route questions to the Data Query, Comparison and Risk services and returns structured views alongside its answer.
+Maps and record tables request complete filtered records from the Visualization API. Grouped comparisons, summary metrics and regional series use geometry-free SQL aggregates through the configured HTTPS Data Query endpoint. Calendar alignment and seasonal averages use the existing daily time-series buckets. HDW playback loads the supplied static weather cubes. The Agent API can additionally route questions to the Data Query, Comparison and Risk services and returns structured views alongside its answer.
 
 The default website connects to the deployed APIs configured in [`website/src/api.ts`](website/src/api.ts). Local services are useful for backend development but are not prerequisites for previewing the built website. The agent remains a routing prototype; the website currently renders only the view contracts it can reproduce faithfully.
 
@@ -117,7 +117,7 @@ The implemented views are a subset of the feature roadmap. Current rankings comp
 
 ### Connecting the website to local APIs
 
-Copy `website/.env.example` to `website/.env.local`, or set these public URLs
+Copy `website/.env.example` to `website/.env.development.local`, or set these public URLs
 in the frontend build environment:
 
 ```dotenv
@@ -127,21 +127,17 @@ VITE_DATA_QUERY_URL=http://127.0.0.1:8000
 ```
 
 Restart the development server or rebuild the website afterward. The checked-in
-development profile enables SQL aggregation at the verified HTTP Data Query origin;
-the production build does not load that profile. The repository-root `.env` configures Python
+development and production profiles enable SQL aggregation at
+`https://d3t70p3if3twy3.cloudfront.net/api/data-query`. The repository-root `.env` configures Python
 services. The older `frontend/assets/js/api-config.js` belongs to the separate local UI.
 
-**Aggregation rollout:** without `VITE_DATA_QUERY_URL`, comparison, summary and
-regional panels retain the deployed Visualization API's complete-record path and
-calculate their aggregates in the browser. To enable SQL aggregation, first deploy
-`/grouped-counts`, `/summary` and `/regional-series`, verify their public routing,
-CORS and warehouse totals, then set `VITE_DATA_QUERY_URL` and rebuild. A configured
-service failure remains visible; it does not switch to browser calculations.
-The HTTP origin now exposes PR #3's endpoints and passed frontend contract checks.
-The proposed CloudFront `/api/data-query` prefix still returned static-server 404s
-during verification. An HTTPS route is required before enabling SQL in the production
-site's build; the HTTP origin is configured only for local development. See the
-[API guide](services/data_query/README.md).
+**Aggregation rollout:** `/grouped-counts`, `/summary` and `/regional-series` are
+enabled in both build profiles. Their CloudFront routing, query parameters, CORS
+and response contracts were verified against the live HTTPS service after the
+production routing fix. A configured service failure remains visible; it does not
+switch to browser calculations. Set `VITE_DATA_QUERY_URL=` in the build environment
+to explicitly use the Visualization API's complete-record aggregation path instead.
+See the [API guide](services/data_query/README.md).
 
 ## Local backend setup
 

@@ -34,17 +34,14 @@ the other assets, including the existing HDW files, are retained.
 
 ## Data and behavior
 
-- `website/src/api.ts` configures the remote visualization and agent URLs.
+- `website/src/api.ts` configures the remote visualization, agent and Data Query URLs.
 - Map layers, event detail, record tables and daily time-series buckets use the
   visualization service. Grouped comparisons, summary metrics and regional series
-  default to the existing complete-record path and browser calculations. EPSS
-  aggregates count outages, while map features represent circuits. Setting
-  `VITE_DATA_QUERY_URL` at build time explicitly enables server aggregation; deploy
-  and verify those endpoints before enabling it. Configured-service failures do
-  not switch data sources at runtime.
-- The Vite development profile uses the verified HTTP Data Query origin. It is
-  separate from this production build, which needs a working HTTPS route before
-  SQL aggregation can be enabled on Pages.
+  use Data Query SQL aggregates. EPSS aggregates count outages, while map features
+  represent circuits. Both Vite build profiles set `VITE_DATA_QUERY_URL` to the
+  verified HTTPS route at `https://d3t70p3if3twy3.cloudfront.net/api/data-query`.
+  Configured-service failures do not switch data sources at runtime. An explicit
+  empty URL selects the complete-record path and browser calculations at build time.
 - Unsupported filter controls/options show a short reason underneath. Card header
   information controls share dataset definitions with CSV exports. Ask comparison
   and spatial-context views show a small pending-support notice while retaining
