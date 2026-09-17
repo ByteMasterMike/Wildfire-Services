@@ -15,6 +15,7 @@ export function panelsFromAnswer(answer: AgentAnswer): AnswerPanel[] {
       panels.push({type: 'stat_card', name: String(p.label), settings: {answerStat: {
         value: p.value, label: String(p.label), scope: String(p.scope), period: String(p.period),
         unit: typeof p.unit === 'string' ? p.unit : '',
+        sourceDataset: typeof p.source_dataset === 'string' ? p.source_dataset : '',
       }}});
       continue;
     }
@@ -36,4 +37,12 @@ export function panelsFromAnswer(answer: AgentAnswer): AnswerPanel[] {
     panels.push({type: view.type as PanelId, name: `${dataset.name} · ${start.slice(0, 4)}`, settings});
   }
   return panels;
+}
+
+export function unsupportedViewNotice(answer: AgentAnswer): string | null {
+  const types = new Set((answer.views ?? []).map(view => view.type));
+  const names = [types.has('comparison') ? 'comparison' : '', types.has('spatial_context') ? 'spatial context' : ''].filter(Boolean);
+  if (!names.length) return null;
+  const label = names.join(' and ');
+  return `${label[0].toUpperCase()}${label.slice(1)} ${names.length === 1 ? 'view is' : 'views are'} not supported here yet.`;
 }

@@ -4,8 +4,9 @@ import { PanelContext, type PanelSettings } from './state';
 import { TimeSeries, Comparison } from './AnalysisCharts';
 import { EventMap } from './EventMap';
 import { RecordTable, StatCard } from './RecordPanels';
-import { currentView, PANEL_VIEWS, viewSettings } from './panelViews.ts';
+import { currentView, panelDatasets, PANEL_VIEWS, viewSettings } from './panelViews.ts';
 import { usePanelDrag } from './usePanelDrag.ts';
+import { PanelCaveats } from './PanelCaveats';
 
 const CONTENT: Record<PanelId, () => React.JSX.Element> = { map: EventMap, time_series: TimeSeries, comparison: Comparison, record_table: RecordTable, stat_card: StatCard };
 function PanelTitle({ panel, onRename }: { panel: PanelInstance; onRename: (id: number, name: string) => void }) {
@@ -74,6 +75,7 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
     <header className={`panel-header${expanded ? '' : ' is-draggable'}`} onPointerDown={event => { if (!expanded) drag.start(event, panel.id); }} onClickCapture={drag.suppressDragClick}>
       {!expanded && <svg className="panel-drag-grip" width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1"/><circle cx="8" cy="3" r="1"/><circle cx="2" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="2" cy="13" r="1"/><circle cx="8" cy="13" r="1"/></svg>}
       <PanelTitle panel={panel} onRename={onRename} /><div className="panel-actions">
+      <PanelCaveats datasets={panelDatasets(panel.type, panel.settings)} title={panelTitle(panel)}/>
       {PANEL_VIEWS.filter(view => view.type === panel.type).length > 1 && <button className="panel-expand" aria-label={`Change view for ${panelTitle(panel)}`} title="Change view" onClick={() => setChoosingView(true)}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></svg>
       </button>}

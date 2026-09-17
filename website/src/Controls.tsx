@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { COUNTIES, DATASETS, UTILITIES, configFor, type DatasetId, type Filters } from './data.ts';
+import { COUNTIES, DATASETS, UTILITIES, configFor, filterSupport, type DatasetId, type Filters } from './data.ts';
 import { getCoverage } from './api.ts';
 import { useRemote } from './useRemote';
 
@@ -11,17 +11,19 @@ export function YearOptions({available, selected, onChange}: {available: number[
   return <div className="year-options">{available.map(year => <label key={year}><input type="checkbox" checked={selected.includes(year)} disabled={!selected.includes(year) && selected.length >= 5}
     onChange={() => onChange(selected.includes(year) ? selected.filter(value => value !== year) : [...selected, year])}/>{year}</label>)}</div>;
 }
-export function ChartFilters({ filters, onChange, dataset, years, yearSelection }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; years?: number[]; yearSelection?: YearSelection }) {
+export function ChartFilters({ filters, onChange, dataset, datasets, years, yearSelection }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; datasets?: readonly DatasetId[]; years?: number[]; yearSelection?: YearSelection }) {
   const [open, setOpen] = useState(false);
   const summary = years ? yearSelection ? `${years.length} ${years.length === 1 ? 'year' : 'years'}` : years.join(' / ') : `${filters.start} – ${filters.end}`;
   return <div className="chart-filter-drawer">
     <button className="filter-trigger" aria-label="Filters" aria-haspopup="dialog" onClick={() => setOpen(true)}><span>Filters</span><span className="filter-summary">{summary}{filters.county && ` · ${filters.county}`}{filters.utility && ` · ${filters.utility}`}</span></button>
-    {open && <FilterDialog filters={filters} onChange={onChange} dataset={dataset} years={years} yearSelection={yearSelection} onClose={() => setOpen(false)} />}
+    {open && <FilterDialog filters={filters} onChange={onChange} dataset={dataset} datasets={datasets} years={years} yearSelection={yearSelection} onClose={() => setOpen(false)} />}
   </div>;
 }
-function FilterDialog({ filters, onChange, dataset, years, yearSelection, onClose }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; years?: number[]; yearSelection?: YearSelection; onClose: () => void }) {
+function FilterDialog({ filters, onChange, dataset, datasets, years, yearSelection, onClose }: { filters: Filters; onChange: (filters: Filters) => void; dataset?: DatasetId; datasets?: readonly DatasetId[]; years?: number[]; yearSelection?: YearSelection; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useId();
+  const support = filterSupport(dataset ? [dataset] : datasets ?? []);
+  const countyNote = `${title}-county-note`, utilityNote = `${title}-utility-note`;
   useEffect(() => {
     const element = dialog.current!;
     const root = document.documentElement; const previousOverflow = root.style.overflow;
@@ -35,8 +37,10 @@ function FilterDialog({ filters, onChange, dataset, years, yearSelection, onClos
     <div className="analysis-filters">
       {!years && <><label>From<input aria-label="Start date" type="date" value={filters.start} onChange={e => onChange({ ...filters, start: e.target.value })} /></label>
       <label>To<input aria-label="End date" type="date" value={filters.end} onChange={e => onChange({ ...filters, end: e.target.value })} /></label></>}
-      <label>County<select aria-label="County" value={filters.county} onChange={e => onChange({ ...filters, county: e.target.value })}><option value="">All counties</option>{COUNTIES.map(c => <option key={c}>{c}</option>)}</select></label>
-      <label>Utility<select aria-label="Utility" value={filters.utility} onChange={e => onChange({ ...filters, utility: e.target.value })}><option value="">All utilities</option>{UTILITIES.map(u => <option key={u}>{u}</option>)}</select></label>
+      <label>County<select aria-label="County" aria-describedby={!support.county ? countyNote : undefined} disabled={!support.county && !filters.county} value={filters.county} onChange={e => onChange({ ...filters, county: e.target.value })}><option value="">All counties</option>{COUNTIES.map(c => <option key={c} disabled={!support.county}>{c}</option>)}</select>
+        {!support.county && <small id={countyNote} className="filter-reason">Not available for this dataset</small>}</label>
+      <label>Utility<select aria-label="Utility" aria-describedby={support.utility !== 'all' ? utilityNote : undefined} disabled={support.utility === 'none' && !filters.utility} value={filters.utility} onChange={e => onChange({ ...filters, utility: e.target.value })}><option value="">All utilities</option>{UTILITIES.map(u => <option key={u} disabled={support.utility === 'none' || (support.utility === 'pge' && u !== 'PG&E')}>{u}</option>)}</select>
+        {support.utility !== 'all' && <small id={utilityNote} className="filter-reason">{support.utility === 'pge' ? 'PG&E only' : 'Not available for this dataset'}</small>}</label>
     </div>
     {dataset && <Coverage dataset={dataset} />}
     <button className="quiet-button" onClick={onClose}>Done</button>

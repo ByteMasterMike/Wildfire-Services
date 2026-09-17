@@ -126,8 +126,9 @@ VITE_AGENT_URL=http://127.0.0.1:8004
 VITE_DATA_QUERY_URL=http://127.0.0.1:8000
 ```
 
-Restart the development server or rebuild the website afterward. Without overrides,
-the existing deployed URLs are used. The repository-root `.env` configures Python
+Restart the development server or rebuild the website afterward. The checked-in
+development profile enables SQL aggregation at the verified HTTP Data Query origin;
+the production build does not load that profile. The repository-root `.env` configures Python
 services. The older `frontend/assets/js/api-config.js` belongs to the separate local UI.
 
 **Aggregation rollout:** without `VITE_DATA_QUERY_URL`, comparison, summary and
@@ -136,9 +137,11 @@ calculate their aggregates in the browser. To enable SQL aggregation, first depl
 `/grouped-counts`, `/summary` and `/regional-series`, verify their public routing,
 CORS and warehouse totals, then set `VITE_DATA_QUERY_URL` and rebuild. A configured
 service failure remains visible; it does not switch to browser calculations.
-The proposed CloudFront `/api/data-query` prefix returned static-server 404s during
-verification, and the existing origin did not expose these new endpoints. Do not
-enable that URL until deployment is verified. See the [API guide](services/data_query/README.md).
+The HTTP origin now exposes PR #3's endpoints and passed frontend contract checks.
+The proposed CloudFront `/api/data-query` prefix still returned static-server 404s
+during verification. An HTTPS route is required before enabling SQL in the production
+site's build; the HTTP origin is configured only for local development. See the
+[API guide](services/data_query/README.md).
 
 ## Local backend setup
 

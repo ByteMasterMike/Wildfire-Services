@@ -31,6 +31,19 @@ export const utilityLabel = (code: unknown) => typeof code === 'string' ? ({ PGE
 export const asText = (value: unknown): string | null => value === null || value === undefined || value === '' ? null : String(value);
 export const asNumber = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) ? value : null;
 
+export function filterSupport(datasets: readonly DatasetId[]) {
+  return {
+    county: !datasets.some(dataset => dataset === 'psps' || dataset === 'us_ignitions'),
+    utility: datasets.includes('us_ignitions') ? 'none' as const : datasets.includes('epss') ? 'pge' as const : 'all' as const,
+  };
+}
+
+export function supportedFilters(filters: Filters, datasets: readonly DatasetId[]): Filters {
+  const support = filterSupport(datasets);
+  return {...filters, county: support.county ? filters.county : '',
+    utility: support.utility === 'none' || (support.utility === 'pge' && filters.utility !== 'PG&E') ? '' : filters.utility};
+}
+
 export function filterError(filters: Filters): string | null {
   for (const value of [filters.start, filters.end]) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value) return 'Choose a valid start and end date.';

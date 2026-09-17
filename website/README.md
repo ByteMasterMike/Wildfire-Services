@@ -18,6 +18,7 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/workspaceAggregates.ts` | Existing record-based aggregation by default; explicitly configured SQL aggregation |
 | `src/agentContracts.ts`, `src/answerPanels.ts` | Agent wire contracts and the currently supported view adapters |
 | `src/agentTrace.ts`, `src/ToolTrace.tsx` | Streamed and final service/tool activity in a collapsed disclosure |
+| `src/PanelCaveats.tsx`, `src/caveats.ts` | Dataset notes in card headers and the shared CSV caveat catalog |
 | `src/EventMap.tsx`, `src/MapEventPreview.tsx`, `src/spatial.ts` | Leaflet maps, event bubbles and location lookups |
 | `src/HdwPlayer.tsx`, `src/weather.ts` | Yearly static weather cubes and daily playback |
 | `src/AnalysisCharts.tsx`, `src/YearComparison.tsx`, `src/RegionalSeries.tsx`, `src/SeasonalSeries.tsx` | Grouped and temporal visualizations |
@@ -25,9 +26,9 @@ setup, warehouse prerequisites and historical model limitations.
 | `src/RecordPanels.tsx` | Record tables and summary metrics |
 | `src/ExportActions.tsx`, `src/exports.ts` | CSV and chart PNG exports |
 
-Maps and records use the Visualization API. By default, grouped comparisons,
-summary metrics and regional time series use its complete-record path and retain
-the existing browser calculations. Setting `VITE_DATA_QUERY_URL` explicitly moves
+Maps and records use the Visualization API. In production builds without a Data
+Query URL, grouped comparisons, summary metrics and regional time series retain
+the complete-record path and browser calculations. Setting `VITE_DATA_QUERY_URL` moves
 those three panel types to geometry-free Data Query aggregates. Calendar alignment
 and seasonal profiles retain the existing daily time-series API. The browser does
 not call the Comparison API directly. Ask uses Agent and its downstream services.
@@ -44,6 +45,12 @@ npm run dev
 ```
 
 Development URL: `http://127.0.0.1:8771/`.
+
+The checked-in `.env.development` sets `VITE_DATA_QUERY_URL` to the verified
+read-only Data Query origin at `http://18.233.17.247:8000`, so the local HTTP
+development server uses PR #3's SQL aggregates. Override it in `.env.local` for
+another service; set `VITE_DATA_QUERY_URL=` explicitly to use browser aggregation.
+This development profile is not loaded by the production build.
 
 ```sh
 npm test
@@ -63,12 +70,13 @@ rebuild after changing them. These are public browser URLs; do not put secrets
 in `VITE_` variables. The repository-root `.env` configures Python services.
 Ordinary website preview does not require a local database or model runtime.
 
-Leave `VITE_DATA_QUERY_URL` unset to use the currently deployed record APIs.
-Deploy and verify the Data Query aggregate endpoints before setting this variable.
+Production builds leave `VITE_DATA_QUERY_URL` unset to use the existing record APIs.
+Verify an HTTPS Data Query route before setting this variable for production.
 The proxy must forward query strings and route to the service's unprefixed paths.
-The proposed public `/api/data-query` prefix returned static-server 404s on
-September 16, 2026; the origin's OpenAPI also lacked the three new aggregate routes.
-Local SQL tests do not establish that the production route has been deployed.
+On September 16, 2026, all three endpoints were verified against the HTTP origin
+with the frontend response validators and CORS enabled. The proposed CloudFront
+`/api/data-query` prefix still returned a static-server 404. Do not put the HTTP
+origin in an HTTPS site's build: browser mixed-content rules would block it.
 Source selection happens at build time: configured Data Query failures remain
 visible and never trigger a runtime switch back to browser calculations.
 
@@ -82,9 +90,13 @@ utility and cause views. Records and summary metrics each have one entry.
 Only implemented views appear.
 
 Use the header's Change view action to switch within a panel category. It retains
-the panel's position, custom name, date/geographic filters and expansion state.
-Automatic names track the current view. Unavailable filter combinations remain
-explicit rather than silently changing the selected region or utility. The view
+the panel's position, custom name, dates, supported filters and expansion state.
+Changing source clears only filters that the new dataset cannot support.
+Unavailable controls/options are disabled with a short reason underneath, such
+as `PG&E only`. A mixed trend containing EPSS also restricts utility selection;
+EPSS cannot be enabled while an incompatible utility is selected. Cause breakdown
+disables datasets without cause fields. Request validation remains in place.
+Automatic names track the current view. The view
 catalog is in `src/panelViews.ts`; future analyses can join their existing category.
 Trend modes and comparison grouping are selected here instead of separate controls
 in the chart body. Existing saved panels continue to load without a migration.
@@ -160,7 +172,8 @@ It can append the supported harness-planned views; it does not execute render
 instructions from model prose. A four-minute timeout or Cancel leaves the data
 panels usable. Generated scalar answers are not saved across page refreshes.
 Multiple-dataset map specs and advanced comparison/spatial specs are not yet
-ported; their answer text remains available.
+ported; their answer text remains available. Comparison and spatial-context
+responses include a small `not supported here yet` notice in the conversation.
 
 `src/agentContracts.ts` defines all six existing `ComponentSpec` types, including
 their parameters, evidence IDs and artifact references. The complete answer,
@@ -206,6 +219,11 @@ year choices into independent state.
 
 CPUC and CAL FIRE CSV exports prepend quoted `# Note:` rows with the dataset
 definitions from `shared/dataset_caveats.json`, also used by Agent qualifications.
+The same `datasetCaveats()` function supplies a collapsed information control in
+applicable card headers. Its notes follow the active datasets; agent scalar cards
+use their cited `source_dataset`, so a model-risk card does not inherit CPUC notes.
+The disclosure overlays the card content without changing panel dimensions and
+closes on Escape, outside interaction or a dataset change.
 Readers importing these CSVs should skip those note rows before the column header.
 Missing values remain empty fields, distinct from numeric zero.
 

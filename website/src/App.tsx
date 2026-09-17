@@ -7,7 +7,7 @@ import { EventDetail } from './RecordPanels';
 import { askAgent, type AgentAnswer, type AgentStreamEvent } from './api.ts';
 import { ToolTrace } from './ToolTrace';
 import { DATASETS, type EventRecord } from './data.ts';
-import { panelsFromAnswer } from './answerPanels.ts';
+import { panelsFromAnswer, unsupportedViewNotice } from './answerPanels.ts';
 import { updatePanelSettings, viewSettings, type PanelView } from './panelViews.ts';
 import { movePanel } from './panelOrder.ts';
 
@@ -35,6 +35,10 @@ function initialPanels(): PanelInstance[] {
 }
 function Markdown({ text }: { text: string }) {
   return <>{text.split('\n').map((line, index) => <p key={index} className={line ? '' : 'paragraph-gap'}>{line.split(/(\*\*[^*]+\*\*)/g).map((part, i) => part.startsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : part)}</p>)}</>;
+}
+function AnswerViewNotice({answer}: {answer?: AgentAnswer}) {
+  const notice = answer ? unsupportedViewNotice(answer) : null;
+  return notice ? <p className="answer-view-notice" role="status">{notice}</p> : null;
 }
 export default function App() {
   const [panels, setPanels] = useState<PanelInstance[]>(initialPanels);
@@ -107,7 +111,7 @@ export default function App() {
       <div className="site-brand">Wildfire <span>Analysis workspace</span></div>
       <section id="workspace-top" className="workspace-intro" aria-label="Ask and choose panels">
         <div ref={stageRef} className="conversation-stage">
-          {messages.length > 0 && <div ref={chatRef} className="chat-messages" aria-label="Conversation" aria-live="polite">{messages.map(message => <div key={message.id} className={`chat-message ${message.role} ${message.error ? 'message-error' : ''}`}><Markdown text={message.content} />{message.role === 'assistant' && <ToolTrace answer={message.response} events={message.events ?? []} finished />}</div>)}{busy && <div><p className="panel-note">{progress}</p><ToolTrace events={streamEvents} finished={false} /></div>}</div>}
+          {messages.length > 0 && <div ref={chatRef} className="chat-messages" aria-label="Conversation" aria-live="polite">{messages.map(message => <div key={message.id} className={`chat-message ${message.role} ${message.error ? 'message-error' : ''}`}><Markdown text={message.content} />{message.role === 'assistant' && <><AnswerViewNotice answer={message.response}/><ToolTrace answer={message.response} events={message.events ?? []} finished /></>}</div>)}{busy && <div><p className="panel-note">{progress}</p><ToolTrace events={streamEvents} finished={false} /></div>}</div>}
           <form onSubmit={submit} className="search-form"><input aria-label="Ask a question" value={query} onChange={e => setQuery(e.target.value)} placeholder="What do you want to know today~" />
             {busy ? <button type="button" aria-label="Cancel request" onClick={() => controller.current?.abort(new Error('Request cancelled.'))}>■</button> : query.trim() && <button type="submit" aria-label="Send message">↑</button>}
           </form>

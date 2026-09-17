@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CHART_DATASETS as DATASETS, filterError, aggregateDaily, unavailableReason, datasetNote,
   type DatasetId, type Interval } from './data.ts';
 import { getDailySeries } from './api.ts';
@@ -25,6 +25,8 @@ function TimelineSeries() {
   const setFilters = (filters: typeof settings.filters) => update({ filters });
   const setInterval = (interval: Interval) => update({ interval });
   const [hovered, setHovered] = useState<number | null>(null);
+  const epssNote = useId();
+  const epssBlocked = !selected.includes('epss') && Boolean(unavailableReason('epss', filters));
   const plot = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(540);
   const [height, setHeight] = useState(246);
@@ -60,14 +62,16 @@ function TimelineSeries() {
     <div className="analysis-heading series-toolbar">
     <div className="dataset-switches" role="group" aria-label="Visible datasets">
       {DATASETS.map(dataset => <button key={dataset.id} type="button" role="checkbox" aria-checked={selected.includes(dataset.id)} aria-label={dataset.name}
+        disabled={dataset.id === 'epss' && epssBlocked} aria-describedby={dataset.id === 'epss' && epssBlocked ? epssNote : undefined}
         title={dataset.name} onClick={() => update({ datasets: selected.includes(dataset.id) ? selected.filter(id => id !== dataset.id) : [...selected, dataset.id] })}>
         <span className="dataset-swatch" style={{ background: dataset.color }} />{dataset.name}
         <span aria-hidden="true" className="dataset-check">{selected.includes(dataset.id) ? "✓" : "−"}</span>
       </button>)}
+      {epssBlocked && <small id={epssNote} className="filter-reason">EPSS: PG&E only</small>}
     </div>
     <label>Interval<select aria-label="Time interval" value={interval} onChange={event => { setInterval(event.target.value as Interval); setHovered(null); }}><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option></select></label>
     </div>
-    <ChartFilters filters={filters} onChange={next => { setFilters(next); setHovered(null); }} />
+    <ChartFilters filters={filters} datasets={selected} onChange={next => { setFilters(next); setHovered(null); }} />
     <div ref={plot} className="series-plot">
       {empty ? <LoadState loading={remote.loading} error={remote.loading ? null : empty} retry={remote.error ? remote.retry : undefined} /> : <svg viewBox={`0 0 ${width} ${height}`} role="img" tabIndex={0}
         aria-label={`${interval} event counts. Use left and right arrows to inspect periods.`}
@@ -118,7 +122,8 @@ export function Comparison() {
       svg={()=>barSvg(title,`${config.name}; ${filters.start} – ${filters.end}; ${filters.utility||'All utilities'}; ${filters.county||'All counties'}; ${groupBy}; ${measure==='share'?'percent of selected records':'event count'}; ${total} records. ${datasetNote(dataset)}`,rows,total,config.color,measure==='share')} />
     <div className="comparison-toolbar">
     <div className="comparison-context">
-      <label>Dataset<select aria-label="Comparison dataset" value={dataset} onChange={event => setDataset(event.target.value as DatasetId)}>{DATASETS.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label>Dataset<select aria-label="Comparison dataset" value={dataset} onChange={event => setDataset(event.target.value as DatasetId)}>{DATASETS.map(item => <option key={item.id} value={item.id} disabled={groupBy === 'cause' && !item.hasCause}>{item.name}</option>)}</select>
+        {groupBy === 'cause' && <small className="filter-reason">Cause data: EPSS only</small>}</label>
       <span>By {groupBy}</span>
     </div>
     <div className="measure-switch" role="group" aria-label="Bar values"><button aria-pressed={measure === "count"} onClick={() => setMeasure("count")}>Count</button><button aria-pressed={measure === "share"} onClick={() => setMeasure("share")}>Share %</button></div>

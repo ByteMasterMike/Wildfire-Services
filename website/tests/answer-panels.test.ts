@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { panelsFromAnswer } from '../src/answerPanels.ts';
+import { panelsFromAnswer, unsupportedViewNotice } from '../src/answerPanels.ts';
 import type { AgentAnswer } from '../src/api.ts';
 
 const answer = (views: NonNullable<AgentAnswer['views']>): AgentAnswer => ({status: 'ok', answer_text: 'Recorded results.', views});
@@ -35,7 +35,8 @@ test('stat specs retain source values, including zero counts and risk probabilit
     {type: 'stat_card', params: {kind: 'risk', source_dataset: 'cnhpp', value: 0.12, label: 'P(≥1 ignition)', scope: 'cell 20', period: '2024-06-01', unit: 'risk'}},
   ]));
   assert.equal(result[0].settings.answerStat?.value, 0);
-  assert.deepEqual(result[1].settings.answerStat, {value: 0.12, label: 'P(≥1 ignition)', scope: 'cell 20', period: '2024-06-01', unit: 'risk'});
+  assert.equal(result[0].settings.answerStat?.sourceDataset, 'cpuc_ignitions');
+  assert.deepEqual(result[1].settings.answerStat, {value: 0.12, label: 'P(≥1 ignition)', scope: 'cell 20', period: '2024-06-01', unit: 'risk', sourceDataset: 'cnhpp'});
 });
 
 test('unrepresentable incident filters and missing dates never become a different query', () => {
@@ -55,4 +56,20 @@ test('answer adaptation does not mutate the service payload or share panel setti
   assert.deepEqual(response, before);
   assert.deepEqual(panelsFromAnswer(response)[0].settings.overlays, ['hftd']);
   assert.equal(panelsFromAnswer(response)[0].settings.filters?.county, '');
+});
+
+test('unsupported Ask views receive a visible, deduplicated notice while supported views remain usable', () => {
+  const response = answer([
+    {type: 'comparison', params: {kind: 'utilities', metric: 'count'}},
+    {type: 'comparison', params: {kind: 'ranking', metric: 'count'}},
+    {type: 'spatial_context', params: {lat: 38, lon: -122}},
+    {type: 'record_table', params: {dataset: 'cpuc_ignitions', year: 2024}},
+  ]);
+  const original = structuredClone(response);
+  assert.equal(unsupportedViewNotice(response), 'Comparison and spatial context views are not supported here yet.');
+  assert.equal(panelsFromAnswer(response).length, 1);
+  assert.deepEqual(response, original);
+  assert.equal(unsupportedViewNotice(answer([{type: 'spatial_context', params: {lat: 38, lon: -122}}])), 'Spatial context view is not supported here yet.');
+  assert.equal(unsupportedViewNotice(answer([])), null);
+  assert.equal(unsupportedViewNotice({status: 'error', answer_text: 'Unavailable'}), null);
 });

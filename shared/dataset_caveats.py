@@ -1,4 +1,4 @@
-"""Dataset definitions shared by agent qualifications and browser exports."""
+"""Dataset definitions shared by agent qualifications, cards and browser exports."""
 
 import json
 from pathlib import Path

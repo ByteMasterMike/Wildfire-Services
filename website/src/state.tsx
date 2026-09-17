@@ -8,7 +8,7 @@ export interface PanelSettings {
   datasets: DatasetId[]; overlays: string[];
   weatherYear?: number; weatherDate?: string;
   seriesMode?: 'timeline' | 'yearly' | 'regional' | 'seasonal'; comparisonYears?: number[]; seasonYears?: number[];
-  answerStat?: { value: number; label: string; scope: string; period: string; unit: string };
+  answerStat?: { value: number; label: string; scope: string; period: string; unit: string; sourceDataset?: string };
 }
 export function newPanel(id: number, type: PanelId): PanelInstance {
   return { id, type, settings: {

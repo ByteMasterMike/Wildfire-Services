@@ -1,5 +1,6 @@
 import type { PanelId, PanelInstance } from './PanelPicker';
 import type { PanelSettings } from './state';
+import { CHART_DATASETS, DATASETS, supportedFilters, type DatasetId } from './data.ts';
 
 export interface PanelView {
   id: string;
@@ -38,7 +39,24 @@ export function currentView(type: PanelId, settings: PanelSettings): string {
 
 export function updatePanelSettings(panel: PanelInstance, patch: Partial<PanelSettings>): PanelInstance {
   const settings = { ...panel.settings, ...patch };
+  if (patch.dataset !== undefined || patch.datasets !== undefined || patch.seriesMode !== undefined) {
+    settings.filters = supportedFilters(settings.filters, panelDatasets(panel.type, settings));
+  }
   const automaticTitle = !panel.name || (!panel.nameIsCustom && PANEL_VIEWS.some(view => view.type === panel.type && view.title === panel.name));
   const name = automaticTitle ? PANEL_VIEWS.find(view => view.id === currentView(panel.type, settings))!.title : panel.name;
   return { ...panel, name, settings };
+}
+
+export function panelDatasets(type: PanelId, settings: PanelSettings): DatasetId[] {
+  if (type === 'stat_card' && settings.answerStat) {
+    const source = settings.answerStat.sourceDataset;
+    const dataset = DATASETS.find(item => item.id === source || item.api === source || item.query === source);
+    return dataset ? [dataset.id] : [];
+  }
+  if (type === 'time_series') {
+    if (settings.seriesMode === 'regional') return ['epss'];
+    if (!settings.seriesMode || settings.seriesMode === 'timeline') return [...settings.datasets];
+    return [CHART_DATASETS.some(dataset => dataset.id === settings.dataset) ? settings.dataset : 'cpuc'];
+  }
+  return [settings.dataset];
 }

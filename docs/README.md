@@ -42,6 +42,13 @@ the other assets, including the existing HDW files, are retained.
   `VITE_DATA_QUERY_URL` at build time explicitly enables server aggregation; deploy
   and verify those endpoints before enabling it. Configured-service failures do
   not switch data sources at runtime.
+- The Vite development profile uses the verified HTTP Data Query origin. It is
+  separate from this production build, which needs a working HTTPS route before
+  SQL aggregation can be enabled on Pages.
+- Unsupported filter controls/options show a short reason underneath. Card header
+  information controls share dataset definitions with CSV exports. Ask comparison
+  and spatial-context views show a small pending-support notice while retaining
+  the answer and full response contract.
 - Each panel has independent filters. Names, order and settings persist in the
   browser; conversation text and selected-event context do not.
 - Add panel groups the available views under Map, Time series, Comparison,
