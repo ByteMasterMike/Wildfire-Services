@@ -27,13 +27,13 @@ export function TemporalPlot({ values, labels, ceiling, compact = false, unit, o
       onMouseLeave={()=>inspect(null)} onBlur={()=>inspect(null)}
       onKeyDown={event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();inspect(Math.max(0,Math.min(values.length-1,(active??0)+(event.key==='ArrowRight'?1:-1))));}}}>
       <text x={left} y={12}>{unit}</text>
-      {[0,ceiling/2,ceiling].map(value=><g key={value}><path d={`M${left} ${y(value)}H${right}`} stroke="#ffffff13"/><text x={left-7} y={y(value)+4} textAnchor="end">{value.toLocaleString(undefined,{maximumFractionDigits:1})}</text></g>)}
+      {[0,ceiling/2,ceiling].map(value=><g key={value}><path d={`M${left} ${y(value)}H${right}`} stroke="var(--chart-grid)"/><text x={left-7} y={y(value)+4} textAnchor="end">{value.toLocaleString(undefined,{maximumFractionDigits:1})}</text></g>)}
       {ticks.map(index=><text key={index} x={x(index)} y={size.height-7} textAnchor={index===0?'start':index===values.length-1?'end':'middle'}>{labels[index]}</text>)}
       {referenceLines.map(line=><g key={line.label} aria-label={line.label}><path d={pathFor(line.values)} stroke={line.color} strokeWidth="1.4" strokeDasharray="5 4" opacity="0.65" fill="none" strokeLinejoin="round"/>
         {line.values.map((value,index)=>value!==null&&(index===0||line.values[index-1]===null)&&(index===line.values.length-1||line.values[index+1]===null)&&<circle key={index} cx={x(index)} cy={y(value)} r="2.5" fill={line.color}/>)}</g>)}
       <path d={pathFor(values)} stroke="#b7a0f0" strokeWidth={compact?1.8:referenceLines.length?2.8:2} fill="none" strokeLinejoin="round"/>
       {values.map((value,index)=>value!==null&&(values.length<25||(index===0||values[index-1]===null)&&(index===values.length-1||values[index+1]===null))&&<circle key={index} cx={x(index)} cy={y(value)} r={compact?2:3} fill="#b7a0f0"/>)}
-      {active!==null&&active<values.length&&<g><path d={`M${x(active)} ${top}V${bottom}`} stroke="#ffffff55" strokeDasharray="3 3"/>{referenceLines.map(line=>line.values[active]!=null&&<circle key={line.label} cx={x(active)} cy={y(line.values[active]!)} r="3" fill={line.color}/>)}{values[active]!==null&&<circle cx={x(active)} cy={y(values[active]!)} r="4" fill="#b7a0f0"/>}</g>}
+      {active!==null&&active<values.length&&<g><path d={`M${x(active)} ${top}V${bottom}`} stroke="var(--chart-cursor)" strokeDasharray="3 3"/>{referenceLines.map(line=>line.values[active]!=null&&<circle key={line.label} cx={x(active)} cy={y(line.values[active]!)} r="3" fill={line.color}/>)}{values[active]!==null&&<circle cx={x(active)} cy={y(values[active]!)} r="4" fill="#b7a0f0"/>}</g>}
     </svg>
   </div>;
 }

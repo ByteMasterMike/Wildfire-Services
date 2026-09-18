@@ -10,6 +10,7 @@ import { DATASETS, type EventRecord } from './data.ts';
 import { panelsFromAnswer, unsupportedViewNotice } from './answerPanels.ts';
 import { updatePanelSettings, viewSettings, type PanelView } from './panelViews.ts';
 import { movePanel } from './panelOrder.ts';
+import { ThemeToggle } from './ThemeToggle.tsx';
 
 interface Message { id: string; role: 'user' | 'assistant'; content: string; error?: boolean; response?: AgentAnswer; events?: AgentStreamEvent[] }
 const STORAGE_KEY = 'wildfire-workspace-v1';
@@ -108,7 +109,10 @@ export default function App() {
   }
   return <SelectionContext.Provider value={{ inspect: setDetail }}>
     <main className={`demo-app ${panels.length ? 'has-panels' : ''} ${messages.length ? 'has-chat' : ''}`}>
-      <div className="site-brand">Wildfire <span>Analysis workspace</span></div>
+      <header className="site-header">
+        <div className="site-brand">Wildfire <span>Analysis workspace</span></div>
+        <ThemeToggle />
+      </header>
       <section id="workspace-top" className="workspace-intro" aria-label="Ask and choose panels">
         <div ref={stageRef} className="conversation-stage">
           {messages.length > 0 && <div ref={chatRef} className="chat-messages" aria-label="Conversation" aria-live="polite">{messages.map(message => <div key={message.id} className={`chat-message ${message.role} ${message.error ? 'message-error' : ''}`}><Markdown text={message.content} />{message.role === 'assistant' && <><AnswerViewNotice answer={message.response}/><ToolTrace answer={message.response} events={message.events ?? []} finished /></>}</div>)}{busy && <div><p className="panel-note">{progress}</p><ToolTrace events={streamEvents} finished={false} /></div>}</div>}

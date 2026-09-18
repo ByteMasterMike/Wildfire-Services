@@ -86,13 +86,13 @@ function TimelineSeries() {
           }
         }}>
         <text x={left} y="13">Events</text>
-        {[0, 1, 2, 3, 4].map(i => <g key={i}><path d={`M${left} ${y(ceiling * i / 4)}H${right}`} stroke="#ffffff12" /><text x={left - 9} y={y(ceiling * i / 4) + 4} textAnchor="end">{ceiling * i / 4}</text></g>)}
+        {[0, 1, 2, 3, 4].map(i => <g key={i}><path d={`M${left} ${y(ceiling * i / 4)}H${right}`} stroke="var(--chart-grid)" /><text x={left - 9} y={y(ceiling * i / 4) + 4} textAnchor="end">{ceiling * i / 4}</text></g>)}
         {tickIndices.map(index => <text key={index} x={x(index)} y={height - 11} textAnchor={index === 0 ? "start" : index === buckets.length - 1 ? "end" : "middle"}>{filters.start.slice(0, 4) === filters.end.slice(0, 4) ? buckets[index].start.slice(5) : buckets[index].start.slice(0, 7)}</text>)}
         {visible.map(dataset => <g key={dataset.id}>
           <polyline points={dataset.values.map((value, index) => `${x(index)},${y(value)}`).join(" ")} fill="none" stroke={dataset.color} strokeWidth="2" strokeLinejoin="round" />
           {dataset.values.length <= 24 && dataset.values.map((value, index) => <circle key={index} cx={x(index)} cy={y(value)} r="3" fill={dataset.color}><title>{dataset.name}: {buckets[index].start} – {buckets[index].end}: {value} events</title></circle>)}
         </g>)}
-        {activeIndex !== null && <g><path d={`M${x(activeIndex)} ${top}V${bottom}`} stroke="#ffffff45" strokeDasharray="3 4" />{visible.map(dataset => <circle key={dataset.id} cx={x(activeIndex)} cy={y(dataset.values[activeIndex])} r="4" fill={dataset.color} stroke="#222" strokeWidth="2" />)}</g>}
+        {activeIndex !== null && <g><path d={`M${x(activeIndex)} ${top}V${bottom}`} stroke="var(--chart-cursor)" strokeDasharray="3 4" />{visible.map(dataset => <circle key={dataset.id} cx={x(activeIndex)} cy={y(dataset.values[activeIndex])} r="4" fill={dataset.color} stroke="var(--plot-marker-stroke)" strokeWidth="2" />)}</g>}
       </svg>}
     </div>
     {!empty && <div className="series-readout" aria-live="polite"><span>{activeIndex === null ? "Selected period" : `${buckets[activeIndex].start} – ${buckets[activeIndex].end}`}</span><div>{visible.map(dataset => <span key={dataset.id} style={{ color: dataset.color }}>{dataset.name} <strong>{activeIndex === null ? dataset.total : dataset.values[activeIndex]}</strong></span>)}</div></div>}

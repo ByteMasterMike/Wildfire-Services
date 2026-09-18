@@ -6,10 +6,19 @@
     <meta name="theme-color" content="#1a1a1a" />
     <meta name="description" content="Explore wildfire and outage records in your own analysis workspace." />
     <title>Wildfire · Analysis workspace</title>
-    <script type="module" crossorigin src="./assets/workspace/index-oSoT8EuJ.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/workspace/index-CZA10lwq.css">
+    <script>
+      try {
+        if (localStorage.getItem('wildfire-workspace-theme') === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', '#f3f1ec');
+        }
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="./assets/workspace/index-DGrPeXsv.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/workspace/index-MAaC4I5A.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
   </body>
 </html>
