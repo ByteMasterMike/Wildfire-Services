@@ -32,7 +32,7 @@ export const PANEL_VIEWS: PanelView[] = [
 ];
 
 export function viewSettings(current: PanelSettings, view: PanelView): PanelSettings {
-  return structuredClone({ ...current, ...view.settings, answerStat: undefined, weatherDate: undefined, weatherYear: undefined, riskDate: undefined });
+  return structuredClone({ ...current, ...view.settings, answerStat: undefined, weatherDate: undefined, weatherYear: undefined, riskDate: undefined, mapView: undefined, playbackDate: undefined });
 }
 
 export function currentView(type: PanelId, settings: PanelSettings): string {
