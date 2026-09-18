@@ -38,6 +38,14 @@ test('risk surface view is a map hindcast, not an event overlay', () => {
   assert.equal(view.title, 'Modeled ignition risk surface');
 });
 
+test('residual map view joins the training assignment, not event overlays', () => {
+  const view = PANEL_VIEWS.find(view => view.id === 'residual-map')!;
+  const changed = viewSettings(settings, view);
+  assert.equal(changed.mapMode, 'residual');
+  assert.equal(currentView('map', changed), 'residual-map');
+  assert.equal(view.title, 'Model residual map');
+});
+
 test('current view follows actual settings including legacy panels without a preset id', () => {
   assert.equal(currentView('comparison',{...settings,groupBy:'cause'}),'cause-comparison');
   assert.equal(currentView('time_series',{...settings,seriesMode:'yearly'}),'annual-time');

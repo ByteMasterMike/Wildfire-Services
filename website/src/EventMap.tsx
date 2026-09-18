@@ -13,11 +13,12 @@ import { MapLegend, acresRadius } from './MapLegend';
 import { featuresOnDate } from './weather.ts';
 import { ExportActions } from './ExportActions';
 import { MapEventPreview, type EventPreview } from './MapEventPreview';
+import { ResidualMap } from './ResidualMap.tsx';
 import { RiskSurfaceMap } from './RiskSurfaceMap.tsx';
 
 export function EventMap() {
   const {settings} = usePanel();
-  return settings.mapMode === 'risk' ? <RiskSurfaceMap/> : <EventDataMap/>;
+  return settings.mapMode === 'risk' ? <RiskSurfaceMap/> : settings.mapMode === 'residual' ? <ResidualMap/> : <EventDataMap/>;
 }
 function EventDataMap() {
   const { settings, update, expanded } = usePanel();
