@@ -15,11 +15,13 @@ export interface GridSurfaceCell {
 export function GridSurfaceMap({
   cells,
   color,
+  fillOpacity,
   label,
   ariaLabel,
 }: {
   cells: readonly GridSurfaceCell[];
   color: (value: number) => string;
+  fillOpacity: (value: number) => number;
   label: (cell: GridSurfaceCell) => string;
   ariaLabel: string;
 }) {
@@ -48,15 +50,14 @@ export function GridSurfaceMap({
       L.rectangle([[cell.lat,cell.lon],[cell.lat+SPACING,cell.lon+SPACING]], {
         renderer,
         pane:'grid-surface',
-        color:'rgba(255,255,255,.28)',
-        weight:.35,
+        stroke:false,
         fillColor:color(cell.value),
-        fillOpacity:.72,
+        fillOpacity:fillOpacity(cell.value),
       }).bindTooltip(label(cell),{sticky:true}).addTo(group);
     }
     instance.fitBounds(L.latLngBounds(cells.map(cell=>[cell.lat,cell.lon] as [number,number])),{padding:[16,16],animate:false});
     return ()=>{instance.removeLayer(group);if(instance.hasLayer(renderer))instance.removeLayer(renderer);};
-  },[cells,color,label]);
+  },[cells,color,fillOpacity,label]);
   return <div className="map-stage"><div ref={host} className="leaflet-host" aria-label={ariaLabel}/>
     {tileError&&<div className="map-warning" role="status">Basemap unavailable; grid values are still shown.</div>}</div>;
 }
