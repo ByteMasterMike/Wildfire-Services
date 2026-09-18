@@ -30,7 +30,7 @@ function initialPanels(): PanelInstance[] {
       && (p.settings.statMode === undefined || ['summary','medical_exposure'].includes(p.settings.statMode))
       && (p.settings.weatherYear === undefined || Number.isInteger(p.settings.weatherYear))
       && (p.settings.weatherDate === undefined || typeof p.settings.weatherDate === 'string')
-      && (p.settings.seriesMode === undefined || ['timeline','yearly','regional','seasonal'].includes(p.settings.seriesMode))
+      && (p.settings.seriesMode === undefined || ['timeline','yearly','regional','seasonal','cumulative_acres'].includes(p.settings.seriesMode))
       && (p.settings.seasonYears === undefined || (Array.isArray(p.settings.seasonYears) && p.settings.seasonYears.every((year: unknown) => Number.isInteger(year) && Number(year) >= 1900 && Number(year) <= 2100)))
       && (p.settings.comparisonYears === undefined || (Array.isArray(p.settings.comparisonYears) && p.settings.comparisonYears.every((year: unknown) => Number.isInteger(year) && Number(year) >= 1900 && Number(year) <= 2100)))
       && !p.settings.answerStat) && new Set(saved.map(p => p.id)).size === saved.length) return saved;

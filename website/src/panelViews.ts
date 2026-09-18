@@ -21,6 +21,7 @@ export const PANEL_VIEWS: PanelView[] = [
   { id: 'annual-time', type: 'time_series', title: 'Year comparison', description: 'Compare years on the same calendar axis.', settings: { dataset: 'cpuc', seriesMode: 'yearly' } },
   { id: 'regional-time', type: 'time_series', title: 'Regional trends', description: 'Compare EPSS trends across PG&E divisions.', settings: { dataset: 'epss', seriesMode: 'regional' } },
   { id: 'seasonal-time', type: 'time_series', title: 'Seasonal profile', description: 'Average weekly events across selected years.', settings: { dataset: 'cpuc', seriesMode: 'seasonal' } },
+  { id: 'cumulative-acres', type: 'time_series', title: 'Cumulative acres burned within a season', description: 'Accumulate reported CAL FIRE acreage through the selected period.', settings: { dataset: 'calfire', seriesMode: 'cumulative_acres' } },
   { id: 'county-comparison', type: 'comparison', title: 'County ranking', description: 'Rank counties by recorded events.', settings: { dataset: 'cpuc', groupBy: 'county' } },
   { id: 'utility-comparison', type: 'comparison', title: 'Utility comparison', description: 'Compare recorded counts across utilities.', settings: { dataset: 'cpuc', groupBy: 'utility' } },
   { id: 'cause-comparison', type: 'comparison', title: 'Cause breakdown', description: 'Compare the recorded causes of EPSS outages.', settings: { dataset: 'epss', groupBy: 'cause' } },
@@ -37,7 +38,7 @@ export function currentView(type: PanelId, settings: PanelSettings): string {
   if (type === 'map' && settings.mapMode === 'risk') return 'risk-surface-map';
   if (type === 'map' && settings.mapMode === 'residual') return 'residual-map';
   if (type === 'map') return settings.overlays.includes('hdw') ? 'weather-map' : settings.dataset === 'epss' ? 'outages-map' : settings.dataset === 'psps' ? 'psps-map' : 'events-map';
-  if (type === 'time_series') return settings.seriesMode === 'regional' ? 'regional-time' : settings.seriesMode === 'seasonal' ? 'seasonal-time' : settings.seriesMode === 'yearly' ? 'annual-time' : 'events-time';
+  if (type === 'time_series') return settings.seriesMode === 'regional' ? 'regional-time' : settings.seriesMode === 'seasonal' ? 'seasonal-time' : settings.seriesMode === 'cumulative_acres' ? 'cumulative-acres' : settings.seriesMode === 'yearly' ? 'annual-time' : 'events-time';
   if (type === 'comparison') return `${settings.groupBy}-comparison`;
   if (type === 'record_table') return 'event-records';
   return settings.statMode === 'medical_exposure' ? 'medical-exposure' : 'summary-stats';

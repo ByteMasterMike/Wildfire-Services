@@ -12,11 +12,13 @@ import { RegionalSeries } from './RegionalSeries';
 import { SeasonalSeries } from './SeasonalSeries';
 import { ExportActions } from './ExportActions';
 import { lineSvg, barSvg, type ExportRow } from './exports.ts';
+import { CumulativeAcres } from './CumulativeAcres.tsx';
 
 export function TimeSeries() {
   const { settings } = usePanel();
   if (settings.seriesMode === 'regional') return <RegionalSeries />;
   if (settings.seriesMode === 'seasonal') return <SeasonalSeries />;
+  if (settings.seriesMode === 'cumulative_acres') return <CumulativeAcres />;
   return settings.seriesMode === 'yearly' ? <YearComparison /> : <TimelineSeries />;
 }
 function TimelineSeries() {

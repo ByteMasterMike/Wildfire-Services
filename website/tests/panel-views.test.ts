@@ -49,6 +49,7 @@ test('residual map view joins the training assignment, not event overlays', () =
 test('current view follows actual settings including legacy panels without a preset id', () => {
   assert.equal(currentView('comparison',{...settings,groupBy:'cause'}),'cause-comparison');
   assert.equal(currentView('time_series',{...settings,seriesMode:'yearly'}),'annual-time');
+  assert.equal(currentView('time_series',{...settings,seriesMode:'cumulative_acres'}),'cumulative-acres');
   assert.equal(currentView('map',{...settings,dataset:'psps'}),'psps-map');
   assert.equal(currentView('map',{...settings,dataset:'epss',overlays:['hdw']}),'weather-map');
   assert.equal(currentView('stat_card',{...settings,dataset:'epss',statMode:'medical_exposure'}),'medical-exposure');
