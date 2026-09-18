@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { clearDataCache, getGroupedCounts, getRegionalSeries, getSummary } from '../src/api.ts';
 import { DEFAULT_FILTERS } from '../src/data.ts';
+
+test('production build profile pins Data Query to the live CloudFront URL', () => {
+  const text = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../.env.production'), 'utf8');
+  const value = text.split(/\r?\n/).map(line => line.trim()).find(line => line.startsWith('VITE_DATA_QUERY_URL='))?.slice('VITE_DATA_QUERY_URL='.length);
+  assert.equal(value, 'https://d3t70p3if3twy3.cloudfront.net/api/data-query');
+});
 
 test('grouped counts fetch one geometry-free response and retain all categories', async t => {
   clearDataCache(); t.after(clearDataCache);

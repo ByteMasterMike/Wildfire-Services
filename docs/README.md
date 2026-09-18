@@ -1,9 +1,8 @@
 # Website / GitHub Pages
 
 `docs/index.html` and `docs/assets/workspace/` are the built website, generated
-from [`website/`](../website/README.md). The interface follows the independent
-`demo/` design: a conversation area and 13 analysis views in five panel categories.
-The website uses real remote records; `demo/` remains a separate design prototype.
+from [`website/`](../website/README.md). The interface is a conversation area
+and 13 analysis views in five panel categories, using real remote records.
 
 Start with the [root README](../README.md) for architecture, usage and local
 backend setup. This directory contains the static publication output; edit

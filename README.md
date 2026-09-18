@@ -38,9 +38,8 @@ website/                        # production React/TypeScript source and Node te
   src/api.ts                    # browser-facing API URLs, pagination and SSE client
   scripts/build.mjs             # Vite build into docs/; cleans temporary output
 docs/                           # built GitHub Pages entrypoint and static assets
-demo/                           # independent Figma-derived UI design reference
 frontend/                       # separate local Historical Map + Planning Tool
-analysis/                       # data dictionary, audits and read-only inventory SQL
+analysis/                       # audits and comparison notes
 shared/                         # cross-service utilities (paths, db)
 db/                             # PostGIS schema + loaders (map layers + risk grid)
 tests/                          # live API verification suite
@@ -111,7 +110,7 @@ Panel names, order and settings are saved in browser local storage. Chat message
 
 ### Data interpretation and current scope
 
-The [database dictionary](analysis/database-dictionary.md) describes warehouse columns, cause definitions and available model artifacts; [db/schema.sql](db/schema.sql) is the schema reference. EPSS is PG&E-only, and its cause categories describe outages. CPUC and CAL FIRE records do not supply the same cause field. PSPS customer totals count customer-events, not distinct households.
+[db/schema.sql](db/schema.sql) is the schema reference. EPSS is PG&E-only, and its cause categories describe outages. CPUC and CAL FIRE records do not supply the same cause field. PSPS customer totals count customer-events, not distinct households.
 
 The implemented views are a subset of the feature roadmap. Current rankings compare recorded counts, not modeled circuit risk or rates normalized by customers served. HDW playback is a supplied historical weather surface, not predicted ignition probability. Predicted risk surfaces, residual maps and model performance cards still require separate integration. Source date ranges reflect recorded events rather than verified collection completeness or last-scrape timestamps.
 

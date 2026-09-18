@@ -1,7 +1,6 @@
 # Wildfire analysis workspace
 
-Production website source, initially ported from the `demo/` design. Changes here
-do not modify or import the demo. React / TypeScript / Vite build a static page
+Production website source. React / TypeScript / Vite build a static page
 into `docs/` for GitHub Pages.
 
 See the [root README](../README.md) for the service architecture, local backend
