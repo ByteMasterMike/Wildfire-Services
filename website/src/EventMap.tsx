@@ -13,8 +13,13 @@ import { MapLegend, acresRadius } from './MapLegend';
 import { featuresOnDate } from './weather.ts';
 import { ExportActions } from './ExportActions';
 import { MapEventPreview, type EventPreview } from './MapEventPreview';
+import { RiskSurfaceMap } from './RiskSurfaceMap.tsx';
 
 export function EventMap() {
+  const {settings} = usePanel();
+  return settings.mapMode === 'risk' ? <RiskSurfaceMap/> : <EventDataMap/>;
+}
+function EventDataMap() {
   const { settings, update, expanded } = usePanel();
   const { dataset, filters, overlays } = settings;
   const weather = overlays.includes('hdw');

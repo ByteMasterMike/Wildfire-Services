@@ -116,6 +116,24 @@ def test_health_model_loaded(risk_api):
     assert body["status"] == "ok"
 
 
+def test_risk_api_allows_cross_origin_browser_requests(risk_api):
+    response = risk_api.get(
+        "/health",
+        headers={"Origin": "https://woody-zhu-group.github.io"},
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "*"
+    preflight = risk_api.options(
+        "/health",
+        headers={
+            "Origin": "https://woody-zhu-group.github.io",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert preflight.status_code == 200
+    assert preflight.headers["access-control-allow-origin"] == "*"
+
+
 def test_predict_single_cell_uses_p_at_least_one(risk_api):
     health = risk_api.get("/health").json()
     if not health.get("model_loaded"):

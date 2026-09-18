@@ -11,10 +11,11 @@ export interface PanelView {
 }
 
 export const PANEL_VIEWS: PanelView[] = [
-  { id: 'events-map', type: 'map', title: 'Wildfire events', description: 'Explore ignition and fire locations.', settings: { dataset: 'cpuc', overlays: [] } },
-  { id: 'outages-map', type: 'map', title: 'Outage circuits', description: 'Locate PG&E EPSS outages by circuit.', settings: { dataset: 'epss', overlays: [] } },
-  { id: 'psps-map', type: 'map', title: 'PSPS areas', description: 'Explore shutoff areas by utility.', settings: { dataset: 'psps', overlays: [] } },
-  { id: 'weather-map', type: 'map', title: 'Fire weather', description: 'Play daily HDW alongside event starts.', settings: { dataset: 'cpuc', overlays: ['hdw'] } },
+  { id: 'events-map', type: 'map', title: 'Wildfire events', description: 'Explore ignition and fire locations.', settings: { dataset: 'cpuc', overlays: [], mapMode: 'events' } },
+  { id: 'outages-map', type: 'map', title: 'Outage circuits', description: 'Locate PG&E EPSS outages by circuit.', settings: { dataset: 'epss', overlays: [], mapMode: 'events' } },
+  { id: 'psps-map', type: 'map', title: 'PSPS areas', description: 'Explore shutoff areas by utility.', settings: { dataset: 'psps', overlays: [], mapMode: 'events' } },
+  { id: 'weather-map', type: 'map', title: 'Fire weather', description: 'Play daily HDW alongside event starts.', settings: { dataset: 'cpuc', overlays: ['hdw'], mapMode: 'events' } },
+  { id: 'risk-surface-map', type: 'map', title: 'Modeled ignition risk surface', description: 'Map cNHPP risk for one historical date as a statistical hindcast.', settings: { dataset: 'cpuc', overlays: [], mapMode: 'risk' } },
   { id: 'events-time', type: 'time_series', title: 'Event trends', description: 'Follow CPUC, EPSS and CAL FIRE over time.', settings: { seriesMode: 'timeline', datasets: ['cpuc', 'epss', 'calfire'] } },
   { id: 'annual-time', type: 'time_series', title: 'Year comparison', description: 'Compare years on the same calendar axis.', settings: { dataset: 'cpuc', seriesMode: 'yearly' } },
   { id: 'regional-time', type: 'time_series', title: 'Regional trends', description: 'Compare EPSS trends across PG&E divisions.', settings: { dataset: 'epss', seriesMode: 'regional' } },
@@ -27,10 +28,11 @@ export const PANEL_VIEWS: PanelView[] = [
 ];
 
 export function viewSettings(current: PanelSettings, view: PanelView): PanelSettings {
-  return structuredClone({ ...current, ...view.settings, answerStat: undefined, weatherDate: undefined, weatherYear: undefined });
+  return structuredClone({ ...current, ...view.settings, answerStat: undefined, weatherDate: undefined, weatherYear: undefined, riskDate: undefined });
 }
 
 export function currentView(type: PanelId, settings: PanelSettings): string {
+  if (type === 'map' && settings.mapMode === 'risk') return 'risk-surface-map';
   if (type === 'map') return settings.overlays.includes('hdw') ? 'weather-map' : settings.dataset === 'epss' ? 'outages-map' : settings.dataset === 'psps' ? 'psps-map' : 'events-map';
   if (type === 'time_series') return settings.seriesMode === 'regional' ? 'regional-time' : settings.seriesMode === 'seasonal' ? 'seasonal-time' : settings.seriesMode === 'yearly' ? 'annual-time' : 'events-time';
   if (type === 'comparison') return `${settings.groupBy}-comparison`;
@@ -48,6 +50,7 @@ export function updatePanelSettings(panel: PanelInstance, patch: Partial<PanelSe
 }
 
 export function panelDatasets(type: PanelId, settings: PanelSettings): DatasetId[] {
+  if (type === 'map' && settings.mapMode === 'risk') return [];
   if (type === 'stat_card' && settings.answerStat) {
     const source = settings.answerStat.sourceDataset;
     const dataset = DATASETS.find(item => item.id === source || item.api === source || item.query === source);

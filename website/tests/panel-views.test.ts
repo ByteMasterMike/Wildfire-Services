@@ -23,10 +23,19 @@ test('changing view preserves the selected period and creates independent settin
 });
 
 test('view changes discard stale weather frames and scalar agent results', () => {
-  const changed = viewSettings({...settings, weatherDate:'2024-07-04', weatherYear:2024, answerStat:{value:99,label:'Previous answer',scope:'All',period:'2024',unit:'events'}}, PANEL_VIEWS.find(view=>view.id==='summary-stats')!);
+  const changed = viewSettings({...settings, weatherDate:'2024-07-04', weatherYear:2024, riskDate:'2024-07-15', answerStat:{value:99,label:'Previous answer',scope:'All',period:'2024',unit:'events'}}, PANEL_VIEWS.find(view=>view.id==='summary-stats')!);
   assert.equal(changed.answerStat,undefined);
   assert.equal(changed.weatherDate,undefined);
   assert.equal(changed.weatherYear,undefined);
+  assert.equal(changed.riskDate,undefined);
+});
+
+test('risk surface view is a map hindcast, not an event overlay', () => {
+  const view = PANEL_VIEWS.find(view => view.id === 'risk-surface-map')!;
+  const changed = viewSettings(settings, view);
+  assert.equal(changed.mapMode, 'risk');
+  assert.equal(currentView('map', changed), 'risk-surface-map');
+  assert.equal(view.title, 'Modeled ignition risk surface');
 });
 
 test('current view follows actual settings including legacy panels without a preset id', () => {
