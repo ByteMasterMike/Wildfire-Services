@@ -29,7 +29,7 @@ export function panelsFromAnswer(answer: AgentAnswer): AnswerPanel[] {
     const end = typeof p.end_date === 'string' ? p.end_date : p.year ? `${p.year}-12-31` : null;
     if (!start || !end) continue;
     const settings: Partial<PanelSettings> = {
-      dataset: dataset.id, datasets: [dataset.id],
+      dataset: dataset.id, datasets: [dataset.id], filterMode: 'override',
       filters: {start, end, utility: utilityLabel(p.utility) ?? '', county: typeof p.county === 'string' ? p.county : ''},
       overlays: [...(p.show_hftd ? ['hftd'] : []), ...(p.show_territory ? ['territories'] : [])],
     };
