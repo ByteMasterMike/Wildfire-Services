@@ -256,7 +256,7 @@ export function YearComparison() {
               <g key={i}>
                 <path
                   d={`M${left} ${y((ceiling * i) / 4)}H${right}`}
-                  stroke="#ffffff12"
+                  stroke="var(--chart-grid)"
                 />
                 <text
                   x={left - 9}
@@ -309,7 +309,7 @@ export function YearComparison() {
               <g>
                 <path
                   d={`M${x(hover)} ${top}V${bottom}`}
-                  stroke="#ffffff45"
+                  stroke="var(--chart-cursor)"
                   strokeDasharray="3 4"
                 />
                 {lines.map((line) => {
