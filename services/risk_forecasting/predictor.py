@@ -405,6 +405,45 @@ def predict_grid(
     return lambdas
 
 
+def score_surface(
+    model: FittedModel,
+    on_date: DateLike,
+    data_dir: Path,
+    lookback_days: Optional[int] = None,
+    *,
+    verbose: bool = True,
+) -> dict:
+    """Score every grid cell from one ``predict_grid`` call (hindcast)."""
+    if lookback_days is None:
+        lookback_days = lookback_days_from_env()
+    target = _as_date(on_date)
+    lambdas = predict_grid(
+        model, target, Path(data_dir), lookback_days, verbose=verbose
+    )
+    order = model.grid_df["seg_idx"].to_numpy(dtype=np.int64)
+    cell_ids = model.grid_df["cell_id"].to_numpy()
+    lats = model.grid_df["lat"].to_numpy()
+    lons = model.grid_df["lon"].to_numpy()
+    lam = lambdas[order]
+    risk = 1.0 - np.exp(-lam)
+    cells = [
+        {
+            "cell_id": int(cid),
+            "lat": float(lat),
+            "lon": float(lon),
+            "risk": float(r),
+            "expected_count": float(intensity),
+            "intensity": float(intensity),
+        }
+        for cid, lat, lon, r, intensity in zip(cell_ids, lats, lons, risk, lam)
+    ]
+    return {
+        "date": target,
+        "lookback_days": int(lookback_days),
+        "cells": cells,
+    }
+
+
 def intensities_for_cells(
     model: FittedModel,
     lambdas: np.ndarray,

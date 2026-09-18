@@ -18,6 +18,7 @@ from services.risk_forecasting.predictor import (
     FittedModel,
     load_fitted_model,
     score_place,
+    score_surface,
 )
 
 _model: Optional[FittedModel] = None
@@ -80,6 +81,24 @@ class PredictResponse(BaseModel):
     )
     mean_intensity: Optional[float] = None
     includes_cell_461: bool = False
+
+
+class SurfaceCell(BaseModel):
+    cell_id: int
+    lat: float
+    lon: float
+    risk: float = Field(
+        ...,
+        description="P(≥1 ignition) for this cell: 1 - exp(-λ)",
+    )
+    expected_count: float
+    intensity: float = Field(..., description="Single-cell Poisson intensity λ")
+
+
+class SurfaceResponse(BaseModel):
+    date: date
+    lookback_days: int
+    cells: list[SurfaceCell]
 
 
 class HealthResponse(BaseModel):
@@ -155,3 +174,36 @@ def predict(
 
     payload: dict[str, Any] = scored.as_response()
     return PredictResponse.model_validate(payload)
+
+
+@app.get("/surface", response_model=SurfaceResponse)
+def surface(
+    date: date = Query(..., description="Historical date YYYY-MM-DD"),
+    lookback_days: Optional[int] = Query(
+        None,
+        ge=1,
+        description="Trailing window length (default LOOKBACK_DAYS env / 90)",
+    ),
+) -> SurfaceResponse:
+    if _model is None:
+        raise HTTPException(
+            status_code=503,
+            detail=_load_error
+            or "Fitted parameters not available. Run fit_model first.",
+        )
+
+    lb = lookback_days if lookback_days is not None else lookback_days_from_env()
+    print(f"[API] /surface date={date} lookback_days={lb}")
+
+    try:
+        payload = score_surface(_model, date, DATA_DIR, lb)
+    except CoverageError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return SurfaceResponse.model_validate(payload)
