@@ -23,6 +23,7 @@ test('map and series specs preserve exact dates, filters, overlays and interval'
   ]));
   assert.equal(result.length, 2);
   assert.deepEqual(result[0].settings.filters, {start: '2023-03-15', end: '2024-07-31', utility: 'PG&E', county: 'Marin'});
+  assert.equal(result[0].settings.filterMode, 'override');
   assert.deepEqual(result[0].settings.overlays, ['hftd', 'territories']);
   assert.deepEqual(result[0].settings.datasets, ['cpuc']);
   assert.equal(result[1].settings.interval, 'weekly');

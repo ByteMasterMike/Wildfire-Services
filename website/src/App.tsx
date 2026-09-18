@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PANELS, PanelPicker, PanelStrip, panelTitle, type PanelInstance } from './PanelPicker';
 import { PanelWorkspace } from './PanelWorkspace';
-import { SelectionContext, newPanel } from './state';
+import { GlobalFiltersContext, SelectionContext, newPanel } from './state';
 import { DataSources } from './Controls';
 import { EventDetail } from './RecordPanels';
 import { askAgent, type AgentAnswer, type AgentStreamEvent } from './api.ts';
@@ -11,6 +11,7 @@ import { panelsFromAnswer, unsupportedViewNotice } from './answerPanels.ts';
 import { updatePanelSettings, viewSettings, type PanelView } from './panelViews.ts';
 import { movePanel } from './panelOrder.ts';
 import { ThemeToggle } from './ThemeToggle.tsx';
+import { GLOBAL_FILTERS_STORAGE_KEY, parseStoredGlobalFilters } from './globalFilters.ts';
 
 interface Message { id: string; role: 'user' | 'assistant'; content: string; error?: boolean; response?: AgentAnswer; events?: AgentStreamEvent[] }
 const STORAGE_KEY = 'wildfire-workspace-v1';
@@ -25,6 +26,7 @@ function initialPanels(): PanelInstance[] {
       && ['count','share'].includes(p.settings.measure) && ['events','acres','counties','customers'].includes(p.settings.metric)
       && Array.isArray(p.settings.datasets) && p.settings.datasets.every((id: string) => DATASETS.some(d => d.id === id))
       && Array.isArray(p.settings.overlays) && p.settings.overlays.every((id: string) => ['hftd','territories','hdw'].includes(id))
+      && (p.settings.filterMode === undefined || ['inherit','override'].includes(p.settings.filterMode))
       && (p.settings.mapMode === undefined || ['events','risk','residual'].includes(p.settings.mapMode))
       && (p.settings.riskDate === undefined || typeof p.settings.riskDate === 'string')
       && (p.settings.statMode === undefined || ['summary','medical_exposure'].includes(p.settings.statMode))
@@ -46,6 +48,10 @@ function AnswerViewNotice({answer}: {answer?: AgentAnswer}) {
 }
 export default function App() {
   const [panels, setPanels] = useState<PanelInstance[]>(initialPanels);
+  const [globalFilters, setGlobalFilters] = useState(() => {
+    try { return parseStoredGlobalFilters(localStorage.getItem(GLOBAL_FILTERS_STORAGE_KEY)); }
+    catch { return parseStoredGlobalFilters(null); }
+  });
   const [showPicker, setShowPicker] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState('');
@@ -64,6 +70,10 @@ export default function App() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(panels.filter(p => !p.settings.answerStat))); setStorageError(false); }
     catch { setStorageError(true); }
   }, [panels]);
+  useEffect(() => {
+    try { localStorage.setItem(GLOBAL_FILTERS_STORAGE_KEY, JSON.stringify(globalFilters)); }
+    catch { /* Workspace year persistence is optional. */ }
+  }, [globalFilters]);
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [messages, busy, progress]);
   useEffect(() => {
@@ -111,6 +121,7 @@ export default function App() {
     } finally { clearTimeout(timeout); setBusy(false); controller.current = null; }
   }
   return <SelectionContext.Provider value={{ inspect: setDetail }}>
+    <GlobalFiltersContext.Provider value={{ filters: globalFilters, setYear: year => setGlobalFilters(current => ({ ...current, year })) }}>
     <main className={`demo-app ${panels.length ? 'has-panels' : ''} ${messages.length ? 'has-chat' : ''}`}>
       <header className="site-header">
         <div className="site-brand">Wildfire <span>Analysis workspace</span></div>
@@ -134,5 +145,6 @@ export default function App() {
       {showPicker && <PanelPicker onSelect={addPanel} onClose={() => setShowPicker(false)} />}
       {detail && <EventDetail record={detail} onClose={() => setDetail(null)} />}
     </main>
+    </GlobalFiltersContext.Provider>
   </SelectionContext.Provider>;
 }

@@ -1,12 +1,15 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { PanelPicker, panelTitle, type PanelId, type PanelInstance } from './PanelPicker';
-import { PanelContext, type PanelSettings } from './state';
+import { PanelContext, useGlobalFilters, type PanelSettings } from './state';
 import { TimeSeries, Comparison } from './AnalysisCharts';
 import { EventMap } from './EventMap';
 import { RecordTable, StatCard } from './RecordPanels';
 import { currentView, panelDatasets, PANEL_VIEWS, viewSettings } from './panelViews.ts';
+import { applySettingsPatch, effectiveSettings, panelUsesGlobalYear } from './globalFilters.ts';
 import { usePanelDrag } from './usePanelDrag.ts';
 import { PanelCaveats } from './PanelCaveats';
+import { PanelYearPin } from './PanelYearPin';
+import { WorkspaceFilters } from './WorkspaceFilters';
 
 const CONTENT: Record<PanelId, () => React.JSX.Element> = { map: EventMap, time_series: TimeSeries, comparison: Comparison, record_table: RecordTable, stat_card: StatCard };
 function PanelTitle({ panel, onRename }: { panel: PanelInstance; onRename: (id: number, name: string) => void }) {
@@ -31,8 +34,10 @@ export function PanelWorkspace({ panels, onRemove, onRename, onUpdate, onDuplica
 }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const drag = usePanelDrag(onReorder);
+  const global = useGlobalFilters();
   if (!panels.length) return null;
   return <section className="panel-workspace" aria-label="Panel workspace"><header className="workspace-heading"><h1>Your workspace <span>{panels.length} panels</span></h1></header>
+    <WorkspaceFilters filters={global.filters} onYearChange={global.setYear} />
     <div ref={drag.gridRef} className="panel-grid">{panels.map(panel => <PanelFrame key={panel.id} panel={panel} expanded={expandedId === panel.id} drag={drag}
       onExpand={() => { drag.stopMotion(); setExpandedId(panel.id); }} onRestore={() => setExpandedId(null)} onRename={onRename} onDuplicate={()=>onDuplicate(panel.id)}
       onRemove={() => { if (expandedId === panel.id) setExpandedId(null); onRemove(panel.id); }} onUpdate={patch => onUpdate(panel.id, patch)} />)}</div>
@@ -52,6 +57,9 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
   const Content = CONTENT[panel.type];
   const [actionsHost,setActionsHost]=useState<HTMLDivElement|null>(null);
   const [choosingView, setChoosingView] = useState(false);
+  const global = useGlobalFilters();
+  const settings = effectiveSettings(panel.type, panel.settings, global.filters);
+  const update = (patch: Partial<PanelSettings>) => onUpdate(applySettingsPatch(panel.type, panel.settings, patch, global.filters));
   useLayoutEffect(() => {
     const element = dialog.current!;
     const root = document.documentElement;
@@ -75,6 +83,7 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
     <header className={`panel-header${expanded ? '' : ' is-draggable'}`} onPointerDown={event => { if (!expanded) drag.start(event, panel.id); }} onClickCapture={drag.suppressDragClick}>
       {!expanded && <svg className="panel-drag-grip" width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true"><circle cx="2" cy="3" r="1"/><circle cx="8" cy="3" r="1"/><circle cx="2" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="2" cy="13" r="1"/><circle cx="8" cy="13" r="1"/></svg>}
       <PanelTitle panel={panel} onRename={onRename} /><div className="panel-actions">
+      {panelUsesGlobalYear(panel.type, panel.settings) && <PanelYearPin type={panel.type} settings={panel.settings} global={global.filters} onUpdate={onUpdate} />}
       <PanelCaveats datasets={panelDatasets(panel.type, panel.settings)} title={panelTitle(panel)}/>
       {PANEL_VIEWS.filter(view => view.type === panel.type).length > 1 && <button className="panel-expand" aria-label={`Change view for ${panelTitle(panel)}`} title="Change view" onClick={() => setChoosingView(true)}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></svg>
@@ -85,7 +94,7 @@ function PanelFrame({ panel, expanded, onExpand, onRestore, onRemove, onRename, 
       </button>}<button ref={closeButton} className="panel-close" title={expanded ? 'Return to workspace (Esc)' : 'Remove panel'} aria-label={`${expanded ? 'Restore' : 'Close'} ${panelTitle(panel)}`} onClick={expanded ? onRestore : onRemove}>×</button>
     </div></header>
     <div className="panel-body" role="region" aria-label={`${panelTitle(panel)} content`} tabIndex={expanded ? 0 : undefined}>
-      <PanelContext.Provider value={{ settings: panel.settings, update: onUpdate, expanded, expand: onExpand, actionsHost, title: panelTitle(panel) }}><Content /></PanelContext.Provider>
+      <PanelContext.Provider value={{ settings, update, expanded, expand: onExpand, actionsHost, title: panelTitle(panel) }}><Content /></PanelContext.Provider>
     </div>
     {choosingView && <PanelPicker category={panel.type} activeView={currentView(panel.type, panel.settings)} onClose={() => setChoosingView(false)} onSelect={view => {
       onUpdate(viewSettings(panel.settings, view));

@@ -6,6 +6,7 @@ export interface PanelSettings {
   dataset: DatasetId; filters: Filters; interval: Interval; groupBy: GroupBy;
   measure: 'count' | 'share'; metric: 'events' | 'acres' | 'counties' | 'customers';
   datasets: DatasetId[]; overlays: string[];
+  filterMode?: 'inherit' | 'override';
   mapMode?: 'events' | 'risk' | 'residual';
   riskDate?: string;
   statMode?: 'summary' | 'medical_exposure';
@@ -21,6 +22,12 @@ export function newPanel(id: number, type: PanelId): PanelInstance {
   } };
 }
 export const SelectionContext = createContext<{ inspect: (record: EventRecord) => void }>({ inspect: () => {} });
+export const GlobalFiltersContext = createContext<{ filters: { year: number }; setYear: (year: number) => void } | null>(null);
+export function useGlobalFilters() {
+  const global = useContext(GlobalFiltersContext);
+  if (!global) throw new Error('Global filters missing');
+  return global;
+}
 export const PanelContext = createContext<{ settings: PanelSettings; update: (patch: Partial<PanelSettings>) => void; expanded: boolean; expand: () => void; actionsHost: HTMLElement | null; title: string } | null>(null);
 export function usePanel() {
   const panel = useContext(PanelContext);
