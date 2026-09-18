@@ -25,7 +25,8 @@ export const PANEL_VIEWS: PanelView[] = [
   { id: 'utility-comparison', type: 'comparison', title: 'Utility comparison', description: 'Compare recorded counts across utilities.', settings: { dataset: 'cpuc', groupBy: 'utility' } },
   { id: 'cause-comparison', type: 'comparison', title: 'Cause breakdown', description: 'Compare the recorded causes of EPSS outages.', settings: { dataset: 'epss', groupBy: 'cause' } },
   { id: 'event-records', type: 'record_table', title: 'Event records', description: 'Search individual events and open their details.', settings: { dataset: 'cpuc' } },
-  { id: 'summary-stats', type: 'stat_card', title: 'Summary metrics', description: 'See related totals under one set of filters.', settings: { dataset: 'cpuc' } },
+  { id: 'summary-stats', type: 'stat_card', title: 'Summary metrics', description: 'See related totals under one set of filters.', settings: { dataset: 'cpuc', statMode: 'summary' } },
+  { id: 'medical-exposure', type: 'stat_card', title: 'Medical baseline and life support customers affected by EPSS outages', description: 'Sum medical-baseline and life-support customer-events during PG&E outages.', settings: { dataset: 'epss', statMode: 'medical_exposure' } },
 ];
 
 export function viewSettings(current: PanelSettings, view: PanelView): PanelSettings {
@@ -38,7 +39,8 @@ export function currentView(type: PanelId, settings: PanelSettings): string {
   if (type === 'map') return settings.overlays.includes('hdw') ? 'weather-map' : settings.dataset === 'epss' ? 'outages-map' : settings.dataset === 'psps' ? 'psps-map' : 'events-map';
   if (type === 'time_series') return settings.seriesMode === 'regional' ? 'regional-time' : settings.seriesMode === 'seasonal' ? 'seasonal-time' : settings.seriesMode === 'yearly' ? 'annual-time' : 'events-time';
   if (type === 'comparison') return `${settings.groupBy}-comparison`;
-  return type === 'record_table' ? 'event-records' : 'summary-stats';
+  if (type === 'record_table') return 'event-records';
+  return settings.statMode === 'medical_exposure' ? 'medical-exposure' : 'summary-stats';
 }
 
 export function updatePanelSettings(panel: PanelInstance, patch: Partial<PanelSettings>): PanelInstance {

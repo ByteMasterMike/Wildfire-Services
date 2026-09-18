@@ -51,6 +51,7 @@ test('current view follows actual settings including legacy panels without a pre
   assert.equal(currentView('time_series',{...settings,seriesMode:'yearly'}),'annual-time');
   assert.equal(currentView('map',{...settings,dataset:'psps'}),'psps-map');
   assert.equal(currentView('map',{...settings,dataset:'epss',overlays:['hdw']}),'weather-map');
+  assert.equal(currentView('stat_card',{...settings,dataset:'epss',statMode:'medical_exposure'}),'medical-exposure');
 });
 
 test('automatic titles follow direct source/layer changes while custom names stay intact', () => {

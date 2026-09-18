@@ -7,6 +7,7 @@ import { SelectionContext, usePanel } from './state';
 import { useRemote } from './useRemote';
 import { useRowCapacity } from './useRowCapacity';
 import { ExportActions } from './ExportActions';
+import { medicalExposureMetrics } from './exposure.ts';
 
 export function RecordTable() {
   const { settings, update, expanded } = usePanel(); const { dataset, filters } = settings;
@@ -38,6 +39,7 @@ export function RecordTable() {
 }
 export function StatCard() {
   const { settings, update } = usePanel(); const { dataset, filters, answerStat } = settings;
+  if (settings.statMode === 'medical_exposure') return <MedicalExposureCard />;
   const validation = filterError(filters) || unavailableReason(dataset, filters);
   const remote = useRemote(validation || answerStat ? null : JSON.stringify(['summary', dataset, filters]), () => getSummary(dataset, filters));
   const metrics = remote.data ?? [];
@@ -47,6 +49,23 @@ export function StatCard() {
     {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <dl className="stat-metrics" aria-label={`${configFor(dataset).name} summary`}>
       {metrics.map(metric => <div key={metric.id} className="stat-metric"><dt>{metric.label}{metric.missing > 0 && <span className="stat-missing" title={`${metric.missing} records have no value for this metric`}> · {metric.missing} missing</span>}</dt><dd>{metric.value === null ? '—' : metric.value.toLocaleString(undefined, { maximumFractionDigits: 1 })}</dd></div>)}
     </dl>}
+  </div>;
+}
+function MedicalExposureCard() {
+  const { settings, update } = usePanel();
+  const { filters } = settings;
+  const validation = filterError(filters) || unavailableReason('epss', filters);
+  const remote = useRemote(validation ? null : JSON.stringify(['medical-exposure', filters]), () => getRecords('epss', filters));
+  const metrics = medicalExposureMetrics(remote.data ?? []);
+  return <div className="analysis-chart stat-panel">
+    <div className="stat-toolbar"><ChartFilters filters={filters} onChange={filters => update({ filters })} dataset="epss" /></div>
+    <ExportActions datasets={['epss']} disabled={Boolean(validation||remote.error||remote.loading)} rows={()=>metrics.map(metric=>({dataset:'EPSS',metric:metric.id,value:metric.value,missing_records:metric.missing,unit:metric.unit,...filters}))} />
+    {validation || remote.error || remote.loading ? <LoadState loading={remote.loading} error={validation || remote.error} retry={remote.error ? remote.retry : undefined} /> : <>
+      <p className="panel-note">Exposure during PG&amp;E EPSS outages; totals are customer-events, not deduplicated customers.</p>
+      <dl className="stat-metrics" aria-label="EPSS medical baseline and life support exposure">
+        {metrics.map(metric => <div key={metric.id} className="stat-metric"><dt>{metric.label}{metric.missing > 0 && <span className="stat-missing" title={`${metric.missing} records have no value for this metric`}> · {metric.missing} missing</span>}</dt><dd>{metric.value.toLocaleString()}</dd></div>)}
+      </dl>
+    </>}
   </div>;
 }
 function DetailFields({attributes}: {attributes: Record<string, unknown>}) {

@@ -27,6 +27,7 @@ function initialPanels(): PanelInstance[] {
       && Array.isArray(p.settings.overlays) && p.settings.overlays.every((id: string) => ['hftd','territories','hdw'].includes(id))
       && (p.settings.mapMode === undefined || ['events','risk','residual'].includes(p.settings.mapMode))
       && (p.settings.riskDate === undefined || typeof p.settings.riskDate === 'string')
+      && (p.settings.statMode === undefined || ['summary','medical_exposure'].includes(p.settings.statMode))
       && (p.settings.weatherYear === undefined || Number.isInteger(p.settings.weatherYear))
       && (p.settings.weatherDate === undefined || typeof p.settings.weatherDate === 'string')
       && (p.settings.seriesMode === undefined || ['timeline','yearly','regional','seasonal'].includes(p.settings.seriesMode))

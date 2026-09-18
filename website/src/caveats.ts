@@ -5,5 +5,6 @@ export function datasetCaveats(datasets: readonly DatasetId[]): string[] {
   return [
     ...(datasets.includes('cpuc') ? [catalog.cpuc_utility_caused] : []),
     ...(datasets.includes('calfire') ? [catalog.calfire_map_feed_counts] : []),
+    ...(datasets.includes('epss') ? [catalog.epss_pge_only] : []),
   ];
 }

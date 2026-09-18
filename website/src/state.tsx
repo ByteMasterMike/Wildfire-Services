@@ -8,6 +8,7 @@ export interface PanelSettings {
   datasets: DatasetId[]; overlays: string[];
   mapMode?: 'events' | 'risk' | 'residual';
   riskDate?: string;
+  statMode?: 'summary' | 'medical_exposure';
   weatherYear?: number; weatherDate?: string;
   seriesMode?: 'timeline' | 'yearly' | 'regional' | 'seasonal'; comparisonYears?: number[]; seasonYears?: number[];
   answerStat?: { value: number; label: string; scope: string; period: string; unit: string; sourceDataset?: string };
