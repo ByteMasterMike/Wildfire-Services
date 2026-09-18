@@ -25,6 +25,8 @@ function initialPanels(): PanelInstance[] {
       && ['count','share'].includes(p.settings.measure) && ['events','acres','counties','customers'].includes(p.settings.metric)
       && Array.isArray(p.settings.datasets) && p.settings.datasets.every((id: string) => DATASETS.some(d => d.id === id))
       && Array.isArray(p.settings.overlays) && p.settings.overlays.every((id: string) => ['hftd','territories','hdw'].includes(id))
+      && (p.settings.mapMode === undefined || ['events','risk'].includes(p.settings.mapMode))
+      && (p.settings.riskDate === undefined || typeof p.settings.riskDate === 'string')
       && (p.settings.weatherYear === undefined || Number.isInteger(p.settings.weatherYear))
       && (p.settings.weatherDate === undefined || typeof p.settings.weatherDate === 'string')
       && (p.settings.seriesMode === undefined || ['timeline','yearly','regional','seasonal'].includes(p.settings.seriesMode))

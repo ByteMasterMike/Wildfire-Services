@@ -2,18 +2,20 @@ import { configFor, filterError, unavailableReason, utilityCode, recordsFromFeat
 import type { AgentAnswer, AgentStreamEvent } from './agentContracts.ts';
 import { readSummary, type SummaryResponse } from './stats.ts';
 import type { RegionSeries } from './temporal.ts';
+import { validateRiskSurface, type RiskSurface } from './riskSurface.ts';
 export type { AgentAnswer, AgentStreamEvent } from './agentContracts.ts';
 
 export const VISUALIZATION_URL = (import.meta.env?.VITE_VISUALIZATION_URL || 'https://d3t70p3if3twy3.cloudfront.net/api/visualization').replace(/\/+$/, '');
 export const AGENT_URL = (import.meta.env?.VITE_AGENT_URL || 'https://d3t70p3if3twy3.cloudfront.net/api/agent').replace(/\/+$/, '');
 export const DATA_QUERY_URL = (import.meta.env?.VITE_DATA_QUERY_URL || 'https://d3t70p3if3twy3.cloudfront.net/api/data-query').replace(/\/+$/, '');
+export const RISK_URL = (import.meta.env?.VITE_RISK_URL || 'https://d3t70p3if3twy3.cloudfront.net/api/risk-forecasting').replace(/\/+$/, '');
 const cache = new Map<string, { at: number; promise: Promise<unknown> }>();
 export function clearDataCache() { cache.clear(); }
-export async function getJSON<T>(url: string): Promise<T> {
+export async function getJSON<T>(url: string, timeoutMs = 25_000): Promise<T> {
   const found = cache.get(url);
   if (found && Date.now() - found.at < 300_000) return found.promise as Promise<T>;
   const promise = (async () => {
-    const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(25_000) });
+    const response = await fetch(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) throw new Error(`Data service returned HTTP ${response.status}. Please retry.`);
     return await response.json() as T;
   })();
@@ -96,6 +98,12 @@ export async function getDailySeries(dataset: DatasetId, filters: Filters) {
   const result = await getJSON<{ buckets: Bucket[]; meta: { total_events: number } }>(`${VISUALIZATION_URL}/time-series?${params}`);
   if (result.buckets.reduce((sum, bucket) => sum + bucket.count, 0) !== result.meta.total_events) throw new Error('Time series total does not match its buckets.');
   return result.buckets;
+}
+export async function getRiskSurface(date: string): Promise<RiskSurface> {
+  return validateRiskSurface(
+    await getJSON<unknown>(`${RISK_URL}/surface?date=${encodeURIComponent(date)}`, 60_000),
+    date,
+  );
 }
 export async function getCoverage(dataset: DatasetId) {
   const result = await getJSON<{ buckets: Bucket[] }>(`${VISUALIZATION_URL}/time-series?dataset=${configFor(dataset).api}&interval=daily`);
