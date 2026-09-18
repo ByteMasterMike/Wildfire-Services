@@ -10,7 +10,10 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from services.risk_forecasting.config import DATA_DIR, lookback_days_from_env
-from services.risk_forecasting.observed import observed_surface
+from services.risk_forecasting.observed import (
+    observed_surface,
+    observed_training_surface,
+)
 from services.risk_forecasting.place import PlaceNotFound, resolve_place
 from services.risk_forecasting.predictor import (
     AGGREGATION,
@@ -226,5 +229,25 @@ def surface(
 def observed(
     date: date = Query(..., description="Historical date YYYY-MM-DD"),
 ) -> ObservedResponse:
+    """Polygon containment against live warehouse CPUC ignitions.
+
+    ``ST_Contains(grid_cells.geom, cpuc_ignitions.geom)`` for the given date.
+    Points outside every 0.24° cell are dropped. Use ``/observed-training``
+    for residuals against the fitted cNHPP evaluation.
+    """
     print(f"[API] /observed date={date}")
     return ObservedResponse.model_validate(observed_surface(date))
+
+
+@app.get("/observed-training", response_model=ObservedResponse)
+def observed_training(
+    date: date = Query(..., description="Historical date YYYY-MM-DD"),
+) -> ObservedResponse:
+    """Nearest SW-corner snap, matching how the model training set was built.
+
+    Assigns each warehouse CPUC point with ``snap_events_to_grid`` (same
+    method as ``events_YYYY.csv``). Every point lands in a cell. Use this
+    endpoint for residuals against the model's own evaluation.
+    """
+    print(f"[API] /observed-training date={date}")
+    return ObservedResponse.model_validate(observed_training_surface(date))

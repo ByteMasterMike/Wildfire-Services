@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from services.risk_forecasting.config import DATA_DIR, GRID_CSV
+from services.risk_forecasting.observed import observed_training_year_total
 from services.risk_forecasting.place import PlaceNotFound, resolve_place
 from services.risk_forecasting.predictor import (
     AGGREGATION,
@@ -348,3 +349,44 @@ def test_observed_postgis_vs_training_csv(risk_api):
         "expected polygon vs nearest-SW-corner mismatch on 2024-07-05; "
         f"got identical {postgis}"
     )
+
+
+def test_observed_training_matches_events_csv(risk_api):
+    csv_path = DATA_DIR / "events_2024.csv"
+    if not csv_path.is_file():
+        pytest.skip(f"training events CSV not available: {csv_path}")
+
+    import pandas as pd
+
+    from services.risk_forecasting import grid_data_prep as gdp
+
+    r = risk_api.get("/observed-training", params={"date": "2024-07-05"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["date"] == "2024-07-05"
+    cells = body["cells"]
+    assert len(cells) == 824
+    ids = [cell["cell_id"] for cell in cells]
+    assert len(ids) == len(set(ids))
+
+    training = {
+        cell["cell_id"]: cell["observed_count"]
+        for cell in cells
+        if cell["observed_count"]
+    }
+    assert sum(training.values()) == 9
+
+    grid = gdp.load_grid(str(GRID_CSV))
+    events = gdp.load_fire_events(str(csv_path))
+    day = events[events["date"] == pd.Timestamp("2024-07-05")]
+    snapped = gdp.snap_events_to_grid(day, grid)
+    csv_counts = {}
+    for cell_id in snapped["cell_id"].astype(int):
+        csv_counts[cell_id] = csv_counts.get(cell_id, 0) + 1
+
+    assert len(day) == 9
+    assert training == csv_counts
+    assert training == {44: 1, 90: 1, 114: 2, 161: 1, 332: 1, 367: 1, 392: 1, 468: 1}
+
+    assert observed_training_year_total(2024) == 741
+    assert observed_training_year_total(2024) != 724
