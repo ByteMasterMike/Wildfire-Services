@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { currentView, PANEL_VIEWS, updatePanelSettings, viewSettings } from '../src/panelViews.ts';
+import { currentView, panelDatasets, PANEL_VIEWS, updatePanelSettings, viewSettings } from '../src/panelViews.ts';
 import type { PanelSettings } from '../src/state';
 
 const settings: PanelSettings = {
@@ -50,6 +50,8 @@ test('current view follows actual settings including legacy panels without a pre
   assert.equal(currentView('comparison',{...settings,groupBy:'cause'}),'cause-comparison');
   assert.equal(currentView('time_series',{...settings,seriesMode:'yearly'}),'annual-time');
   assert.equal(currentView('time_series',{...settings,seriesMode:'cumulative_acres'}),'cumulative-acres');
+  assert.equal(currentView('time_series',{...settings,seriesMode:'customer_events'}),'customer-events');
+  assert.deepEqual(panelDatasets('time_series',{...settings,dataset:'psps',seriesMode:'customer_events'}),['psps']);
   assert.equal(currentView('map',{...settings,dataset:'psps'}),'psps-map');
   assert.equal(currentView('map',{...settings,dataset:'epss',overlays:['hdw']}),'weather-map');
   assert.equal(currentView('stat_card',{...settings,dataset:'epss',statMode:'medical_exposure'}),'medical-exposure');
