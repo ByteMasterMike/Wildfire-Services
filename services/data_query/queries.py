@@ -1453,4 +1453,3 @@ def query_regional_series(
     ]
     series.sort(key=lambda item: (-item["total"], item["name"]))
     return {"series": series, "total": sum(item["total"] for item in series)}
-

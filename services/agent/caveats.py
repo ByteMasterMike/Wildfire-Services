@@ -7,6 +7,7 @@ from datetime import date
 from typing import Any
 
 from services.agent.tools import ToolExecution, ToolExecutor
+from shared.dataset_caveats import DATASET_CAVEATS
 
 
 async def collect_qualifications(
@@ -67,11 +68,7 @@ async def collect_qualifications(
         if _is_cpuc_ignitions(execution):
             add(
                 "cpuc_utility_caused",
-                (
-                    "CPUC ignitions in this warehouse are utility-caused / "
-                    "utility-attributed only; they are not all-cause wildfire "
-                    "counts and are not comparable to CAL FIRE or US ignitions."
-                ),
+                DATASET_CAVEATS["cpuc_utility_caused"],
                 "dataset_definition",
             )
 
@@ -312,15 +309,7 @@ async def collect_qualifications(
     if _needs_calfire_map_feed_caveat(working):
         add(
             "calfire_map_feed_counts",
-            (
-                "CAL FIRE rows in this warehouse are the fire.ca.gov incident-map "
-                "feed, not CAL FIRE's Redbook census. The map's posting threshold "
-                "dropped in 2024 (median acreage 70 to 43; sub-100-acre incidents "
-                "71 to 422). The 133 to 611 Wildfire/Fire count change is a posting "
-                "change, not a change in fire occurrence. Acreage totals in the feed "
-                "track the Redbook at 95–97% in both years, so acre-based comparisons "
-                "remain valid; count-based year-to-year comparisons do not."
-            ),
+            DATASET_CAVEATS["calfire_map_feed_counts"],
             "dataset_definition",
         )
 

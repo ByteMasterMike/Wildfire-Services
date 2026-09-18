@@ -1,0 +1,67 @@
+import * as service from './api.ts';
+import { aggregateDaily, asNumber, asText, UTILITIES, type Bucket, type DatasetId, type Filters, type GroupBy, type Interval } from './data.ts';
+import { readSummary, type SummaryResponse } from './stats.ts';
+import type { RegionSeries } from './temporal.ts';
+
+async function groupedFromRecords(dataset: DatasetId, filters: Filters, groupBy: GroupBy): Promise<service.GroupedCounts> {
+  const events = await service.getRecords(dataset, filters);
+  const counts = new Map<string, number>();
+  for (const event of events) {
+    const key = event[groupBy] ?? 'Not recorded';
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const keys = groupBy === 'utility' ? [...new Set([...(filters.utility ? [filters.utility] : UTILITIES), ...counts.keys()])] : [...counts.keys()];
+  const rows = keys.map(key => ({key, value: groupBy === 'utility' && dataset === 'epss' && key !== 'PG&E' ? null : counts.get(key) ?? 0}))
+    .sort((a, b) => (b.value ?? -1) - (a.value ?? -1) || a.key.localeCompare(b.key));
+  return {rows, total: events.length};
+}
+
+async function summaryFromRecords(dataset: DatasetId, filters: Filters) {
+  const events = await service.getRecords(dataset, filters);
+  const metrics: SummaryResponse['metrics'] = [{id: 'events', value: events.length, missing: 0}];
+  const distinct = (id: string, values: (string | null)[]) => {
+    const known = values.filter(value => value !== null);
+    metrics.push({id, value: known.length || !values.length ? new Set(known).size : null, missing: values.length - known.length});
+  };
+  if (dataset === 'calfire' || dataset === 'psps') {
+    const id = dataset === 'calfire' ? 'acres' : 'customers';
+    const values = events.map(event => id === 'acres' ? event.acres : asNumber(event.properties.customers_deenergized));
+    metrics.push({id, value: !values.length || values.some(value => value !== null) ? values.reduce<number>((sum, value) => sum + (value ?? 0), 0) : null, missing: values.filter(value => value === null).length});
+  }
+  if (dataset === 'epss') distinct('circuits', events.map(event => asText(event.properties.circuit_id)));
+  if (['cpuc', 'calfire', 'epss'].includes(dataset)) distinct('counties', events.flatMap(event => event.county?.split(',').map(county => county.trim()) ?? [null]));
+  if (dataset === 'cpuc' || dataset === 'psps') distinct('utilities', events.map(event => event.utility));
+  return readSummary({total: events.length, metrics}, dataset);
+}
+
+async function regionalFromRecords(filters: Filters, interval: Interval): Promise<{series: RegionSeries[]; total: number}> {
+  const events = await service.getRecords('epss', filters);
+  const days: Bucket[] = [];
+  for (let time = Date.parse(filters.start); time <= Date.parse(filters.end); time += 86400000) {
+    const date = new Date(time).toISOString().slice(0, 10);
+    days.push({start: date, end: date, count: 0});
+  }
+  const groups = new Map<string, Map<string, number>>();
+  for (const event of events) {
+    if (event.date < filters.start || event.date > filters.end) continue;
+    const name = asText(event.properties.division)?.trim() || 'Not recorded';
+    if (!groups.has(name)) groups.set(name, new Map());
+    const counts = groups.get(name)!;
+    counts.set(event.date, (counts.get(event.date) ?? 0) + 1);
+  }
+  const series = [...groups].map(([name, counts]) => {
+    const buckets = aggregateDaily(days.map(day => ({...day, count: counts.get(day.start) ?? 0})), interval);
+    return {name, buckets, total: buckets.reduce((sum, bucket) => sum + bucket.count, 0)};
+  }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  return {series, total: series.reduce((sum, region) => sum + region.total, 0)};
+}
+
+// Enable SQL aggregates only after their public URL has been configured for this build.
+// Failures in that mode stay visible rather than switching data sources at runtime.
+export function createWorkspaceAggregates(useDataQuery: boolean) {
+  return useDataQuery
+    ? {getGroupedCounts: service.getGroupedCounts, getSummary: service.getSummary, getRegionalSeries: service.getRegionalSeries}
+    : {getGroupedCounts: groupedFromRecords, getSummary: summaryFromRecords, getRegionalSeries: regionalFromRecords};
+}
+
+export const {getGroupedCounts, getSummary, getRegionalSeries} = createWorkspaceAggregates(Boolean(import.meta.env?.VITE_DATA_QUERY_URL));

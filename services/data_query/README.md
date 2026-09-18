@@ -41,6 +41,54 @@ Connection settings come from repo-root `.env` via `shared/db.py` (default port 
 
 Common query params: `utility`, `year`, `start_date`, `end_date`, `bbox`, `format=json|geojson`, `geometry=true|false`, `limit`, `offset`.
 
+Workspace aggregate routes accept `utility` and `county` where the dataset
+supports them. They return geometry-free JSON and have no pagination or top-N
+truncation. `/summary` and `/grouped-counts` support
+`cpuc_ignitions`, `epss_outages`, `calfire_incidents`, `psps_events`, and
+`us_ignitions`, with optional `start_date` and `end_date`; `/grouped-counts`
+additionally requires `group_by`. `/regional-series` is EPSS-only and requires
+both dates and `interval`. These routes use the implementation merged in upstream
+PR #3; each path is registered once. Missing group attributes are returned as
+`Not recorded`.
+
+CAL FIRE aggregates use the existing Wildfire/Fire definition. Utility filtering
+is attribute-based. Unsupported geographic filters return 400. EPSS utility
+comparisons return null for SCE/SDG&E, never zero. Summary `metrics` contain
+`id`, `value`, and `missing`; labels and units stay in the frontend. Empty
+populations yield zero; an all-missing metric in a nonempty population yields
+null. PSPS customers are summed across events, not deduplicated people.
+Distinct county summaries split comma-separated source values, while county
+grouping retains the original field as a category, matching prior workspace
+behavior. Regional grouping uses `epss_outages.division`, including a
+`Not recorded` group, and fills event-free bins with zero. All bins are clipped
+to the requested range; weekly bins reset on January 1, including short year-end
+bins. Existing `/rank` behavior and its 25-row cap are unchanged.
+
+As in the existing EPSS record API, a direct non-PG&E utility filter returns an
+empty aggregate population. The workspace rejects that unavailable combination
+before making a request, so it is not presented as an observed zero count.
+
+Deploy this service, expose these routes and verify production responses against
+the warehouse before setting the frontend's `VITE_DATA_QUERY_URL` and rebuilding.
+With that variable unset, the workspace retains its existing Visualization API
+record path and browser calculations. Configured aggregate-service failures stay
+visible without switching data sources. No schema changes, reloaders or model
+fitting are required for this migration.
+
+Regression coverage uses real PostgreSQL with controlled fixtures:
+
+```powershell
+# Use a disposable database with no wildfire schema; never point this at the warehouse.
+$env:AGGREGATE_TEST_DSN = 'postgresql://user:password@127.0.0.1:5432/empty_test_db'
+python -m pytest tests/test_workspace_aggregates.py -q
+```
+
+Tests create the fixture schema inside a transaction and roll it back after each
+case. They fail if the schema already exists. Frontend aggregate-request tests
+verify full category results, total consistency and no GeoJSON fallback in
+configured service mode. The Node suite also covers the default record path,
+deployment compatibility, missing values and calendar calculations.
+
 Special tokens: `utility=untagged`, `incident_type=untyped`, `include_untagged=true`.
 
 Year-to-year CAL FIRE **count** comparisons are the incident-map feed, not the Redbook census (2023→2024 listed 133→611 is a posting-threshold drop, not occurrence; median acres 70→43). Warehouse acres still track Redbook ~95–97%. See [`analysis/calfire-2024-jump.md`](../../analysis/calfire-2024-jump.md).
