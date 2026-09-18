@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 from datetime import date
 from math import exp
 from pathlib import Path
@@ -132,6 +133,36 @@ def test_risk_api_allows_cross_origin_browser_requests(risk_api):
     )
     assert preflight.status_code == 200
     assert preflight.headers["access-control-allow-origin"] == "*"
+
+
+def test_metrics_match_persisted_cnhpp_row(risk_api):
+    metrics_path = (
+        REPO_ROOT
+        / "services"
+        / "risk_forecasting"
+        / "outputs"
+        / "metrics_table.csv"
+    )
+    with metrics_path.open(newline="", encoding="utf-8") as handle:
+        expected = next(
+            row
+            for row in csv.DictReader(handle)
+            if row["model"].strip().lower() == "cnhpp"
+        )
+
+    response = risk_api.get("/metrics")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body == {
+        "model": expected["model"],
+        "log_likelihood": float(expected["log_likelihood"]),
+        "top5_precision": float(expected["top5%_precision"]),
+        "top1_precision": float(expected["top1%_precision"]),
+        "lift_top5": float(expected["lift_top5%"]),
+        "auc": float(expected["AUC"]),
+    }
+    assert "deviance" not in body
+    assert "mae" not in body
 
 
 def test_predict_single_cell_uses_p_at_least_one(risk_api):
