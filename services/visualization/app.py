@@ -19,6 +19,10 @@ from services.data_query.filters import (
     parse_utility,
     validate_date_range,
 )
+from services.shared.dataset_registry import (
+    US_IGNITIONS_META_VISUALIZATION,
+    parse_viz_dataset,
+)
 from services.visualization import aggregations, queries
 from services.visualization.styles import (
     DATASETS,
@@ -94,50 +98,14 @@ async def log_requests(request: Request, call_next):
 
 
 def _parse_dataset(value: str) -> str:
-    ds = value.strip().lower().replace("-", "_")
-    aliases = {
-        "ignition": "ignitions",
-        "cpuc": "ignitions",
-        "epss_outages": "epss",
-        "psps_events": "psps",
-        "cal_fire": "calfire",
-        "calfire_incidents": "calfire",
-        "national_ignitions": "us_ignitions",
-        "usignitions": "us_ignitions",
-    }
-    ds = aliases.get(ds, ds)
-    if ds not in DATASETS and ds != "circuits":
-        raise HTTPException(
-            status_code=400,
-            detail=f"unknown dataset {value!r}; allowed: {', '.join(sorted(DATASETS | {'circuits'}))}",
-        )
-    return ds
+    try:
+        return parse_viz_dataset(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-US_IGNITIONS_META = {
-    "source": "firecastrl_irwin_sample",
-    "utility_attributed": False,
-    "census": False,
-    "coverage": "CONUS",
-    "not_comparable_to": "cpuc_ignitions",
-    "sample_geography": {
-        "method": "point-in-polygon vs Census-derived state boundaries",
-        "california_share_overall": 0.4015,
-        "california_share_2024": 0.5872,
-        "west_region_share_overall": 0.7343,
-        "west_region_share_2024": 0.7828,
-        "note": (
-            "Sample is California-heavy (≈40% of all rows; ≈59% of 2024). "
-            "A national map view overstates geographic balance."
-        ),
-    },
-    "notes": (
-        "All-cause IRWIN-derived ignitions (FireCastRL sample). "
-        "Not comparable to California CPUC utility-caused ignitions. "
-        "Geographically skewed: California ≈40% overall / ≈59% of 2024 "
-        "(Census region West ≈73% / ≈78%)."
-    ),
-}
+# Discrepancy: notes text differs from data_query US_IGNITIONS_META.
+US_IGNITIONS_META = US_IGNITIONS_META_VISUALIZATION
 
 
 @app.get("/health")

@@ -8,6 +8,15 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
+from services.shared.dataset_registry import (
+    ALLOWED_RANK_PAIRS,
+    GROUP_BY_FIELDS,
+    GROUPED_DATASETS,
+    NOT_RECORDED,
+    SUMMARY_METRIC_IDS,
+    WORKSPACE_UTILITIES,
+)
+
 
 def _fetch_page(
     conn: psycopg.Connection,
@@ -608,16 +617,6 @@ def spatial_summary(
 RANK_HARD_CAP = 25
 _UNKNOWN_GROUP = "(unknown)"
 
-ALLOWED_RANK_PAIRS = frozenset(
-    {
-        ("cpuc_ignitions", "county", "count"),
-        ("cpuc_ignitions", "utility", "count"),
-        ("calfire_incidents", "county", "count"),
-        ("calfire_incidents", "county", "acres_burned"),
-        ("epss_outages", "circuit", "count"),
-    }
-)
-
 
 class RankQueryError(ValueError):
     """Invalid ranking request; the route converts this to HTTP 400."""
@@ -943,26 +942,9 @@ def _rank_wrap_sql(
 
 # ---- Workspace aggregates (grouped-counts / summary / regional-series) ----
 
-NOT_RECORDED = "Not recorded"
-WORKSPACE_UTILITIES = ("PG&E", "SCE", "SDG&E")
-GROUPED_DATASETS = frozenset(
-    {
-        "cpuc_ignitions",
-        "calfire_incidents",
-        "epss_outages",
-        "psps_events",
-        "us_ignitions",
-    }
-)
-GROUP_BY_FIELDS = frozenset({"cause", "utility", "county"})
+# Catalog constants (NOT_RECORDED, WORKSPACE_UTILITIES, GROUPED_DATASETS,
+# GROUP_BY_FIELDS, SUMMARY_METRIC_IDS) come from services.shared.dataset_registry.
 REGIONAL_INTERVALS = frozenset({"daily", "weekly", "monthly", "quarterly"})
-SUMMARY_METRIC_IDS = {
-    "cpuc_ignitions": ("events", "counties", "utilities"),
-    "calfire_incidents": ("events", "acres", "counties"),
-    "epss_outages": ("events", "circuits", "counties"),
-    "psps_events": ("events", "customers", "utilities"),
-    "us_ignitions": ("events",),
-}
 
 
 class AggregateQueryError(ValueError):

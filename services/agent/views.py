@@ -14,6 +14,11 @@ from pydantic import Field, ValidationError, model_validator
 
 from services.agent.schemas import Metric, StrictModel
 from services.agent.tools import ToolExecution
+from services.shared.dataset_registry import (
+    COUNT_MAP_DATASETS as _COUNT_MAP_DATASETS,
+    DQ_TO_VIZ as _DQ_TO_VIZ,
+    STAT_LABELS as _STAT_LABELS,
+)
 
 ViewStatus = Literal["applied", "planner_fallback", "none"]
 ComponentType = Literal[
@@ -25,26 +30,6 @@ ComponentType = Literal[
     "spatial_context",
 ]
 
-_DQ_TO_VIZ = {
-    "cpuc_ignitions": "ignitions",
-    "us_ignitions": "us_ignitions",
-    "epss_outages": "epss",
-    "psps_events": "psps",
-    "calfire_incidents": "calfire",
-    "hftd": "hftd",
-}
-_STAT_LABELS = {
-    "cpuc_ignitions": "CPUC ignitions",
-    "us_ignitions": "US ignitions",
-    "epss_outages": "EPSS outages",
-    "psps_events": "PSPS events",
-    "calfire_incidents": "CAL FIRE incidents",
-    "circuits": "Circuits",
-    "ignitions": "CPUC ignitions",
-    "epss": "EPSS outages",
-    "psps": "PSPS events",
-    "calfire": "CAL FIRE incidents",
-}
 _SPATIAL_COUNT_LABELS = {
     "ignitions": "CPUC ignitions",
     "epss_outages": "EPSS outages",
@@ -972,15 +957,6 @@ def _map_extent(dataset: str, utility: str | None, county: str | None) -> str:
     if utility:
         return "territory"
     return "statewide"
-
-
-_COUNT_MAP_DATASETS = {
-    "cpuc_ignitions": "ignitions",
-    "us_ignitions": "us_ignitions",
-    "epss_outages": "epss",
-    "psps_events": "psps",
-    "calfire_incidents": "calfire",
-}
 
 
 def _count_window_is_full_year(args: dict[str, Any], summary: dict[str, Any]) -> bool:

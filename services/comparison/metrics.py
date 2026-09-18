@@ -4,6 +4,15 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+from services.shared.dataset_registry import (
+    REASON_CIRCUITS_PGE,
+    REASON_COMPONENT_NULL,
+    REASON_EPSS_PGE_ONLY,
+    REASON_NO_COUNTY,
+    REASON_NO_COUNTY_AREA,
+    REASON_ZERO_IGNITIONS,
+)
+
 MetricName = Literal[
     "ignition_count",
     "epss_outage_count",
@@ -31,15 +40,6 @@ NORMALIZATIONS: frozenset[str] = frozenset({"none", "per_circuit", "per_km2"})
 
 IgnitionDefinition = Literal["attribute", "spatial"]
 IGNITION_DEFINITIONS: frozenset[str] = frozenset({"attribute", "spatial"})
-
-REASON_EPSS_PGE_ONLY = "EPSS is PG&E-only in this warehouse"
-REASON_NO_COUNTY = "No county attribute/polygon for this metric in the warehouse"
-REASON_NO_COUNTY_AREA = "No county polygon layer; per_km2 unavailable for county regions"
-REASON_CIRCUITS_PGE = (
-    "per_circuit uses the PGE EPSS circuits inventory; not meaningful for this scope"
-)
-REASON_ZERO_IGNITIONS = "Ignition count is zero; ratio undefined"
-REASON_COMPONENT_NULL = "One or more component metrics are null"
 
 
 def parse_metric(value: str) -> str:

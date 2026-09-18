@@ -8,6 +8,12 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from services.shared.dataset_registry import (
+    AGENT_DATASET_VALUES,
+    ALLOWED_RANK_PAIRS,
+    DATASETS,
+)
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -24,14 +30,18 @@ class Utility(str, Enum):
 
 
 class Dataset(str, Enum):
-    CPUC_IGNITIONS = "cpuc_ignitions"
-    US_IGNITIONS = "us_ignitions"
-    EPSS_OUTAGES = "epss_outages"
-    PSPS_EVENTS = "psps_events"
-    CALFIRE_INCIDENTS = "calfire_incidents"
-    CIRCUITS = "circuits"
-    HFTD = "hftd"
-    IOU_TERRITORIES = "iou_territories"
+    CPUC_IGNITIONS = DATASETS["cpuc_ignitions"].agent_key
+    US_IGNITIONS = DATASETS["us_ignitions"].agent_key
+    EPSS_OUTAGES = DATASETS["epss_outages"].agent_key
+    PSPS_EVENTS = DATASETS["psps_events"].agent_key
+    CALFIRE_INCIDENTS = DATASETS["calfire_incidents"].agent_key
+    CIRCUITS = DATASETS["circuits"].agent_key
+    # Discrepancy: warehouse/canonical key is hftd_tiers; agent enum value is hftd.
+    HFTD = DATASETS["hftd_tiers"].agent_key
+    IOU_TERRITORIES = DATASETS["iou_territories"].agent_key
+
+
+assert {member.value for member in Dataset} == set(AGENT_DATASET_VALUES)
 
 
 class HftdTier(str, Enum):
@@ -67,6 +77,9 @@ class DataQueryRecordsArgs(StrictModel):
             Dataset.EPSS_OUTAGES,
         }:
             raise ValueError("circuit_id is valid only for circuits or epss_outages")
+        # Discrepancy: data_query /psps/events has no county= (registry
+        # allowed_filters omit it) but this records schema still allows county
+        # on any dataset except us_ignitions.
         if self.county and self.dataset == Dataset.US_IGNITIONS:
             raise ValueError("county is unavailable for US ignitions")
         return self
@@ -90,15 +103,8 @@ class DataQueryRankArgs(StrictModel):
     def validate_rank_pair(self) -> "DataQueryRankArgs":
         if self.start_date and self.end_date and self.start_date > self.end_date:
             raise ValueError("start_date must be <= end_date")
-        allowed = {
-            ("cpuc_ignitions", "county", "count"),
-            ("cpuc_ignitions", "utility", "count"),
-            ("calfire_incidents", "county", "count"),
-            ("calfire_incidents", "county", "acres_burned"),
-            ("epss_outages", "circuit", "count"),
-        }
         pair = (self.dataset, self.group_by, self.metric)
-        if pair not in allowed:
+        if pair not in ALLOWED_RANK_PAIRS:
             raise ValueError(
                 f"ranking is not available for dataset={self.dataset} "
                 f"group_by={self.group_by} metric={self.metric}"
