@@ -263,6 +263,8 @@ DATASETS: dict[str, DatasetSpec] = {
             "data_query": "/calfire/incidents",
             "visualization": "/map-layer",
         },
+        # calfire_missingness is formatted at collect time from warehouse
+        # counts; it is not in CAVEAT_TEXT and is omitted from the static JSON.
         caveat_ids=("calfire_missingness", "calfire_map_feed_counts"),
         stat_label="CAL FIRE incidents",
     ),
