@@ -227,3 +227,59 @@ def test_predict_county_aggregation(risk_api, db_conn):
         params={"cell_id": 400, "county": "Sacramento", "date": "2024-08-15"},
     )
     assert both.status_code == 400, both.text
+
+
+def test_surface_has_all_grid_cells_and_matches_predict(risk_api, db_conn):
+    health = risk_api.get("/health").json()
+    if not health.get("model_loaded"):
+        pytest.fail(f"cannot test /surface — model not loaded: {health.get('detail')}")
+
+    surface = risk_api.get("/surface", params={"date": "2024-07-15"})
+    assert surface.status_code == 200, surface.text
+    body = surface.json()
+    assert body["date"] == "2024-07-15"
+    assert body["lookback_days"] == 90
+    cells = body["cells"]
+    assert len(cells) == 824
+
+    ids = [cell["cell_id"] for cell in cells]
+    assert len(ids) == len(set(ids))
+
+    with db_conn.cursor() as cur:
+        cur.execute("SELECT cell_id FROM wildfire.grid_cells ORDER BY cell_id")
+        warehouse_ids = [int(row[0]) for row in cur.fetchall()]
+    assert sorted(ids) == warehouse_ids
+    assert len(warehouse_ids) == 824
+
+    sample = next(cell for cell in cells if cell["cell_id"] == 400)
+    assert abs(sample["expected_count"] - sample["intensity"]) < 1e-12
+    assert abs(sample["risk"] - (1.0 - exp(-sample["intensity"]))) < 1e-12
+
+    predict = risk_api.get(
+        "/predict",
+        params={"cell_id": sample["cell_id"], "date": "2024-07-15"},
+    )
+    assert predict.status_code == 200, predict.text
+    predicted = predict.json()
+    assert predicted["cell_id"] == sample["cell_id"]
+    assert abs(predicted["risk"] - sample["risk"]) < 1e-12
+    assert abs(predicted["intensity"] - sample["intensity"]) < 1e-12
+    assert abs(predicted["expected_count"] - sample["expected_count"]) < 1e-12
+
+
+def test_surface_coverage_errors(risk_api):
+    health = risk_api.get("/health").json()
+    if not health.get("model_loaded"):
+        pytest.fail(f"cannot test /surface coverage — model not loaded: {health.get('detail')}")
+
+    future = risk_api.get("/surface", params={"date": "2026-08-15"})
+    assert future.status_code == 400, future.text
+    detail = future.json()["detail"]
+    assert "2025-12-31" in detail
+    assert "no forecast ingestion" in detail
+
+    dropped = risk_api.get("/surface", params={"date": "2020-12-15"})
+    assert dropped.status_code == 400, dropped.text
+    dropped_detail = dropped.json()["detail"]
+    assert "corrupt HRRR" in dropped_detail
+    assert "2025-12-31" not in dropped_detail
