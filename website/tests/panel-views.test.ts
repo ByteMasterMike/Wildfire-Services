@@ -23,11 +23,13 @@ test('changing view preserves the selected period and creates independent settin
 });
 
 test('view changes discard stale weather frames and scalar agent results', () => {
-  const changed = viewSettings({...settings, weatherDate:'2024-07-04', weatherYear:2024, riskDate:'2024-07-15', answerStat:{value:99,label:'Previous answer',scope:'All',period:'2024',unit:'events'}}, PANEL_VIEWS.find(view=>view.id==='summary-stats')!);
+  const changed = viewSettings({...settings, weatherDate:'2024-07-04', weatherYear:2024, riskDate:'2024-07-15', mapView:'daily', playbackDate:'2024-07-04', answerStat:{value:99,label:'Previous answer',scope:'All',period:'2024',unit:'events'}}, PANEL_VIEWS.find(view=>view.id==='summary-stats')!);
   assert.equal(changed.answerStat,undefined);
   assert.equal(changed.weatherDate,undefined);
   assert.equal(changed.weatherYear,undefined);
   assert.equal(changed.riskDate,undefined);
+  assert.equal(changed.mapView,undefined);
+  assert.equal(changed.playbackDate,undefined);
 });
 
 test('risk surface view is a map hindcast, not an event overlay', () => {

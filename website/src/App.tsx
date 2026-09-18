@@ -28,6 +28,8 @@ function initialPanels(): PanelInstance[] {
       && Array.isArray(p.settings.overlays) && p.settings.overlays.every((id: string) => ['hftd','territories','hdw'].includes(id))
       && (p.settings.filterMode === undefined || ['inherit','override'].includes(p.settings.filterMode))
       && (p.settings.mapMode === undefined || ['events','risk','residual'].includes(p.settings.mapMode))
+      && (p.settings.mapView === undefined || ['range','daily'].includes(p.settings.mapView))
+      && (p.settings.playbackDate === undefined || typeof p.settings.playbackDate === 'string')
       && (p.settings.riskDate === undefined || typeof p.settings.riskDate === 'string')
       && (p.settings.statMode === undefined || ['summary','medical_exposure'].includes(p.settings.statMode))
       && (p.settings.weatherYear === undefined || Number.isInteger(p.settings.weatherYear))

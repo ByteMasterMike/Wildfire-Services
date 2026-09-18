@@ -8,6 +8,8 @@ export interface PanelSettings {
   datasets: DatasetId[]; overlays: string[];
   filterMode?: 'inherit' | 'override';
   mapMode?: 'events' | 'risk' | 'residual';
+  mapView?: 'range' | 'daily';
+  playbackDate?: string;
   riskDate?: string;
   statMode?: 'summary' | 'medical_exposure';
   weatherYear?: number; weatherDate?: string;

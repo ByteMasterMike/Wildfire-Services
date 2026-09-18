@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import L from "leaflet"
 import gridJSON from "../../docs/assets/data/weather_anim/grid_cells.json"
 import { getJSON } from "./api.ts"
 import { useRemote } from "./useRemote"
 import { usePanel } from "./state"
+import { PlaybackControls } from "./PlaybackControls.tsx"
+import { usePlayback } from "./playback.ts"
 import {
   validateWeatherYear,
   weatherColor,
@@ -47,40 +49,12 @@ export function HdwPlayer({ map }: { map: L.Map | null }) {
     () => (remote.data ? weatherFrames(remote.data, filters) : []),
     [remote.data, filters.start, filters.end],
   )
-  const index = Math.max(
-    0,
-    frames.findIndex((frame) => frame.date === settings.weatherDate),
+  const dates = useMemo(() => frames.map((frame) => frame.date), [frames])
+  const playback = usePlayback(dates, settings.weatherDate, (date) =>
+    update({ weatherDate: date }),
   )
-  const frame = frames[index]
-  const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState(1)
+  const frame = frames[playback.index]
   const cells = useRef<L.Rectangle[]>([])
-  useEffect(() => {
-    if (frame && frame.date !== settings.weatherDate)
-      update({ weatherDate: frame.date })
-  }, [frame, settings.weatherDate, update])
-  useEffect(() => {
-    setPlaying(false)
-  }, [year, filters.start, filters.end])
-  useEffect(() => {
-    const pause = () => {
-      if (document.hidden) setPlaying(false)
-    }
-    document.addEventListener("visibilitychange", pause)
-    return () => document.removeEventListener("visibilitychange", pause)
-  }, [])
-  useEffect(() => {
-    if (!playing || !frame) return
-    if (index >= frames.length - 1) {
-      setPlaying(false)
-      return
-    }
-    const timer = window.setTimeout(
-      () => update({ weatherDate: frames[index + 1].date }),
-      1000 / speed,
-    )
-    return () => clearTimeout(timer)
-  }, [playing, frame, index, frames, speed, update])
   useEffect(() => {
     if (!map) return
     if (!map.getPane("hdw")) map.createPane("hdw").style.zIndex = "350"
@@ -123,50 +97,53 @@ export function HdwPlayer({ map }: { map: L.Map | null }) {
         ? "No verified HDW days in this range."
         : null)
   return (
-    <div className="hdw-player" aria-label="HDW playback">
-      <div className="hdw-controls">
-        <span className="hdw-label">HDW</span>
-        <select
-          aria-label="Weather year"
-          value={year ?? ""}
-          disabled={!availableYears.length}
-          onChange={(e) => {
-            setPlaying(false)
-            update({
-              weatherYear: Number(e.target.value),
-              weatherDate: undefined,
-            })
-          }}
-        >
-          {availableYears.map((y) => (
-            <option key={y}>{y}</option>
-          ))}
-        </select>
-        <button
-          aria-label={playing ? "Pause weather" : "Play weather"}
-          disabled={!frame}
-          onClick={() => {
-            if (index === frames.length - 1)
-              update({ weatherDate: frames[0].date })
-            setPlaying((p) => !p)
-          }}
-        >
-          {playing ? "Ⅱ" : "▶"}
-        </button>
-        <output aria-label="Weather date">
-          {frame?.date ?? (remote.loading ? "Loading…" : "Unavailable")}
-        </output>
-        <select
-          aria-label="Playback speed"
-          value={speed}
-          onChange={(e) => setSpeed(Number(e.target.value))}
-        >
-          {[1, 2, 4].map((s) => (
-            <option key={s} value={s}>
-              {s}×
-            </option>
-          ))}
-        </select>
+    <PlaybackControls
+      label="HDW playback"
+      dates={dates}
+      current={playback.current}
+      index={playback.index}
+      playing={playback.playing}
+      speed={playback.speed}
+      dateLabel="Weather date"
+      playLabel="Play weather"
+      pauseLabel="Pause weather"
+      speedLabel="Playback speed"
+      scrubberLabel="Weather day"
+      dateOutput={
+        frame?.date ?? (remote.loading ? "Loading…" : "Unavailable")
+      }
+      onTogglePlay={() => {
+        if (playback.index === dates.length - 1)
+          update({ weatherDate: dates[0] })
+        playback.setPlaying((playing) => !playing)
+      }}
+      onSpeed={playback.setSpeed}
+      onScrub={(date) => {
+        playback.setPlaying(false)
+        update({ weatherDate: date })
+      }}
+      leading={
+        <>
+          <span className="hdw-label">HDW</span>
+          <select
+            aria-label="Weather year"
+            value={year ?? ""}
+            disabled={!availableYears.length}
+            onChange={(e) => {
+              playback.setPlaying(false)
+              update({
+                weatherYear: Number(e.target.value),
+                weatherDate: undefined,
+              })
+            }}
+          >
+            {availableYears.map((y) => (
+              <option key={y}>{y}</option>
+            ))}
+          </select>
+        </>
+      }
+      trailing={
         <details className="hdw-source">
           <summary aria-label="HDW source">ⓘ</summary>
           <p>
@@ -175,25 +152,15 @@ export function HdwPlayer({ map }: { map: L.Map | null }) {
               " December 2–31, 2020 is excluded pending verification after known source-weather corruption."}
           </p>
         </details>
-      </div>
-      <input
-        aria-label="Weather day"
-        type="range"
-        min={0}
-        max={Math.max(0, frames.length - 1)}
-        value={index}
-        disabled={!frame}
-        onChange={(e) => {
-          setPlaying(false)
-          update({ weatherDate: frames[Number(e.target.value)].date })
-        }}
-      />
-      {error && (
-        <p className="hdw-error" role="status">
-          {error}
-          {remote.error && <button onClick={remote.retry}>Retry</button>}
-        </p>
-      )}
-    </div>
+      }
+      error={
+        error && (
+          <p className="hdw-error" role="status">
+            {error}
+            {remote.error && <button onClick={remote.retry}>Retry</button>}
+          </p>
+        )
+      }
+    />
   )
 }

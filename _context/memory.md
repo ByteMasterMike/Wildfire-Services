@@ -254,4 +254,12 @@
 - Live bug: `/gpu/start` only called `StartInstances`; status stuck at `loading_model` with 0 MiB VRAM until someone asked a question (or ran `ollama run` by hand).
 - Background bring-up after start returns: poll Ollama `/api/ps` → agent's `ensure_context_loaded()` if not resident → `POST :8004/ask` with “How many CPUC ignitions were there in 2023?”. `ready` only after pre-fire `status=answer`; failure is `error` + `reason`. Frontend polling unchanged.
 
+## 2026-09-18 — Event map day-by-day playback
+
+- Optional `Full range` / `Day by day` toggle on EventDataMap (CPUC, EPSS, CAL FIRE, plus PSPS/US ignitions because they share the same map). Default remains full range.
+- Shared `PlaybackControls` + `usePlayback` extracted from HDW; HDW year/source/frames unchanged. Event playback filters already-paged `getLayer` features locally via `featuresOnDate`; EPSS daily refetches once with `include_outages=true`.
+- Empty days keep the basemap and a muted `No events on this date.` chip (not LoadState). PSPS day-by-day is starts-that-day, not duration-active.
+- Branch `event-map-playback`; do not merge until asked.
+
+
 
