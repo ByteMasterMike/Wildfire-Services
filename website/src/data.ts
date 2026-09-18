@@ -1,13 +1,35 @@
 import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import catalog from '../../shared/datasets.json' with {type: 'json'};
 
-export const DATASETS = [
-  { id: 'cpuc', api: 'ignitions', query: 'cpuc_ignitions', name: 'CPUC', color: '#f3a16c', hasCause: false },
-  { id: 'epss', api: 'epss', query: 'epss_outages', name: 'EPSS', color: '#b7a0f0', hasCause: true },
-  { id: 'calfire', api: 'calfire', query: 'calfire_incidents', name: 'CAL FIRE', color: '#ee8585', hasCause: false },
-  { id: 'psps', api: 'psps', query: 'psps_events', name: 'PSPS', color: '#7caef1', hasCause: false },
-  { id: 'us_ignitions', api: 'us_ignitions', query: 'us_ignitions', name: 'US ignitions', color: '#dc2626', hasCause: false },
+// Workspace-only fields. Registry map colors, style.label, and viz keys stay
+// in shared/datasets.json; these names, hex values, panel order, and hasCause
+// have no backend equivalent.
+const WORKSPACE = [
+  { key: 'cpuc_ignitions', id: 'cpuc', name: 'CPUC', color: '#f3a16c', hasCause: false },
+  { key: 'epss_outages', id: 'epss', name: 'EPSS', color: '#b7a0f0', hasCause: true },
+  { key: 'calfire_incidents', id: 'calfire', name: 'CAL FIRE', color: '#ee8585', hasCause: false },
+  { key: 'psps_events', id: 'psps', name: 'PSPS', color: '#7caef1', hasCause: false },
+  { key: 'us_ignitions', id: 'us_ignitions', name: 'US ignitions', color: '#dc2626', hasCause: false },
 ] as const;
-export type DatasetId = typeof DATASETS[number]['id'];
+
+function generatedRow(key: string) {
+  const row = catalog.datasets.find(item => item.key === key);
+  if (!row?.viz_key) throw new Error(`Generated catalog is missing ${key}. Run python scripts/generate_frontend_registry.py`);
+  return row;
+}
+
+export const DATASETS = WORKSPACE.map(overlay => {
+  const row = generatedRow(overlay.key);
+  return {
+    id: overlay.id,
+    api: row.viz_key,
+    query: row.key,
+    name: overlay.name,
+    color: overlay.color,
+    hasCause: overlay.hasCause,
+  };
+});
+export type DatasetId = typeof WORKSPACE[number]['id'];
 export const CHART_DATASETS = DATASETS.slice(0, 3);
 export const UTILITIES = ['PG&E', 'SCE', 'SDG&E'];
 export const COUNTIES = ['Alameda','Alpine','Amador','Butte','Calaveras','Colusa','Contra Costa','Del Norte','El Dorado','Fresno','Glenn','Humboldt','Imperial','Inyo','Kern','Kings','Lake','Lassen','Los Angeles','Madera','Marin','Mariposa','Mendocino','Merced','Modoc','Mono','Monterey','Napa','Nevada','Orange','Placer','Plumas','Riverside','Sacramento','San Benito','San Bernardino','San Diego','San Francisco','San Joaquin','San Luis Obispo','San Mateo','Santa Barbara','Santa Clara','Santa Cruz','Shasta','Sierra','Siskiyou','Solano','Sonoma','Stanislaus','Sutter','Tehama','Trinity','Tulare','Tuolumne','Ventura','Yolo','Yuba'];
