@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import csv
 from contextlib import asynccontextmanager
 from datetime import date
+from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Query
@@ -126,6 +128,18 @@ class ObservedResponse(BaseModel):
     cells: list[ObservedCell]
 
 
+class MetricsResponse(BaseModel):
+    model: str
+    log_likelihood: float
+    top5_precision: float
+    top1_precision: float
+    lift_top5: float
+    auc: float = Field(
+        ...,
+        description="Secondary ranking diagnostic; not a headline Poisson count metric",
+    )
+
+
 class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
@@ -141,6 +155,33 @@ def health() -> HealthResponse:
             detail=_load_error or "Fitted model not loaded",
         )
     return HealthResponse(status="ok", model_loaded=True)
+
+
+@app.get("/metrics", response_model=MetricsResponse)
+def metrics() -> MetricsResponse:
+    """Return the persisted cNHPP evaluation row; no model recomputation."""
+    metrics_path = Path(__file__).resolve().parent / "outputs" / "metrics_table.csv"
+    try:
+        with metrics_path.open(newline="", encoding="utf-8") as handle:
+            row = next(
+                item
+                for item in csv.DictReader(handle)
+                if item["model"].strip().lower() == "cnhpp"
+            )
+    except (FileNotFoundError, StopIteration, KeyError) as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"cNHPP metrics are unavailable in {metrics_path}",
+        ) from exc
+
+    return MetricsResponse(
+        model=row["model"],
+        log_likelihood=float(row["log_likelihood"]),
+        top5_precision=float(row["top5%_precision"]),
+        top1_precision=float(row["top1%_precision"]),
+        lift_top5=float(row["lift_top5%"]),
+        auc=float(row["AUC"]),
+    )
 
 
 @app.get("/predict", response_model=PredictResponse)
