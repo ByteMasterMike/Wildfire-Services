@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from services.risk_forecasting.config import DATA_DIR, lookback_days_from_env
+from services.risk_forecasting.observed import observed_surface
 from services.risk_forecasting.place import PlaceNotFound, resolve_place
 from services.risk_forecasting.predictor import (
     AGGREGATION,
@@ -99,6 +100,18 @@ class SurfaceResponse(BaseModel):
     date: date
     lookback_days: int
     cells: list[SurfaceCell]
+
+
+class ObservedCell(BaseModel):
+    cell_id: int
+    lat: float
+    lon: float
+    observed_count: int
+
+
+class ObservedResponse(BaseModel):
+    date: date
+    cells: list[ObservedCell]
 
 
 class HealthResponse(BaseModel):
@@ -207,3 +220,11 @@ def surface(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return SurfaceResponse.model_validate(payload)
+
+
+@app.get("/observed", response_model=ObservedResponse)
+def observed(
+    date: date = Query(..., description="Historical date YYYY-MM-DD"),
+) -> ObservedResponse:
+    print(f"[API] /observed date={date}")
+    return ObservedResponse.model_validate(observed_surface(date))

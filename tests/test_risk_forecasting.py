@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from services.risk_forecasting.config import DATA_DIR
+from services.risk_forecasting.config import DATA_DIR, GRID_CSV
 from services.risk_forecasting.place import PlaceNotFound, resolve_place
 from services.risk_forecasting.predictor import (
     AGGREGATION,
@@ -283,3 +283,68 @@ def test_surface_coverage_errors(risk_api):
     dropped_detail = dropped.json()["detail"]
     assert "corrupt HRRR" in dropped_detail
     assert "2025-12-31" not in dropped_detail
+
+
+def test_observed_has_all_grid_cells(risk_api, db_conn):
+    r = risk_api.get("/observed", params={"date": "2024-07-05"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["date"] == "2024-07-05"
+    cells = body["cells"]
+    assert len(cells) == 824
+
+    ids = [cell["cell_id"] for cell in cells]
+    assert len(ids) == len(set(ids))
+    with db_conn.cursor() as cur:
+        cur.execute("SELECT cell_id FROM wildfire.grid_cells ORDER BY cell_id")
+        warehouse_ids = [int(row[0]) for row in cur.fetchall()]
+        cur.execute(
+            """
+            SELECT COUNT(*) FROM wildfire.cpuc_ignitions
+            WHERE event_date = DATE '2024-07-05'
+            """
+        )
+        warehouse_day = int(cur.fetchone()[0])
+    assert sorted(ids) == warehouse_ids
+    assert all(cell["observed_count"] >= 0 for cell in cells)
+    assert sum(cell["observed_count"] for cell in cells) == warehouse_day
+    occupied = {cell["cell_id"]: cell["observed_count"] for cell in cells if cell["observed_count"]}
+    assert occupied == {43: 1, 90: 1, 113: 2, 161: 1, 299: 1, 332: 1, 358: 1, 445: 1}
+
+
+def test_observed_postgis_vs_training_csv(risk_api):
+    """Polygon ST_Contains vs the training CSV nearest-SW-corner snap.
+
+    Same 9 CPUC events on 2024-07-05; cell assignment differs because
+    events_YYYY.csv snaps to nearest grid SW-corner, not polygon interior.
+    """
+    csv_path = DATA_DIR / "events_2024.csv"
+    if not csv_path.is_file():
+        pytest.skip(f"training events CSV not available: {csv_path}")
+
+    import pandas as pd
+
+    from services.risk_forecasting import grid_data_prep as gdp
+
+    body = risk_api.get("/observed", params={"date": "2024-07-05"}).json()
+    postgis = {
+        cell["cell_id"]: cell["observed_count"]
+        for cell in body["cells"]
+        if cell["observed_count"]
+    }
+
+    grid = gdp.load_grid(str(GRID_CSV))
+    events = gdp.load_fire_events(str(csv_path))
+    day = events[events["date"] == pd.Timestamp("2024-07-05")]
+    snapped = gdp.snap_events_to_grid(day, grid)
+    csv_counts = {}
+    for cell_id in snapped["cell_id"].astype(int):
+        csv_counts[cell_id] = csv_counts.get(cell_id, 0) + 1
+
+    assert sum(postgis.values()) == 9
+    assert sum(csv_counts.values()) == 9
+    assert len(day) == 9
+    assert postgis != csv_counts, (
+        "expected polygon vs nearest-SW-corner mismatch on 2024-07-05; "
+        f"got identical {postgis}"
+    )
