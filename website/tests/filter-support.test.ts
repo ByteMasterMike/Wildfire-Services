@@ -37,4 +37,6 @@ test('card notes follow visible time-series datasets and the cited source of age
   assert.deepEqual(datasetCaveats(panelDatasets('stat_card', {...settings, answerStat: {...stat, sourceDataset: 'cnhpp'}})), []);
   assert.deepEqual(panelDatasets('stat_card', {...settings, answerStat: stat}), []);
   assert.deepEqual(panelDatasets('map', {...settings, mapMode: 'risk'}), []);
+  assert.deepEqual(panelDatasets('map', {...settings, mapMode: 'residual'}), ['cpuc']);
+  assert.equal(datasetCaveats(panelDatasets('map', {...settings, mapMode: 'residual'})).length, 1);
 });

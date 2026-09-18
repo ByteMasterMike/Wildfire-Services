@@ -2,6 +2,7 @@ import { configFor, filterError, unavailableReason, utilityCode, recordsFromFeat
 import type { AgentAnswer, AgentStreamEvent } from './agentContracts.ts';
 import { readSummary, type SummaryResponse } from './stats.ts';
 import type { RegionSeries } from './temporal.ts';
+import { validateObservedTraining, type ObservedTraining } from './residual.ts';
 import { validateRiskSurface, type RiskSurface } from './riskSurface.ts';
 export type { AgentAnswer, AgentStreamEvent } from './agentContracts.ts';
 
@@ -102,6 +103,12 @@ export async function getDailySeries(dataset: DatasetId, filters: Filters) {
 export async function getRiskSurface(date: string): Promise<RiskSurface> {
   return validateRiskSurface(
     await getJSON<unknown>(`${RISK_URL}/surface?date=${encodeURIComponent(date)}`, 60_000),
+    date,
+  );
+}
+export async function getObservedTraining(date: string): Promise<ObservedTraining> {
+  return validateObservedTraining(
+    await getJSON<unknown>(`${RISK_URL}/observed-training?date=${encodeURIComponent(date)}`),
     date,
   );
 }

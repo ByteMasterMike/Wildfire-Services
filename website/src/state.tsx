@@ -6,7 +6,7 @@ export interface PanelSettings {
   dataset: DatasetId; filters: Filters; interval: Interval; groupBy: GroupBy;
   measure: 'count' | 'share'; metric: 'events' | 'acres' | 'counties' | 'customers';
   datasets: DatasetId[]; overlays: string[];
-  mapMode?: 'events' | 'risk';
+  mapMode?: 'events' | 'risk' | 'residual';
   riskDate?: string;
   weatherYear?: number; weatherDate?: string;
   seriesMode?: 'timeline' | 'yearly' | 'regional' | 'seasonal'; comparisonYears?: number[]; seasonYears?: number[];
