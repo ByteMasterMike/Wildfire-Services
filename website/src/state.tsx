@@ -10,7 +10,7 @@ export interface PanelSettings {
   riskDate?: string;
   statMode?: 'summary' | 'medical_exposure';
   weatherYear?: number; weatherDate?: string;
-  seriesMode?: 'timeline' | 'yearly' | 'regional' | 'seasonal' | 'cumulative_acres'; comparisonYears?: number[]; seasonYears?: number[];
+  seriesMode?: 'timeline' | 'yearly' | 'regional' | 'seasonal' | 'cumulative_acres' | 'customer_events'; comparisonYears?: number[]; seasonYears?: number[];
   answerStat?: { value: number; label: string; scope: string; period: string; unit: string; sourceDataset?: string };
 }
 export function newPanel(id: number, type: PanelId): PanelInstance {
