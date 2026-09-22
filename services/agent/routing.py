@@ -21,9 +21,9 @@ class RouteDecision:
 
 
 UTILITY_PATTERNS = {
-    "PGE": r"\b(?:pge|pg&e|pacific gas(?: and| &) electric)\b",
-    "SCE": r"\b(?:sce|southern california edison)\b",
-    "SDGE": r"\b(?:sdge|sdg&e|san diego gas(?: and| &) electric)\b",
+    "PGE": r"\b(?:pge|pg\s*&\s*e|pg\s+and\s+e|pacific gas(?:(?: and| &) electric)?)\b",
+    "SCE": r"\b(?:sce|socal edison|southern california edison|edison)\b",
+    "SDGE": r"\b(?:sdge|sdg\s*&\s*e|san diego gas(?:(?: and| &) electric)?)\b",
     "PACIFICORP": r"\bpacificorp\b",
     "Liberty": r"\bliberty\b",
     "BVES": r"\b(?:bves|bear valley electric)\b",
@@ -114,7 +114,13 @@ _TIME_SERIES_VIZ = frozenset(
 
 UNSUPPORTED = {
     "cpz": r"\b(?:cpz|circuit protection zone)\b",
-    "cost": r"\b(?:cost|price|budget|dollars?|economic)\b",
+    "cost": r"\b(?:cost|price|budget|dollars?|economic|premiums?)\b",
+    "air_quality": r"\bair quality\b",
+    "evacuation": r"\bevacuat",
+    "translation": r"\btranslat",
+    "personnel": r"\b(?:firefighters?|personnel|human resources)\b",
+    "satellite": r"\bsatellite\b",
+    "leadership": r"\b(?:ceo|chief executive)\b",
     "optimization": r"\b(?:optimi[sz]e|optimal|schedule|allocate)\b",
     "damage": r"\b(?:property damage|expected loss|insured loss|fatalit)\b",
     "live_web": (
@@ -146,7 +152,7 @@ ALL_MODEL_TOOLS = [
 def candidate_tools(question: str) -> list[str]:
     """Return the smallest plausible catalog without choosing tool arguments."""
     lower = " ".join(question.lower().split())
-    has_count = bool(re.search(r"\b(?:how many|count|number of)\b", lower))
+    has_count = _has_quantity_op(lower)
     has_map = _asks_map_view(lower)
     has_trend = bool(
         re.search(r"\b(?:trend|time series|weekly|monthly|daily)\b", lower)
@@ -540,7 +546,13 @@ def _datasets(text: str) -> list[str]:
 
 
 def _has_quantity_op(lower: str) -> bool:
-    return bool(re.search(r"\b(?:how many|count|number of)\b", lower))
+    return bool(
+        re.search(
+            r"\b(?:how many|count|number of|tally|total number|total of)\b|"
+            r"\bclose to\s+\d+\b",
+            lower,
+        )
+    )
 
 
 def _asks_map_view(lower: str) -> bool:
@@ -638,7 +650,7 @@ def _asks_territory_boundary(lower: str) -> bool:
     ):
         return False
     # Boundary asks: territory alone, or "territory map/boundary/geometry".
-    if re.search(r"\b(?:boundary|polygon|geometry|footprint|service area)\b", lower):
+    if re.search(r"\b(?:boundary|polygon|geometry|footprint|service area|service-area|outline)\b", lower):
         return True
     if re.search(r"\b(?:map|show|display|draw)\b.*\bterritor|\bterritor\w*\b.*\b(?:map|layer)\b", lower):
         return True
@@ -968,9 +980,13 @@ def route_question(question: str, *, force_model: bool = False) -> RouteDecision
         )
     # "near/around/close to X" without an explicit radius or coordinates is an
     # undefined spatial scope; do not silently invent county containment.
+    proximity_is_numeric = re.search(
+        r"\b(?:around|close to|near)\s+(?:20\d{2}|a\s+)?\d+\b", lower
+    )
     if (
         re.search(r"\b(?:near|around|close to)\b", lower)
         and not re.search(r"\bnear me\b", lower)
+        and not proximity_is_numeric
         and _coords(text) is None
         and not re.search(
             r"(?:\b\d+(?:\.\d+)?\s*(?:km|mi|miles?|kilometers?)\b|\bradius\b)",
@@ -986,7 +1002,10 @@ def route_question(question: str, *, force_model: bool = False) -> RouteDecision
                 "(for example 25 km) or a county/utility polygon to use."
             ),
         )
-    if re.search(r"\b(?:northern|southern)\s+california\b", lower):
+    region_text = lower
+    for pattern in UTILITY_PATTERNS.values():
+        region_text = re.sub(pattern, " ", region_text, flags=re.I)
+    if re.search(r"\b(?:northern|southern)\s+california\b", region_text):
         return RouteDecision(
             "clarification",
             "undefined_region",

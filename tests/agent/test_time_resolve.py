@@ -65,6 +65,14 @@ def test_explicit_month_window():
     assert result.end_date == "2023-08-31"
 
 
+def test_apostrophe_year_expands_into_the_2000s():
+    result = resolve_time("Tally ignitions in '24", today=TODAY)
+    assert result.status == "explicit"
+    assert result.year == 2024
+    assert result.start_date == "2024-01-01"
+    assert result.end_date == "2024-12-31"
+
+
 def test_bare_year_is_full_calendar_year():
     result = resolve_time("cpuc ignitions in 2024", today=TODAY)
     assert result.status == "explicit"

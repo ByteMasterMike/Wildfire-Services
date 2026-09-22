@@ -111,6 +111,21 @@ def test_relative_year_helpers():
     assert _year("recent fires", today=today) is None
 
 
+def test_close_to_a_number_is_a_count_not_a_place():
+    decision = route_question("Were CPUC ignitions close to 500 in 2024?")
+    assert decision.path == "deterministic"
+    assert decision.rule == "filtered_records"
+    assert decision.tool_calls[0][0] == "data_query_records"
+    assert decision.tool_calls[0][1]["year"] == 2024
+
+
+def test_apostrophe_year_counts_as_that_year():
+    decision = route_question("Tally PG and E utility-attributed ignitions in '24.")
+    assert decision.path == "deterministic"
+    assert decision.rule == "filtered_records"
+    assert decision.tool_calls[0][1]["year"] == 2024
+
+
 def test_near_place_without_radius_clarifies():
     decision = route_question("Show me fires near Sacramento in 2024")
     assert decision.path == "clarification"
