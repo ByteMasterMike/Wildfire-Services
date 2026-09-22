@@ -44,6 +44,18 @@ REGEX_ONLY = {
         "Depends on whether the matched read can express a named county or "
         "month. That is tool-schema arithmetic, not an atomic fact about the wording."
     ),
+    "medical_exposure_missing_year": (
+        "The medical-baseline, life-support, and medically-vulnerable phrases "
+        "are matched in routing.py. There is no separate Jev fact for that phrase set yet."
+    ),
+    "series_mode_missing_year": (
+        "Yearly, seasonal, cumulative-acres, customer-event, and regional "
+        "phrases are matched in routing.py. There is no separate Jev fact for that phrase set yet."
+    ),
+    "series_mode_missing_dataset": (
+        "Yearly and seasonal charts require a named CPUC, EPSS, or CAL FIRE "
+        "dataset. That check stays in routing.py."
+    ),
 }
 
 OFF_TOPIC_RULES = {
