@@ -547,7 +547,11 @@ def _datasets(text: str) -> list[str]:
 
 def _has_quantity_op(lower: str) -> bool:
     return bool(
-        re.search(r"\b(?:how many|count|number of|tally|total number|total of)\b", lower)
+        re.search(
+            r"\b(?:how many|count|number of|tally|total number|total of)\b|"
+            r"\bclose to\s+\d+\b",
+            lower,
+        )
     )
 
 

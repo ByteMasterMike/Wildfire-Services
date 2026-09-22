@@ -17,10 +17,12 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true,
+      "intent": true,
+      "dataset": true
     },
-    "regex_path": "clarification",
-    "regex_rule": "records_missing_year",
+    "regex_path": "deterministic",
+    "regex_rule": "filtered_records",
     "expected_facts": {
       "has_time_scope": {
         "value": false,
@@ -696,11 +698,11 @@
     "needs_human_review": false,
     "regex_agrees": {
       "disposition": true,
-      "intent": false,
+      "intent": true,
       "dataset": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "deterministic",
+    "regex_rule": "filtered_records",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
