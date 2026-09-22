@@ -56,4 +56,6 @@ test('CSV headers carry each relevant shared dataset definition once', () => {
   assert.equal(lines[2], '"count","missing"');
   assert.equal(lines[3], '"0",""');
   assert.match(datasetCaveats(['epss', 'psps'])[0], /PG&E-only/);
+  assert.equal(datasetCaveats(['epss', 'psps']).length, 1);
+  assert.match(datasetCaveats(['us_ignitions'])[0], /FireCastRL classification sample/);
 });
