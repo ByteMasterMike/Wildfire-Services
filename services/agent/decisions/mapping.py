@@ -357,6 +357,9 @@ def derive_case_labels(case: dict[str, Any]) -> dict[str, Any]:
         "intent_excluded": disposition != "answer" or not intent_clear,
         "notes": "; ".join(notes),
     }
+    from services.agent.decisions.expected_facts import expected_facts
+
+    row["expected_facts"] = expected_facts(question)
     return _apply_label_overrides(str(case.get("id") or ""), row)
 
 

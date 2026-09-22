@@ -5,10 +5,26 @@ from services.agent.decisions.mapping import policy_rule_ids
 from services.agent.decisions.schemas import POLICY_SENTENCES
 
 
-def test_every_policy_rule_has_a_function():
-    missing = policy_rule_ids() - covered_rule_ids()
+def test_every_policy_rule_is_covered_or_regex_only(capsys):
+    from services.agent.decisions.jev_policy import REGEX_ONLY
+
+    covered = covered_rule_ids()
+    regex_only = set(REGEX_ONLY)
+    rules = policy_rule_ids()
+    print("rule_id | where")
+    for rule_id in sorted(rules):
+        if rule_id in covered:
+            where = "jev_policy"
+        elif rule_id in regex_only:
+            where = "regex-only: " + REGEX_ONLY[rule_id]
+        else:
+            where = "MISSING"
+        print(f"{rule_id} | {where}")
+    missing = rules - covered - regex_only
     assert not missing, sorted(missing)
-    assert set(POLICY_SENTENCES) <= covered_rule_ids()
+    assert set(POLICY_SENTENCES) <= covered | regex_only
+    overlap = covered & regex_only
+    assert not overlap, sorted(overlap)
 
 
 CASES = [
@@ -126,28 +142,28 @@ CASES = [
     ),
     (
         "unsupported_rank_cross_dataset",
-        JevFacts(intent="rank", dataset="multiple", has_time_scope=0.9, rank_group="county"),
+        JevFacts(intent="rank", dataset="multiple", has_time_scope=0.9, rank_dimension="county", mentions_multiple_datasets=0.9),
         "unsupported",
         None,
         "unsupported_rank_cross_dataset",
     ),
     (
         "unsupported_rank_us_state",
-        JevFacts(intent="rank", dataset="us_ignitions", has_time_scope=0.9, rank_group="state"),
+        JevFacts(intent="rank", dataset="us_ignitions", has_time_scope=0.9, rank_dimension="state"),
         "unsupported",
         None,
         "unsupported_rank_us_state",
     ),
     (
         "unsupported_rank_epss_utility",
-        JevFacts(intent="rank", dataset="epss_outages", has_time_scope=0.9, rank_group="utility"),
+        JevFacts(intent="rank", dataset="epss_outages", has_time_scope=0.9, rank_dimension="utility"),
         "unsupported",
         None,
         "unsupported_rank_epss_utility",
     ),
     (
         "unsupported_ranking",
-        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.9, rank_group="cell"),
+        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.9, rank_dimension="cell"),
         "unsupported",
         None,
         "unsupported_ranking",
@@ -158,13 +174,6 @@ CASES = [
         "unsupported",
         None,
         "unexpressable_county_filter",
-    ),
-    (
-        "unexpressed_filter_constraints",
-        JevFacts(intent="count", dataset="cpuc_ignitions", county="sacramento", has_time_scope=0.9, dropped_filter=0.9),
-        "clarify",
-        "unexpressed_filter_constraints",
-        None,
     ),
     (
         "map_missing_year",
@@ -203,21 +212,21 @@ CASES = [
     ),
     (
         "ranking_missing_year",
-        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.1, rank_group="county"),
+        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.1, rank_dimension="county"),
         "clarify",
         "ranking_missing_year",
         None,
     ),
     (
         "ranking_missing_slots",
-        JevFacts(intent="rank", has_time_scope=0.9, rank_group="missing"),
+        JevFacts(intent="rank", has_time_scope=0.9, rank_dimension="none", dataset="none"),
         "clarify",
         "ranking_missing_slots",
         None,
     ),
     (
         "ranking_county_contradiction",
-        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.9, rank_group="county", county="alameda"),
+        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.9, rank_dimension="county", county="alameda"),
         "clarify",
         "ranking_county_contradiction",
         None,
@@ -233,6 +242,11 @@ CASES = [
 
 
 def test_policy_table():
+    from services.agent.decisions.jev_policy import REGEX_ONLY
+
+    names = {row[0] for row in CASES}
+    missing = set(POLICY_SENTENCES) - names - set(REGEX_ONLY)
+    assert not missing, sorted(missing)
     questions = {
         "time_out_of_coverage": "How many ignitions in 2030?",
         "risk_future_date": "",
@@ -243,6 +257,30 @@ def test_policy_table():
         assert outcome.clarify_reason == reason, (name, outcome.clarify_reason)
         assert outcome.unsupported_topic == topic, (name, outcome.unsupported_topic)
         assert name.replace("multi_intent_stays_answer", "multi_intent_count_and_trend") in outcome.trace
+
+
+def test_rank_triples_match_routing_source():
+    import inspect
+    import re
+
+    from services.agent.decisions.jev_policy import ALLOWED_RANK_TRIPLES
+    from services.agent.routing import _route_ranking
+
+    found = set(re.findall(r'\("(\w+)", "(\w+)", "(\w+)"\)', inspect.getsource(_route_ranking)))
+    assert found == ALLOWED_RANK_TRIPLES
+
+
+def test_acres_metric_is_computed_in_code():
+    outcome = derive_outcome(
+        JevFacts(
+            intent="rank",
+            dataset="calfire_incidents",
+            rank_dimension="county",
+            has_time_scope=0.9,
+        ),
+        question="Which county had the most acres burned in 2023?",
+    )
+    assert outcome.disposition == "answer"
 
 
 def test_hftd_map_does_not_need_a_year():

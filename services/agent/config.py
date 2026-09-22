@@ -63,6 +63,7 @@ class AgentSettings:
     jev_daily_call_cap: int = 5000
     jev_log_path: str = "services/agent/logs/jev_shadow.jsonl"
     jev_log_max_mb: float = 50.0
+    jev_ablation: str = "v3_policy_context"
 
     @classmethod
     def from_env(cls) -> "AgentSettings":
@@ -127,6 +128,7 @@ class AgentSettings:
                 "AGENT_JEV_LOG_PATH", "services/agent/logs/jev_shadow.jsonl"
             ),
             jev_log_max_mb=float(os.getenv("AGENT_JEV_LOG_MAX_MB", "50")),
+            jev_ablation=os.getenv("AGENT_JEV_ABLATION", "v3_policy_context").strip(),
         )
         value.validate()
         return value
@@ -159,6 +161,17 @@ class AgentSettings:
             raise ValueError("AGENT_JEV_MAX_CONCURRENCY must be >= 1")
         if self.jev_daily_call_cap < 0:
             raise ValueError("AGENT_JEV_DAILY_CALL_CAP must be >= 0")
+        if self.jev_ablation not in {
+            "v2_full",
+            "v3_split",
+            "v3_single",
+            "v3_no_glossary",
+            "v3_policy_context",
+        }:
+            raise ValueError(
+                "AGENT_JEV_ABLATION must be v2_full, v3_split, v3_single, "
+                "v3_no_glossary, or v3_policy_context"
+            )
         if not self.allow_remote_provider and not _is_loopback(self.model_base_url):
             raise ValueError(
                 "Remote model providers are blocked. Security review and "

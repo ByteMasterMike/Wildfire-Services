@@ -277,7 +277,7 @@
 ## 2026-09-22 — Jev phase 3 (facts, not a rulebook)
 
 - `jev-1.13.0` has no seed, temperature, or deterministic mode in SDK 0.7.1. Identical canonical payloads (hash mismatches 0) still move low-confidence choice labels. Confidence >= 0.7 did not flip in a 20x10 repeat. Notes in `docs/JEV_DETERMINISM.md`.
-- Schema v3 questions live in `services/agent/decisions/v3.py`. `jev_policy.py` turns those facts into a disposition. v3 is not the shadow default yet. Router paraphrase fixes stay off this branch until the Jev baseline is committed.
+- Schema v3 questions live in `services/agent/decisions/v3.py`. `jev_policy.py` turns those facts into a disposition. Ablation winner is `v3_policy_context` (disposition 87.6%, paraphrase disposition 90.2%, tool_pick 100%). Shadow uses that layout. The daily cap counts questions. Router paraphrase fixes are a separate branch.
 
 
 

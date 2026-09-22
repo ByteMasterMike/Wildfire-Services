@@ -223,9 +223,11 @@ def test_daily_cap_blocks_further_calls(tmp_path):
     runner.submit_routing("b", "two", decision, "2026-09-21", forced=False)
     rows = _wait(runner.log, lambda found: any(row.get("reason") == "daily_cap" for row in found))
     deadline = time.time() + 2
-    while backend.calls < 1 and time.time() < deadline:
+    while backend.calls < 3 and time.time() < deadline:
         time.sleep(0.02)
-    assert backend.calls == 1
+    # The cap counts questions. The admitted question makes three v3 calls.
+    assert backend.calls == 3
+    assert runner._calls_today == 1
     assert runner.cap_blocked == 1
     assert any(row.get("reason") == "daily_cap" for row in rows)
 

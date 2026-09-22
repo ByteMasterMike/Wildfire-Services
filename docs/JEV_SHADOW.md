@@ -77,7 +77,7 @@ AGENT_JEV_MODE=shadow .venv/bin/python -m services.agent.eval.runner --models qw
 .venv/bin/python -m services.agent.eval.jev_vs_qwen jev-shadow
 ```
 
-A field that differs between off and shadow, and also between the two off runs, is `llm_variance`. Only a difference that appears in the shadow run alone is a shadow effect. The daily cap still counts API reservations. Schema v3 will count user questions instead, once that config is the shadow default.
+A field that differs between off and shadow, and also between the two off runs, is `llm_variance`. Only a difference that appears in the shadow run alone is a shadow effect. `AGENT_JEV_DAILY_CALL_CAP` counts user questions. One question may send several Jev calls. `AGENT_JEV_ABLATION` selects the shadow question layout.
 
 
 ## Not implemented

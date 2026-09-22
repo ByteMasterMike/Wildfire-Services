@@ -105,6 +105,7 @@ class ShadowRunner:
         today: str,
         *,
         forced: bool,
+        candidate_tools: list[str] | None = None,
     ) -> None:
         admitted = self._sampled()
         with self._lock:
@@ -128,7 +129,13 @@ class ShadowRunner:
             regex,
             state,
             questions,
+            list(candidate_tools or []),
         )
+
+    @property
+    def bundles_tool_pick(self) -> bool:
+        """v3 sends tool pick inside the question record, so it is not a second cap hit."""
+        return getattr(self.settings, "jev_ablation", "v3_split") != "v2_full"
 
     def was_admitted(self, request_id: str) -> bool:
         with self._lock:
@@ -207,6 +214,7 @@ class ShadowRunner:
         return True
 
     def _consume_cap(self) -> bool:
+        """Count user questions. One question may make several API calls."""
         today = self._clock().date()
         with self._lock:
             if today != self._day:
@@ -228,7 +236,23 @@ class ShadowRunner:
         regex: dict[str, Any],
         state: dict[str, str],
         questions: dict[str, QuestionSpec],
+        candidate_tools: list[str] | None = None,
     ) -> None:
+        if self.bundles_tool_pick:
+            try:
+                self._run_v3(
+                    request_id,
+                    question,
+                    digest,
+                    forced,
+                    path,
+                    rule,
+                    regex,
+                    candidate_tools or [],
+                )
+            finally:
+                self._slots.release()
+            return
         try:
             result = self._evaluate(request_id, digest, state, questions)
             if result is None:
@@ -340,6 +364,118 @@ class ShadowRunner:
             )
         finally:
             self._slots.release()
+
+    def _run_v3(
+        self,
+        request_id: str,
+        question: str,
+        digest: str,
+        forced: bool,
+        path: str,
+        rule: str,
+        regex: dict[str, Any],
+        candidate_tools: list[str],
+    ) -> None:
+        from concurrent.futures import ThreadPoolExecutor
+
+        from services.agent.decisions.integrity import parse_raw_answers
+        from services.agent.decisions.jev_policy import derive_outcome, facts_from_answers
+        from services.agent.decisions.schemas import DOMAIN_CONTEXT
+        from services.agent.decisions.v3 import SCHEMA_VERSION as V3_VERSION
+        from services.agent.decisions.v3 import calls_for
+
+        config = getattr(self.settings, "jev_ablation", "v3_split")
+        mode = {
+            "v3_split": "per_call",
+            "v3_single": "concatenated",
+            "v3_no_glossary": "none",
+            "v3_policy_context": "policy",
+        }.get(config, "per_call")
+        calls = calls_for(
+            question,
+            self._clock().date().isoformat(),
+            include_tools=candidate_tools or None,
+            glossary_mode=mode,
+            policy_context=DOMAIN_CONTEXT if config == "v3_policy_context" else None,
+        )
+
+        def run_call(call: dict[str, Any]) -> tuple[dict[str, Any], DecisionResult | None]:
+            result = self._evaluate(request_id, digest, call["state"], call["questions"])
+            return call, result
+
+        with ThreadPoolExecutor(max_workers=max(1, len(calls))) as pool:
+            finished = list(pool.map(run_call, calls))
+
+        call_records = []
+        merged: dict[str, Any] = {}
+        errors: list[str] = []
+        unexpected = False
+        model_version = None
+        for call, result in finished:
+            payload = _payload(call["state"], call["questions"], self.settings.jev_model)
+            if result is None:
+                errors.append("backend returned None")
+                call_records.append({"name": call["name"], "request_payload": payload, "error": "backend returned None"})
+                continue
+            if not self._identity_ok(result, request_id, digest, question):
+                return
+            if result.raw:
+                try:
+                    _parsed, flag = parse_raw_answers(result.raw, call["questions"])
+                    unexpected = unexpected or flag
+                except ValueError as exc:
+                    errors.append(str(exc))
+            if result.error:
+                errors.append(result.error)
+            else:
+                merged.update({name: answer_to_json(answer) for name, answer in result.answers.items()})
+            model_version = model_version or result.model_version
+            call_records.append(
+                {
+                    "name": call["name"],
+                    "request_payload": payload,
+                    "raw": result.raw,
+                    "latency_ms": result.latency_ms,
+                    "input_tokens": result.input_tokens,
+                    "unexpected_option": result.unexpected_option,
+                    "error": result.error,
+                }
+            )
+            unexpected = unexpected or bool(result.unexpected_option)
+        facts = facts_from_answers(merged)
+        outcome = derive_outcome(facts, question=question)
+        self._write_now(
+            {
+                "type": "routing",
+                "schema_version": V3_VERSION,
+                "ablation_config": config,
+                "request_id": request_id,
+                "ts": self._clock().isoformat(),
+                "question": question,
+                "question_hash": digest,
+                "forced": forced,
+                "backend": self.backend.name,
+                "model_version": model_version,
+                "regex": {"path": path, "rule": rule, "labels": regex},
+                "unmapped_rule": bool(regex.get("unmapped_rule")),
+                "request_payload": call_records[0]["request_payload"] if call_records else {},
+                "calls": call_records,
+                "facts": facts.__dict__,
+                "outcome": {
+                    "disposition": outcome.disposition,
+                    "clarify_reason": outcome.clarify_reason,
+                    "unsupported_topic": outcome.unsupported_topic,
+                    "trace": outcome.trace,
+                    "confidence": outcome.confidence,
+                },
+                "jev": None
+                if errors or not merged
+                else {"answers": merged},
+                "agree": None,
+                "unexpected_option": unexpected,
+                "error": "; ".join(errors) if errors else None,
+            }
+        )
 
     def _evaluate(
         self,

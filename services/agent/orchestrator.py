@@ -151,14 +151,20 @@ class AgentOrchestrator:
                 forced = bool(
                     force_model or self.settings.disable_deterministic_routing
                 )
+                tools = (
+                    list(decision.slots.get("candidate_tools") or [])
+                    if decision.path == "model"
+                    else None
+                )
                 shadow.submit_routing(
                     request_id,
                     question,
                     decision,
                     date.today().isoformat(),
                     forced=forced,
+                    candidate_tools=tools,
                 )
-                if decision.path == "model":
+                if decision.path == "model" and not shadow.bundles_tool_pick:
                     shadow.submit_tool_pick(
                         request_id,
                         question,

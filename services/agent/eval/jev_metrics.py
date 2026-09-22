@@ -240,6 +240,10 @@ def write_review_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "jev",
         "jev_confidence",
         "jev_probabilities",
+        "repeats",
+        "correct_count",
+        "modal_answer",
+        "flip_rate",
         "category",
         "notes",
     ]

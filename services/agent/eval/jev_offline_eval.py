@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -146,6 +147,7 @@ def expected_for(case: dict[str, Any], source: str) -> dict[str, Any]:
             "clarify_reason": case.get("expected_clarify_reason"),
             "unsupported_topic": case.get("expected_unsupported_topic"),
             "needs_human_review": bool(case.get("needs_human_review")),
+            "expected_facts": case.get("expected_facts"),
         }
         if expected.get("disposition") != "answer":
             expected["intent"] = None
@@ -444,6 +446,11 @@ def main() -> int:
     parser.add_argument("--repeat-count", type=int, default=10)
     parser.add_argument("--budget-estimate", action="store_true")
     parser.add_argument("--ablation", action="store_true")
+    parser.add_argument(
+        "--ablation-configs",
+        default="",
+        help="Comma-separated ablation configs. Default is all five.",
+    )
     args = parser.parse_args()
 
     from dotenv import load_dotenv
@@ -531,6 +538,7 @@ def main() -> int:
 
     results: list[dict[str, Any]] = []
     repeat_hits: dict[str, list[list[bool]]] = {}
+    intent_votes: dict[str, list[Any]] = {}
     total = len(jobs)
     for index, job in enumerate(jobs, start=1):
         case = job["case"]
@@ -578,6 +586,8 @@ def main() -> int:
                     repeat_hits[field][shot_index].append(
                         labels_match(expected.get(field), actual.get(field))
                     )
+                    if field == "intent":
+                        intent_votes.setdefault(str(case.get("id")), []).append(actual.get(field))
         jev_answers = {}
         if result and result.answers and not result.error:
             jev_answers = {
@@ -704,14 +714,22 @@ def main() -> int:
         if all(row["agree"].values()):
             continue
         confidence = choice_confidence(row["jev_record"], "intent")
+        votes = intent_votes.get(str(row["case_id"])) or [(row.get("jev_answers") or {}).get("intent")]
+        modal = Counter(votes).most_common(1)[0][0] if votes else ""
+        expected_intent = row["expected"].get("intent")
+        correct_count = sum(1 for vote in votes if labels_match(expected_intent, vote))
         review_rows.append(
             {
                 "request_id": row["case_id"],
                 "source": row["source"],
                 "question": row["question"],
-                "expected": json.dumps(row["expected"].get("intent")),
+                "expected": json.dumps(expected_intent),
                 "regex": row["regex"].get("intent"),
                 "jev": (row.get("jev_answers") or {}).get("intent"),
+                "repeats": len(votes),
+                "correct_count": correct_count,
+                "modal_answer": modal,
+                "flip_rate": 0 if len(set(map(str, votes))) <= 1 else 1,
                 "jev_confidence": confidence if confidence is not None else "",
                 "jev_probabilities": json.dumps(
                     (((row.get("jev_record") or {}).get("jev") or {}).get("answers") or {})

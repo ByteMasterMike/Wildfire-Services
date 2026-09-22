@@ -107,6 +107,21 @@ def topic_questions() -> dict[str, QuestionSpec]:
         "is_multi_intent": _noul(
             "The question asks for two different kinds of result at once, such as a count and a trend."
         ),
+        "rank_dimension": _choice(
+            "If the question asks for a ranking, what is being ranked?",
+            {
+                "county": "Counties are the things being ordered.",
+                "utility": "Utilities are the things being ordered.",
+                "state": "States are the things being ordered.",
+                "circuit": "Circuits are the things being ordered.",
+                "division": "Divisions are the things being ordered.",
+                "cell": "Grid cells are the things being ordered.",
+                "none": "The question is not asking for a ranking.",
+            },
+        ),
+        "mentions_multiple_datasets": _noul(
+            "The question names two different warehouse datasets, such as CPUC ignitions and CAL FIRE incidents."
+        ),
     }
 
 

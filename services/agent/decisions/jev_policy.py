@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Callable
 
+from services.agent.routing import _rank_metric
 from services.agent.time_resolve import resolve_time
 
 COUNTY_CAPABLE = {
@@ -16,6 +17,25 @@ COUNTY_CAPABLE = {
     "circuits",
 }
 RISK_COVERAGE_END = date(2025, 12, 31)
+
+# Same allowed (dataset, group_by, metric) triples as routing._route_ranking.
+ALLOWED_RANK_TRIPLES = {
+    ("cpuc_ignitions", "county", "count"),
+    ("cpuc_ignitions", "utility", "count"),
+    ("calfire_incidents", "county", "count"),
+    ("calfire_incidents", "county", "acres_burned"),
+    ("epss_outages", "circuit", "count"),
+}
+
+# A dropped filter is a property of the tool call the router would build, not
+# of the question wording. Jev would have to know which read fires and which
+# argument that read cannot express. That stays in routing.py.
+REGEX_ONLY = {
+    "unexpressed_filter_constraints": (
+        "Depends on whether the matched read can express a named county or "
+        "month. That is tool-schema arithmetic, not an atomic fact about the wording."
+    ),
+}
 
 OFF_TOPIC_RULES = {
     "cpz": "unsupported_cpz",
@@ -43,11 +63,8 @@ class JevFacts:
     is_multi_intent: float = 0.0
     county: str | None = "none"
     utilities: dict[str, float] = field(default_factory=dict)
-    # Optional facts used by ranking refusals. Production leaves these unset
-    # unless a later question asks them; tests set them explicitly.
-    rank_group: str | None = None
-    rank_cross_dataset: float = 0.0
-    dropped_filter: float = 0.0
+    rank_dimension: str | None = "none"
+    mentions_multiple_datasets: float = 0.0
     threshold: float = 0.5
 
 
@@ -59,6 +76,52 @@ class DerivedOutcome:
     trace: list[str]
     confidence: float | None
     deciding_margins: dict[str, float]
+
+
+def facts_from_answers(answers: dict[str, Any], *, threshold: float = 0.5) -> JevFacts:
+    """Build JevFacts from Answer objects or JSON answer dicts."""
+
+    def raw(name: str) -> Any:
+        answer = answers.get(name)
+        if answer is None:
+            return None
+        if isinstance(answer, dict):
+            return answer.get("value")
+        return getattr(answer, "value", None)
+
+    def noul(name: str) -> float:
+        value = raw(name)
+        return float(value) if isinstance(value, (int, float)) else 0.0
+
+    def choice(name: str) -> str | None:
+        value = raw(name)
+        return value if isinstance(value, str) else None
+
+    utilities = {
+        key.removeprefix("utility_"): noul(key)
+        for key in answers
+        if str(key).startswith("utility_")
+    }
+    return JevFacts(
+        has_time_scope=noul("has_time_scope"),
+        vague_time=noul("vague_time"),
+        future_time=noul("future_time"),
+        names_specific_place=noul("names_specific_place"),
+        vague_proximity=noul("vague_proximity"),
+        broad_region=noul("broad_region"),
+        asks_risk=noul("asks_risk"),
+        names_risk_metric=noul("names_risk_metric"),
+        prompt_injection=noul("prompt_injection"),
+        off_topic=choice("off_topic") or "on_topic",
+        intent=choice("intent"),
+        dataset=choice("dataset"),
+        is_multi_intent=noul("is_multi_intent"),
+        county=choice("county") or "none",
+        utilities=utilities,
+        rank_dimension=choice("rank_dimension") or "none",
+        mentions_multiple_datasets=noul("mentions_multiple_datasets"),
+        threshold=threshold,
+    )
 
 
 def _yes(value: float, threshold: float) -> bool:
@@ -131,22 +194,12 @@ def derive_outcome(
     if _yes(facts.asks_risk, threshold) and not _yes(facts.has_time_scope, threshold):
         return hit("forecast_missing_date", "asks_risk", "has_time_scope")
 
-    if _yes(facts.rank_cross_dataset, threshold) or (
-        facts.intent == "rank" and facts.dataset == "multiple"
-    ):
-        trace.append("unsupported_rank_cross_dataset")
-        return DerivedOutcome("unsupported", None, "unsupported_rank_cross_dataset", trace, None, {})
-    if facts.intent == "rank" and (
-        facts.rank_group == "state" or facts.dataset == "us_ignitions"
-    ):
-        trace.append("unsupported_rank_us_state")
-        return DerivedOutcome("unsupported", None, "unsupported_rank_us_state", trace, None, {})
-    if facts.intent == "rank" and facts.dataset == "epss_outages" and facts.rank_group == "utility":
-        trace.append("unsupported_rank_epss_utility")
-        return DerivedOutcome("unsupported", None, "unsupported_rank_epss_utility", trace, None, {})
-    if facts.intent == "rank" and facts.rank_group in {"cell", "division"}:
-        trace.append("unsupported_ranking")
-        return DerivedOutcome("unsupported", None, "unsupported_ranking", trace, None, {})
+    ranking_rule = _ranking_rule(facts, question, threshold)
+    if ranking_rule:
+        if ranking_rule.startswith("unsupported"):
+            trace.append(ranking_rule)
+            return DerivedOutcome("unsupported", None, ranking_rule, trace, None, {})
+        return hit(ranking_rule, "has_time_scope", "mentions_multiple_datasets")
 
     if (
         facts.county
@@ -156,8 +209,6 @@ def derive_outcome(
     ):
         trace.append("unexpressable_county_filter")
         return DerivedOutcome("unsupported", None, "unexpressable_county_filter", trace, None, {})
-    if _yes(facts.dropped_filter, threshold):
-        return hit("unexpressed_filter_constraints", "dropped_filter")
     if (
         _yes(facts.asks_risk, threshold)
         and facts.county not in (None, "none")
@@ -173,7 +224,6 @@ def derive_outcome(
         "spatial_context": "spatial_missing_year",
         "count": "records_missing_year",
         "records_list": "records_missing_year",
-        "rank": "ranking_missing_year",
     }
     if (
         intent in missing_year
@@ -181,12 +231,6 @@ def derive_outcome(
         and not (intent == "map" and facts.dataset == "hftd")
     ):
         return hit(missing_year[intent], "has_time_scope")
-    if intent == "rank" and facts.rank_group == "missing":
-        trace.append("ranking_missing_slots")
-        return DerivedOutcome("clarify", "ranking_missing_slots", None, trace, None, {})
-    if intent == "rank" and facts.rank_group == "county" and facts.county not in (None, "none"):
-        trace.append("ranking_county_contradiction")
-        return DerivedOutcome("clarify", "ranking_county_contradiction", None, trace, None, {})
 
     if _yes(facts.is_multi_intent, threshold):
         trace.append("multi_intent_count_and_trend")
@@ -212,6 +256,32 @@ def _risk_date_after_coverage(question: str) -> bool:
         return False
 
 
+def _ranking_rule(facts: JevFacts, question: str, threshold: float) -> str | None:
+    """Mirror _route_ranking using dataset, rank_dimension, and a code-side metric."""
+    if facts.intent != "rank":
+        return None
+    dimension = facts.rank_dimension if facts.rank_dimension not in (None, "none") else None
+    dataset = facts.dataset if facts.dataset not in (None, "none", "multiple") else None
+    if _yes(facts.mentions_multiple_datasets, threshold) or facts.dataset == "multiple":
+        return "unsupported_rank_cross_dataset"
+    if dimension == "state" or facts.dataset == "us_ignitions":
+        return "unsupported_rank_us_state"
+    if dimension == "utility" and dataset == "epss_outages":
+        return "unsupported_rank_epss_utility"
+    if dimension in {"cell", "division"}:
+        return "unsupported_ranking"
+    if dataset is None or dimension is None:
+        return "ranking_missing_slots"
+    metric = _rank_metric((question or "").lower(), dataset)
+    if (dataset, dimension, metric) not in ALLOWED_RANK_TRIPLES:
+        return "unsupported_ranking"
+    if not _yes(facts.has_time_scope, threshold):
+        return "ranking_missing_year"
+    if dimension == "county" and facts.county not in (None, "none"):
+        return "ranking_county_contradiction"
+    return None
+
+
 def covered_rule_ids() -> set[str]:
     """Rule ids this module can emit, excluding the extra prompt_injection fact."""
     return {
@@ -229,7 +299,6 @@ def covered_rule_ids() -> set[str]:
         "unsupported_rank_epss_utility",
         "unsupported_ranking",
         "unexpressable_county_filter",
-        "unexpressed_filter_constraints",
         "ambiguous_risk_place",
         "map_plus_trend_missing_year",
         "map_missing_year",

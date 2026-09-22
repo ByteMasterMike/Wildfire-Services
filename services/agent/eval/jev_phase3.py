@@ -25,12 +25,43 @@ def dispatch(args: Any, jobs: list[dict[str, Any]]) -> int:
         return _run_repeat_test(args.repeat_test, args.repeat_count, args.model)
 
     if args.ablation or args.schema == "v3":
-        print(
-            "v3 and ablation execution is wired through calls_for() and derive_outcome(). "
-            "Run --budget-estimate before a live ablation. "
-            "This process did not start those calls because the repeat-test hash proof runs first."
-        )
-        return 0
+        return _run_live(args, jobs, repeats)
+    return 0
+
+
+def _run_live(args: Any, jobs: list[dict[str, Any]], repeats: int) -> int:
+    from services.agent.decisions.backend import QuestionSpec
+    from services.agent.decisions.integrity import question_hash
+    from services.agent.decisions.typesafe_backend import TypeSafeBackend, prepared_api_key
+    from services.agent.eval.jev_ablation import CONFIGS, run_ablation
+    from services.agent.eval.jev_offline_eval import _today
+
+    if not prepared_api_key():
+        print("TYPESAFE_API_KEY is not set. No live calls were made.")
+        return 1
+    backend = TypeSafeBackend(model=args.model, timeout_seconds=30)
+    probe = backend.evaluate(
+        {"question": "probe", "today": _today(), "context": "probe"},
+        {"ready": QuestionSpec(kind="noul", instructions="The word probe is present.")},
+        request_id="probe",
+        question_hash=question_hash("probe"),
+    )
+    if probe is None or probe.error or not probe.model_version:
+        print(f"Probe failed: {None if probe is None else probe.error}")
+        return 1
+    backend.model = probe.model_version
+    print(f"Pinned model version {backend.model}")
+    chosen = tuple(
+        item.strip()
+        for item in (getattr(args, "ablation_configs", "") or "").split(",")
+        if item.strip()
+    )
+    selected = chosen or (CONFIGS if args.ablation else ("v3_split",))
+    report = run_ablation(jobs, backend, repeats=repeats, configs=selected)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    out = RUNS / f"jev_ablation_{stamp}.json"
+    out.write_text(json.dumps(report, default=str), encoding="utf-8")
+    print(f"Wrote {out}")
     return 0
 
 
