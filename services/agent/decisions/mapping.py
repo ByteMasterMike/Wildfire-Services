@@ -486,7 +486,7 @@ def _intent_from_case(
         return "multi_intent", True
     if "data_query_spatial" in unique and "risk_forecast" in unique:
         return "risk", True
-    if not unique and disposition == "answer":
+    if not unique:
         return "exploratory_overview", False
     return None, False
 

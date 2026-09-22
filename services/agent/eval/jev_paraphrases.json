@@ -17,12 +17,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": true,
-      "intent": false,
-      "dataset": true
+      "disposition": false
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "clarification",
+    "regex_rule": "records_missing_year",
     "expected_facts": {
       "has_time_scope": {
         "value": false,
@@ -95,11 +93,11 @@
     "needs_human_review": false,
     "regex_agrees": {
       "disposition": true,
-      "intent": false,
+      "intent": true,
       "dataset": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "deterministic",
+    "regex_rule": "filtered_records",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
@@ -623,12 +621,12 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false,
-      "intent": false,
-      "dataset": false
+      "disposition": true,
+      "intent": true,
+      "dataset": true
     },
-    "regex_path": "clarification",
-    "regex_rule": "undefined_spatial_scope",
+    "regex_path": "deterministic",
+    "regex_rule": "filtered_records",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
@@ -697,12 +695,12 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false,
+      "disposition": true,
       "intent": false,
-      "dataset": false
+      "dataset": true
     },
-    "regex_path": "clarification",
-    "regex_rule": "undefined_spatial_scope",
+    "regex_path": "model",
+    "regex_rule": "open_ended",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
@@ -772,7 +770,8 @@
     "label_certainty": "reviewed",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true,
+      "dataset": false
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -842,7 +841,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": true
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -913,8 +913,7 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": true,
-      "unsupported_topic": true
+      "disposition": true
     },
     "regex_path": "unsupported",
     "regex_rule": "unsupported_cost",
@@ -984,7 +983,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": true
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -1055,8 +1055,7 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": true,
-      "clarify_reason": true
+      "disposition": true
     },
     "regex_path": "clarification",
     "regex_rule": "undefined_spatial_scope",
@@ -1130,8 +1129,7 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": true,
-      "clarify_reason": true
+      "disposition": true
     },
     "regex_path": "clarification",
     "regex_rule": "risk_missing_place",
@@ -1201,7 +1199,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": true
     },
     "regex_path": "model",
     "regex_rule": "open_comparison",
@@ -1273,7 +1272,7 @@
     "needs_human_review": false,
     "regex_agrees": {
       "disposition": false,
-      "clarify_reason": false
+      "dataset": true
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -1343,7 +1342,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": true
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -1413,7 +1413,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": true
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -1483,10 +1484,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "unsupported",
+    "regex_rule": "unsupported_air_quality",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
@@ -1553,10 +1554,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "unsupported",
+    "regex_rule": "unsupported_leadership",
     "expected_facts": {
       "has_time_scope": {
         "value": false,
@@ -1623,10 +1624,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "unsupported",
+    "regex_rule": "unsupported_evacuation",
     "expected_facts": {
       "has_time_scope": {
         "value": false,
@@ -1693,10 +1694,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "unsupported",
+    "regex_rule": "unsupported_translation",
     "expected_facts": {
       "has_time_scope": {
         "value": false,
@@ -1764,11 +1765,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false,
-      "unsupported_topic": false
+      "disposition": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "unsupported",
+    "regex_rule": "unsupported_cost",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
@@ -1835,10 +1835,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "unsupported",
+    "regex_rule": "unsupported_personnel",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
@@ -1905,10 +1905,10 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": true
     },
-    "regex_path": "model",
-    "regex_rule": "open_ended",
+    "regex_path": "unsupported",
+    "regex_rule": "unsupported_satellite",
     "expected_facts": {
       "has_time_scope": {
         "value": true,
@@ -1976,8 +1976,7 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": true,
-      "unsupported_topic": true
+      "disposition": true
     },
     "regex_path": "unsupported",
     "regex_rule": "unsupported_live_web",
@@ -2047,7 +2046,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": true
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -2117,7 +2117,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": false
     },
     "regex_path": "model",
     "regex_rule": "open_ended",
@@ -2187,7 +2188,8 @@
     "label_certainty": "low",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false
+      "disposition": false,
+      "dataset": false
     },
     "regex_path": "deterministic",
     "regex_rule": "filtered_records",
@@ -2339,12 +2341,12 @@
     "label_certainty": "high",
     "needs_human_review": false,
     "regex_agrees": {
-      "disposition": false,
+      "disposition": true,
       "intent": false,
       "dataset": false
     },
-    "regex_path": "clarification",
-    "regex_rule": "undefined_region",
+    "regex_path": "model",
+    "regex_rule": "open_ended",
     "expected_facts": {
       "has_time_scope": {
         "value": false,
@@ -2647,11 +2649,11 @@
     "needs_human_review": false,
     "regex_agrees": {
       "disposition": true,
-      "intent": false,
+      "intent": true,
       "dataset": true
     },
-    "regex_path": "deterministic",
-    "regex_rule": "time_series",
+    "regex_path": "model",
+    "regex_rule": "multi_intent_count_and_trend",
     "expected_facts": {
       "has_time_scope": {
         "value": true,

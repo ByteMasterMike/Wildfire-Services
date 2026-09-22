@@ -35,6 +35,12 @@ REGEX_ONLY = {
         "Depends on whether the matched read can express a named county or "
         "month. That is tool-schema arithmetic, not an atomic fact about the wording."
     ),
+    "unsupported_air_quality": "Router keyword. v3 off_topic groups this under other_off_topic.",
+    "unsupported_evacuation": "Router keyword. v3 off_topic groups this under other_off_topic.",
+    "unsupported_translation": "Router keyword. v3 off_topic groups this under other_off_topic.",
+    "unsupported_personnel": "Router keyword. v3 off_topic groups this under other_off_topic.",
+    "unsupported_satellite": "Router keyword. v3 off_topic groups this under other_off_topic.",
+    "unsupported_leadership": "Router keyword. v3 off_topic groups this under other_off_topic.",
 }
 
 OFF_TOPIC_RULES = {
