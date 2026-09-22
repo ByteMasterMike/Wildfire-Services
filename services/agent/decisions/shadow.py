@@ -390,13 +390,15 @@ class ShadowRunner:
             "v3_single": "concatenated",
             "v3_no_glossary": "none",
             "v3_policy_context": "policy",
+            "v3_hybrid": "policy",
         }.get(config, "per_call")
         calls = calls_for(
             question,
             self._clock().date().isoformat(),
             include_tools=candidate_tools or None,
             glossary_mode=mode,
-            policy_context=DOMAIN_CONTEXT if config == "v3_policy_context" else None,
+            policy_context=DOMAIN_CONTEXT if config in {"v3_policy_context", "v3_hybrid"} else None,
+            include_direct_clarify=config == "v3_hybrid",
         )
 
         def run_call(call: dict[str, Any]) -> tuple[dict[str, Any], DecisionResult | None]:

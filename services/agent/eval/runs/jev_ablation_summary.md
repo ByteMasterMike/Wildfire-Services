@@ -16,7 +16,18 @@ Paraphrase disposition: v2_full 85.4% flip 4.9%, v3_split 85.4% flip 7.3%, v3_si
 
 v3_policy_context is the winner: highest disposition majority, and that majority did not flip across five repeats. Putting the v2 policy paragraph on every small call helped. Putting every v3 question in one call (v3_single) was a bit worse than split calls and much worse on tool pick than the policy-context run. Dropping the glossary hurt paraphrase disposition. Derived clarify_reason is weak in every v3 config because it is inferred from facts, while v2 asked for the reason directly and scored 100%.
 
-Shadow default is `v3_policy_context`.
+Shadow default is `v3_hybrid`: the same policy-context calls, plus the v2 `clarify_reason` Choice. When the derived disposition is clarify, that direct answer is the scored reason.
+
+Hybrid rerun, five repeats, jev-1.13.0:
+
+| config | disposition | intent | dataset | tool_pick | clarify_reason | tokens | p50 / p95 |
+|---|---|---|---|---|---|---:|---|
+| v3_policy_context | 87.6% / flip 0% (105) | 95.5% / 4.5% (66) | 95% / 0% (20) | 100% / 0% (15) | 38.5% / 7.7% (13) | 6040 | 399 / 735 ms |
+| v3_hybrid | 87.6% / flip 0% (105) | 97.0% / 3.0% (66) | 95% / 0% (20) | 100% / 6.7% (15) | 76.9% / 0% (13) | 6663 | 403 / 701 ms |
+
+Paraphrase disposition is 90.2% flip 0 for both (n=41). Paraphrase clarify_reason is 66.7% for policy context and 100% for hybrid (n=3).
+
+The only tool_pick flip is `detect_partial_200`: visualization_create at 0.32, 0.38, 0.25, and 0.31, and clarify at 0.28. Original confidence is 0.32. No flip had confidence >= 0.8, so that gate passes.
 
 ## Go / no-go
 

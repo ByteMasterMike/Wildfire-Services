@@ -180,10 +180,16 @@ def calls_for(
     include_tools: list[str] | None = None,
     glossary_mode: str = "per_call",
     policy_context: str | None = None,
+    include_direct_clarify: bool = False,
 ) -> list[dict]:
     """Build the v3 calls. glossary_mode is per_call, concatenated, none, or policy."""
+    topic_qs = topic_questions()
+    if include_direct_clarify:
+        from services.agent.decisions.schemas import routing_questions
+
+        topic_qs["clarify_reason"] = routing_questions()["clarify_reason"]
     fact = {"name": "facts", "questions": fact_questions(), "glossary": None}
-    topic = {"name": "topic", "questions": topic_questions(), "glossary": dataset_glossary()}
+    topic = {"name": "topic", "questions": topic_qs, "glossary": dataset_glossary()}
     places = {"name": "places", "questions": place_questions(), "glossary": None}
     grouped = [fact, topic, places]
     if include_tools is not None:

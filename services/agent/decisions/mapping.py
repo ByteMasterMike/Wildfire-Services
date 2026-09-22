@@ -410,6 +410,9 @@ _LABEL_OVERRIDES: dict[str, dict[str, Any]] = {
         "tool_pick": ["data_query_records"],
         "needs_human_review": False,
     },
+    "holdout_unsupported_budget": {
+        "unsupported_topic": ["unsupported_cost", "unsupported_optimization"],
+    },
     "utility_not_invented_from_place": {
         "acceptable_outcomes": [
             {

@@ -20,7 +20,7 @@ from services.agent.decisions.integrity import answers_equal, parse_raw_answers
 from services.agent.decisions.mapping import RULE_TO_INTENT, routing_rule_ids
 from services.agent.decisions.shadow import ShadowRunner
 from services.agent.decisions.shadow_log import ShadowLog
-from services.agent.eval.jev_metrics import accuracy, field_applies
+from services.agent.eval.jev_metrics import accuracy, field_applies, labels_match
 from services.agent.orchestrator import AgentOrchestrator
 from services.agent.routing import route_question
 
@@ -419,6 +419,21 @@ def test_clarify_reason_does_not_score_when_disposition_is_answer():
     assert field_applies("intent", {"disposition": "clarify", "intent": "other"}) is False
     assert field_applies("tool_pick", {"disposition": "unsupported", "tool_pick": "unsupported"}) is False
     assert field_applies("dataset", {"disposition": "clarify", "dataset": "cpuc_ignitions"}) is False
+    assert field_applies(
+        "unsupported_topic",
+        {
+            "disposition": "unsupported",
+            "unsupported_topic": "unsupported_cost",
+            "acceptable_outcomes": [
+                {"disposition": "unsupported", "unsupported_topic": "unexpressable_county_filter"},
+                {"disposition": "answer", "dataset": "calfire_incidents"},
+            ],
+        },
+    ) is False
+    assert labels_match(
+        ["unsupported_cost", "unsupported_optimization"],
+        "unsupported_optimization",
+    )
     rows = [(expected, "ambiguous_risk_metric")]
     pairs = [
         (item.get("clarify_reason"), actual)

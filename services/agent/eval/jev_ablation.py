@@ -33,6 +33,7 @@ _V3_MODE = {
     "v3_single": "concatenated",
     "v3_no_glossary": "none",
     "v3_policy_context": "policy",
+    "v3_hybrid": "policy",
 }
 
 
@@ -72,7 +73,8 @@ def _calls(unit: dict[str, Any], config: str) -> list[dict[str, Any]]:
         today,
         include_tools=tools,
         glossary_mode=_V3_MODE[config],
-        policy_context=DOMAIN_CONTEXT if config == "v3_policy_context" else None,
+        policy_context=DOMAIN_CONTEXT if config in {"v3_policy_context", "v3_hybrid"} else None,
+        include_direct_clarify=config == "v3_hybrid",
     )
 
 
@@ -137,12 +139,17 @@ def _values(unit: dict[str, Any], config: str, answers: dict[str, Answer]) -> di
     intent = answers.get("intent")
     dataset = answers.get("dataset")
     tool = answers.get("tool_pick")
+    direct_clarify = answers.get("clarify_reason")
+    clarify_reason = outcome.clarify_reason
+    if outcome.disposition == "clarify" and direct_clarify is not None and config == "v3_hybrid":
+        clarify_reason = direct_clarify.value
     return {
         "disposition": outcome.disposition,
         "intent": None if intent is None else intent.value,
         "dataset": None if dataset is None else dataset.value,
         "tool_pick": None if tool is None else tool.value,
-        "clarify_reason": outcome.clarify_reason,
+        "tool_confidence": None if tool is None else tool.confidence,
+        "clarify_reason": clarify_reason,
         "unsupported_topic": outcome.unsupported_topic,
         "facts": facts,
         "outcome": outcome,
@@ -202,6 +209,7 @@ def run_ablation(
         para_expected: dict[str, list[dict[str, Any]]] = defaultdict(list)
         tokens: list[int] = []
         walls: list[float] = []
+        tool_trace: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for repeat_index in range(repeats):
             actuals: dict[str, list[Any]] = defaultdict(list)
             para_actuals: dict[str, list[Any]] = defaultdict(list)
@@ -210,6 +218,13 @@ def run_ablation(
                 judged = _values(unit, config, shot["answers"])
                 tokens.append(shot["tokens"])
                 walls.append(shot["wall_ms"])
+                if unit["tools"] and judged.get("tool_pick") is not None:
+                    tool_trace[str(unit["case"].get("id"))].append(
+                        {
+                            "value": judged.get("tool_pick"),
+                            "confidence": judged.get("tool_confidence"),
+                        }
+                    )
                 if repeat_index == 0 and config != "v2_full" and judged["outcome"] is not None:
                     _note_fact_error(unit, judged, report)
                 for field in (
@@ -250,6 +265,19 @@ def run_ablation(
             "p95_ms": pct(0.95),
             "calls": sum(1 for _ in tokens),
         }
+        flips = []
+        for case_id, votes in tool_trace.items():
+            values = [item["value"] for item in votes]
+            if len(set(values)) <= 1:
+                continue
+            flips.append({"id": case_id, "votes": votes})
+            original = votes[0]
+            print(
+                f"  tool_pick flip {case_id}: "
+                + ", ".join(f"{item['value']}@{item['confidence']}" for item in votes)
+                + f" original_confidence={original['confidence']}"
+            )
+        report["configs"][config]["tool_flips"] = flips
         _print_config(config, report["configs"][config])
         partial = RUNS / "jev_ablation_partial.json"
         partial.write_text(json.dumps(report, default=str), encoding="utf-8")

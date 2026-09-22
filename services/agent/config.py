@@ -63,7 +63,7 @@ class AgentSettings:
     jev_daily_call_cap: int = 5000
     jev_log_path: str = "services/agent/logs/jev_shadow.jsonl"
     jev_log_max_mb: float = 50.0
-    jev_ablation: str = "v3_policy_context"
+    jev_ablation: str = "v3_hybrid"
 
     @classmethod
     def from_env(cls) -> "AgentSettings":
@@ -128,7 +128,7 @@ class AgentSettings:
                 "AGENT_JEV_LOG_PATH", "services/agent/logs/jev_shadow.jsonl"
             ),
             jev_log_max_mb=float(os.getenv("AGENT_JEV_LOG_MAX_MB", "50")),
-            jev_ablation=os.getenv("AGENT_JEV_ABLATION", "v3_policy_context").strip(),
+            jev_ablation=os.getenv("AGENT_JEV_ABLATION", "v3_hybrid").strip(),
         )
         value.validate()
         return value
@@ -167,10 +167,11 @@ class AgentSettings:
             "v3_single",
             "v3_no_glossary",
             "v3_policy_context",
+            "v3_hybrid",
         }:
             raise ValueError(
                 "AGENT_JEV_ABLATION must be v2_full, v3_split, v3_single, "
-                "v3_no_glossary, or v3_policy_context"
+                "v3_no_glossary, v3_policy_context, or v3_hybrid"
             )
         if not self.allow_remote_provider and not _is_loopback(self.model_base_url):
             raise ValueError(

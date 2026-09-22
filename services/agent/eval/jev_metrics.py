@@ -129,6 +129,11 @@ def field_applies(field: str, expected: dict[str, Any]) -> bool:
     if field == "clarify_reason":
         return disposition == "clarify" and expected.get("clarify_reason") is not None
     if field == "unsupported_topic":
+        branches = expected.get("acceptable_outcomes") or []
+        if branches:
+            branch_dispositions = {branch.get("disposition") for branch in branches}
+            if branch_dispositions != {"unsupported"}:
+                return False
         return disposition == "unsupported" and expected.get("unsupported_topic") is not None
     if field == "comparison_kind":
         return disposition == "answer" and expected.get("comparison_kind") is not None
