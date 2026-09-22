@@ -254,4 +254,10 @@
 - Live bug: `/gpu/start` only called `StartInstances`; status stuck at `loading_model` with 0 MiB VRAM until someone asked a question (or ran `ollama run` by hand).
 - Background bring-up after start returns: poll Ollama `/api/ps` → agent's `ensure_context_loaded()` if not resident → `POST :8004/ask` with “How many CPUC ignitions were there in 2023?”. `ready` only after pre-fire `status=answer`; failure is `error` + `reason`. Frontend polling unchanged.
 
+## 2026-09-21 — Merged branches still listed
+
+- No open PRs on Woody-Zhu-Group/Wildfire-Platform. Every remote branch except `main` is contained in `platform/main` (`c108380`, PR #21). Safe to delete the 12 leftover branch names.
+- Local `main` is `f0fea5f`, 11 commits behind `platform/main`.
+- Local `agent-small-model-harness` `7aede62` is a checkpoint of `AGENTS.md`, `_context/memory.md`, and `pr1-review-draft.md` that is not on GitHub. Do not delete that local branch with the others.
+
 
