@@ -1,0 +1,256 @@
+"""Table-driven checks that jev_policy mirrors routing policies."""
+
+from services.agent.decisions.jev_policy import JevFacts, covered_rule_ids, derive_outcome
+from services.agent.decisions.mapping import policy_rule_ids
+from services.agent.decisions.schemas import POLICY_SENTENCES
+
+
+def test_every_policy_rule_has_a_function():
+    missing = policy_rule_ids() - covered_rule_ids()
+    assert not missing, sorted(missing)
+    assert set(POLICY_SENTENCES) <= covered_rule_ids()
+
+
+CASES = [
+    (
+        "ambiguous_risk_metric",
+        JevFacts(asks_risk=0.9, names_risk_metric=0.1),
+        "clarify",
+        "ambiguous_risk_metric",
+        None,
+    ),
+    (
+        "missing_location",
+        JevFacts(vague_proximity=0.8, names_specific_place=0.1),
+        "clarify",
+        "missing_location",
+        None,
+    ),
+    (
+        "undefined_spatial_scope",
+        JevFacts(vague_proximity=0.8, names_specific_place=0.9),
+        "clarify",
+        "undefined_spatial_scope",
+        None,
+    ),
+    (
+        "undefined_region",
+        JevFacts(broad_region=0.9),
+        "clarify",
+        "undefined_region",
+        None,
+    ),
+    (
+        "ambiguous_relative_time",
+        JevFacts(vague_time=0.9, has_time_scope=0.1),
+        "clarify",
+        "ambiguous_relative_time",
+        None,
+    ),
+    (
+        "time_out_of_coverage",
+        JevFacts(has_time_scope=0.9),
+        "clarify",
+        "time_out_of_coverage",
+        None,
+    ),
+    (
+        "risk_future_date",
+        JevFacts(asks_risk=0.9, names_risk_metric=0.9, names_specific_place=0.9, has_time_scope=0.9, future_time=0.9),
+        "clarify",
+        "risk_future_date",
+        None,
+    ),
+    (
+        "risk_missing_place",
+        JevFacts(asks_risk=0.9, names_risk_metric=0.9, names_specific_place=0.1, has_time_scope=0.9),
+        "clarify",
+        "risk_missing_place",
+        None,
+    ),
+    (
+        "forecast_missing_date",
+        JevFacts(asks_risk=0.9, names_risk_metric=0.9, names_specific_place=0.9, has_time_scope=0.1),
+        "clarify",
+        "forecast_missing_date",
+        None,
+    ),
+    (
+        "ambiguous_risk_place",
+        JevFacts(
+            asks_risk=0.9,
+            names_risk_metric=0.9,
+            names_specific_place=0.9,
+            has_time_scope=0.9,
+            county="sacramento",
+            utilities={"PGE": 0.9},
+        ),
+        "clarify",
+        "ambiguous_risk_place",
+        None,
+    ),
+    (
+        "unsupported_cpz",
+        JevFacts(off_topic="cpz"),
+        "unsupported",
+        None,
+        "unsupported_cpz",
+    ),
+    (
+        "unsupported_cost",
+        JevFacts(off_topic="cost_or_budget"),
+        "unsupported",
+        None,
+        "unsupported_cost",
+    ),
+    (
+        "unsupported_optimization",
+        JevFacts(off_topic="optimization_or_scheduling"),
+        "unsupported",
+        None,
+        "unsupported_optimization",
+    ),
+    (
+        "unsupported_damage",
+        JevFacts(off_topic="damage_or_loss"),
+        "unsupported",
+        None,
+        "unsupported_damage",
+    ),
+    (
+        "unsupported_live_web",
+        JevFacts(off_topic="live_or_web"),
+        "unsupported",
+        None,
+        "unsupported_live_web",
+    ),
+    (
+        "unsupported_rank_cross_dataset",
+        JevFacts(intent="rank", dataset="multiple", has_time_scope=0.9, rank_group="county"),
+        "unsupported",
+        None,
+        "unsupported_rank_cross_dataset",
+    ),
+    (
+        "unsupported_rank_us_state",
+        JevFacts(intent="rank", dataset="us_ignitions", has_time_scope=0.9, rank_group="state"),
+        "unsupported",
+        None,
+        "unsupported_rank_us_state",
+    ),
+    (
+        "unsupported_rank_epss_utility",
+        JevFacts(intent="rank", dataset="epss_outages", has_time_scope=0.9, rank_group="utility"),
+        "unsupported",
+        None,
+        "unsupported_rank_epss_utility",
+    ),
+    (
+        "unsupported_ranking",
+        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.9, rank_group="cell"),
+        "unsupported",
+        None,
+        "unsupported_ranking",
+    ),
+    (
+        "unexpressable_county_filter",
+        JevFacts(intent="count", dataset="hftd", county="sacramento", has_time_scope=0.9),
+        "unsupported",
+        None,
+        "unexpressable_county_filter",
+    ),
+    (
+        "unexpressed_filter_constraints",
+        JevFacts(intent="count", dataset="cpuc_ignitions", county="sacramento", has_time_scope=0.9, dropped_filter=0.9),
+        "clarify",
+        "unexpressed_filter_constraints",
+        None,
+    ),
+    (
+        "map_missing_year",
+        JevFacts(intent="map", dataset="cpuc_ignitions", has_time_scope=0.1),
+        "clarify",
+        "map_missing_year",
+        None,
+    ),
+    (
+        "trend_missing_year",
+        JevFacts(intent="trend", has_time_scope=0.2),
+        "clarify",
+        "trend_missing_year",
+        None,
+    ),
+    (
+        "map_plus_trend_missing_year",
+        JevFacts(intent="map_plus_trend", has_time_scope=0.0),
+        "clarify",
+        "map_plus_trend_missing_year",
+        None,
+    ),
+    (
+        "spatial_missing_year",
+        JevFacts(intent="spatial_context", has_time_scope=0.1),
+        "clarify",
+        "spatial_missing_year",
+        None,
+    ),
+    (
+        "records_missing_year",
+        JevFacts(intent="count", dataset="cpuc_ignitions", has_time_scope=0.1),
+        "clarify",
+        "records_missing_year",
+        None,
+    ),
+    (
+        "ranking_missing_year",
+        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.1, rank_group="county"),
+        "clarify",
+        "ranking_missing_year",
+        None,
+    ),
+    (
+        "ranking_missing_slots",
+        JevFacts(intent="rank", has_time_scope=0.9, rank_group="missing"),
+        "clarify",
+        "ranking_missing_slots",
+        None,
+    ),
+    (
+        "ranking_county_contradiction",
+        JevFacts(intent="rank", dataset="cpuc_ignitions", has_time_scope=0.9, rank_group="county", county="alameda"),
+        "clarify",
+        "ranking_county_contradiction",
+        None,
+    ),
+    (
+        "multi_intent_stays_answer",
+        JevFacts(intent="count", dataset="cpuc_ignitions", has_time_scope=0.9, is_multi_intent=0.9),
+        "answer",
+        None,
+        None,
+    ),
+]
+
+
+def test_policy_table():
+    questions = {
+        "time_out_of_coverage": "How many ignitions in 2030?",
+        "risk_future_date": "",
+    }
+    for name, facts, disposition, reason, topic in CASES:
+        outcome = derive_outcome(facts, question=questions.get(name, "How many PGE ignitions in 2024?"))
+        assert outcome.disposition == disposition, name
+        assert outcome.clarify_reason == reason, (name, outcome.clarify_reason)
+        assert outcome.unsupported_topic == topic, (name, outcome.unsupported_topic)
+        assert name.replace("multi_intent_stays_answer", "multi_intent_count_and_trend") in outcome.trace
+
+
+def test_hftd_map_does_not_need_a_year():
+    outcome = derive_outcome(JevFacts(intent="map", dataset="hftd", has_time_scope=0.0))
+    assert outcome.disposition == "answer"
+
+
+def test_deciding_margin_is_distance_from_threshold():
+    outcome = derive_outcome(JevFacts(broad_region=0.8))
+    assert abs(outcome.deciding_margins["broad_region"] - 0.3) < 1e-9
+    assert abs(outcome.confidence - 0.3) < 1e-9
